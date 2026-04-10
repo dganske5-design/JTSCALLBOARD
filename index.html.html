@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JTS Corp Sales Scoreboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&f[]=cabinet-grotesk@500,700,800&display=swap" rel="stylesheet">
+  <style>
+    :root,[data-theme="light"]{--bg:#eef3f9;--surface:#ffffff;--surface-2:#f6f9fd;--surface-3:#edf3fb;--border:#d7e2ef;--text:#172033;--muted:#617089;--primary:#005bbb;--primary-2:#0f7b66;--primary-soft:rgba(0,91,187,.08);--success-soft:rgba(15,123,102,.1);--warning:#d97706;--danger:#b42318;--shadow:0 18px 40px rgba(15,23,42,.08);--radius:20px;--radius-sm:14px;--font-body:'General Sans',Inter,sans-serif;--font-display:'Cabinet Grotesk','General Sans',sans-serif}
+    [data-theme="dark"]{--bg:#0d1528;--surface:#111b31;--surface-2:#15223d;--surface-3:#1a2948;--border:#263757;--text:#e8f0ff;--muted:#9eb1cf;--primary:#68a8ff;--primary-2:#54c4ab;--primary-soft:rgba(104,168,255,.14);--success-soft:rgba(84,196,171,.16);--warning:#ffb454;--danger:#ff9385;--shadow:0 18px 40px rgba(0,0,0,.34)}
+    *{box-sizing:border-box}body{margin:0;font-family:var(--font-body);background:linear-gradient(180deg,rgba(0,91,187,.07),transparent 22%),linear-gradient(135deg,rgba(15,123,102,.05),transparent 45%),var(--bg);color:var(--text)}button,input,select{font:inherit}img,svg{display:block;max-width:100%}
+    .shell{min-height:100dvh;padding:20px}.frame{width:min(1240px,100%);margin:0 auto}.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 22px;margin-bottom:16px}.brand{display:flex;align-items:center;gap:16px}.brand-mark{width:260px;min-width:260px}.brand-copy strong{display:block;font-family:var(--font-display);font-size:1.15rem;letter-spacing:-.02em}.brand-copy span{display:block;margin-top:4px;color:var(--muted);font-size:.92rem}
+    .top-actions{display:flex;gap:10px;align-items:center}.btn,.icon-btn{border:none;cursor:pointer;border-radius:999px;transition:.18s ease}.icon-btn{width:44px;height:44px;background:var(--surface-2);border:1px solid var(--border);color:var(--text)}.btn{padding:12px 18px;font-weight:700}.btn-primary{background:var(--primary);color:#fff}.btn-secondary{background:var(--surface-2);color:var(--text);border:1px solid var(--border)}.btn-danger{background:var(--danger);color:#fff}
+    .hero{position:relative;overflow:hidden;padding:26px 26px 22px;margin-bottom:16px}.hero::after{content:'';position:absolute;right:-60px;top:-50px;width:260px;height:260px;background:radial-gradient(circle, rgba(0,91,187,.11), transparent 68%);pointer-events:none}.eyebrow{display:inline-flex;padding:6px 11px;border-radius:999px;background:var(--primary-soft);color:var(--primary);font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+    h1{margin:12px 0 10px;font-size:clamp(2.2rem,4vw,3.8rem);line-height:1;letter-spacing:-.05em;font-family:var(--font-display);max-width:13ch}.lede{margin:0;color:var(--muted);max-width:64ch}.hero-rail{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}.rail-card{padding:14px 16px;border-radius:16px;background:var(--surface-2);border:1px solid var(--border)}.rail-card span{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}.rail-card strong{display:block;margin-top:8px;font-size:1.45rem;font-family:var(--font-display)}
+    .layout{display:grid;grid-template-columns:340px 1fr;gap:16px}.panel{padding:18px}.panel h2{margin:0 0 12px;font-size:1.1rem}
+    .segmented{display:grid;grid-template-columns:1fr 1fr;padding:4px;background:var(--surface-2);border-radius:999px;margin-bottom:14px}.segmented button{border:none;background:transparent;padding:11px 12px;border-radius:999px;color:var(--muted);font-weight:700;cursor:pointer}.segmented button.active{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+    .calendar-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.month-nav{display:flex;gap:8px}.month-nav button{width:38px;height:38px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);cursor:pointer}
+    .weekday-row,.calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}.weekday{padding:6px 0;text-align:center;font-size:.74rem;color:var(--muted);font-weight:700}.calendar-days{margin-top:6px}
+    .day-cell{min-height:66px;border-radius:14px;border:1px solid var(--border);background:var(--surface-2);padding:8px 6px;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;cursor:pointer}.day-cell.empty{background:transparent;border:none;cursor:default}.day-cell.active{background:var(--primary-soft);border-color:rgba(0,91,187,.35);box-shadow:inset 0 0 0 1px rgba(0,91,187,.12)}.day-number{font-weight:800}.day-meta{font-size:.7rem;color:var(--muted)}
+    .month-list{display:grid;grid-template-columns:1fr 1fr;gap:10px}.month-chip{padding:14px;border:1px solid var(--border);background:var(--surface-2);border-radius:14px;text-align:left;cursor:pointer}.month-chip.active{background:var(--primary-soft);border-color:rgba(0,91,187,.3)}
+    .search{width:100%;padding:12px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);margin-bottom:14px}
+    .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}.summary-card{padding:16px;border-radius:16px;background:var(--surface-2);border:1px solid var(--border)}.summary-card span{display:block;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}.summary-card strong{display:block;font-size:1.7rem;font-family:var(--font-display);margin-top:6px}
+    .podiums{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}.podium{padding:18px;background:linear-gradient(180deg,var(--surface-2),var(--surface));position:relative;overflow:hidden}.podium::after{content:'';position:absolute;right:-30px;bottom:-40px;width:150px;height:150px;background:radial-gradient(circle, rgba(15,123,102,.09), transparent 68%)}.podium h3{margin:0 0 10px;font-size:1rem}.winner-line{display:flex;align-items:center;justify-content:space-between;gap:12px}.winner{display:flex;align-items:center;gap:12px}.winner-badge{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;font-weight:800}.winner-meta strong{display:block;font-size:1.15rem}.winner-meta span{display:block;color:var(--muted);font-size:.85rem}.winner-score{font-family:var(--font-display);font-size:1.6rem}
+    .boards{display:grid;grid-template-columns:1fr 1fr;gap:16px}.leaderboard h3{margin:0 0 12px;font-size:1rem}.leader-table{width:100%;border-collapse:collapse}.leader-table th,.leader-table td{padding:12px 8px;border-bottom:1px solid var(--border);text-align:left}.leader-table th{font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}.rep{display:flex;align-items:center;gap:10px}.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--primary-soft);color:var(--primary);font-weight:800}.pill{display:inline-flex;padding:5px 10px;border-radius:999px;background:var(--success-soft);color:var(--primary-2);font-size:.72rem;font-weight:800}.rank-chip{display:inline-flex;padding:4px 8px;border-radius:999px;background:var(--surface-3);font-size:.72rem;font-weight:800;color:var(--muted)}
+    .transport-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}.transport-card{padding:14px;border-radius:16px;background:linear-gradient(135deg,var(--surface-2),var(--surface-3));border:1px solid var(--border)}.transport-card strong{display:block;font-size:.95rem;margin-bottom:4px}.transport-card span{font-size:.84rem;color:var(--muted)}
+    .modal{position:fixed;inset:0;background:rgba(15,23,42,.54);display:none;align-items:center;justify-content:center;padding:20px}.modal.open{display:flex}.modal-card{width:min(640px,100%);padding:22px}.field{display:grid;gap:6px;margin-bottom:12px}.field input,.field select{padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);color:var(--text)}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.helper{font-size:.8rem;color:var(--muted)}.agent-list{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 14px}.agent-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border)}.agent-pill button{border:none;background:transparent;color:var(--danger);cursor:pointer;font-weight:700}
+    @media (max-width:1020px){.layout,.boards,.podiums,.row{grid-template-columns:1fr}.summary,.hero-rail,.transport-strip{grid-template-columns:1fr 1fr}}
+    @media (max-width:720px){.shell{padding:10px}.topbar{flex-direction:column;align-items:flex-start}.brand{flex-direction:column;align-items:flex-start}.brand-mark{width:220px;min-width:220px}.summary,.month-list,.hero-rail,.transport-strip{grid-template-columns:1fr}.leader-table th:nth-child(4),.leader-table td:nth-child(4){display:none}.day-cell{min-height:58px;padding:6px 4px}.day-meta{font-size:.64rem}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="frame">
+      <header class="card topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-label="JTS logo">
+            <svg viewBox="0 0 360 90" role="img" aria-label="Johanson Transportation Service logo" xmlns="http://www.w3.org/2000/svg">
+              <rect width="360" height="90" rx="12" fill="white"/>
+              <text x="18" y="62" fill="#c9c9c9" font-size="64" font-style="italic" font-family="Arial, sans-serif">JTS</text>
+              <text x="150" y="45" fill="#0b57b7" font-size="38" font-style="italic" font-weight="700" font-family="Arial, sans-serif">Johanson</text>
+              <text x="150" y="68" fill="#0b57b7" font-size="20" font-style="italic" font-family="Arial, sans-serif">Transportation Service</text>
+            </svg>
+          </div>
+          <div class="brand-copy">
+            <strong>JTS Corp Sales Scoreboard</strong>
+            <span>Live transportation-themed employee scorecards for calls and phone time</span>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button class="icon-btn" id="themeToggle" aria-label="Toggle theme">◐</button>
+          <button class="btn btn-secondary" id="openAdmin">Admin</button>
+        </div>
+      </header>
+
+      <section class="card hero">
+        <div class="eyebrow">JTS sales competition</div>
+        <h1>JTS Corp Sales Scoreboard</h1>
+        <p class="lede">A cleaner competition-first view for your transportation team, with clearer daily winners, monthly leaders, and side-by-side rankings for calls and phone time.</p>
+        <div class="hero-rail">
+          <div class="rail-card"><span>Selected period</span><strong id="selectedPeriodRail">Today</strong></div>
+          <div class="rail-card"><span>Total calls</span><strong id="totalCallsRail">0</strong></div>
+          <div class="rail-card"><span>Total phone time</span><strong id="totalTimeRail">0m</strong></div>
+        </div>
+        <div class="transport-strip">
+          <div class="transport-card"><strong>Freight-lane feel</strong><span>Cleaner blue and terminal-style surfaces to match transportation branding.</span></div>
+          <div class="transport-card"><strong>Competition focus</strong><span>Leader callouts and faster scanning for top performers in each category.</span></div>
+          <div class="transport-card"><strong>Employee clarity</strong><span>Simple day and month views without clutter from extra dashboard details.</span></div>
+        </div>
+      </section>
+
+      <section class="layout">
+        <aside class="card panel">
+          <div class="segmented">
+            <button id="dayBtn" class="active" type="button">By day</button>
+            <button id="monthBtn" type="button">By month</button>
+          </div>
+          <div id="dayView">
+            <div class="calendar-head">
+              <strong id="monthLabel"></strong>
+              <div class="month-nav">
+                <button id="prevMonth" aria-label="Previous month">‹</button>
+                <button id="nextMonth" aria-label="Next month">›</button>
+              </div>
+            </div>
+            <div class="weekday-row" id="weekdayRow"></div>
+            <div class="calendar-days" id="calendarDays"></div>
+          </div>
+          <div id="monthView" style="display:none">
+            <h2>Select month</h2>
+            <div class="month-list" id="monthList"></div>
+          </div>
+        </aside>
+
+        <section>
+          <div class="card panel" style="margin-bottom:16px">
+            <input class="search" id="repSearch" type="search" placeholder="Search agents" aria-label="Search agents" />
+            <div class="summary">
+              <div class="summary-card"><span>Selected period</span><strong id="selectedPeriod">Today</strong></div>
+              <div class="summary-card"><span>Total calls</span><strong id="totalCalls">0</strong></div>
+              <div class="summary-card"><span>Total phone time</span><strong id="totalTime">0m</strong></div>
+            </div>
+          </div>
+
+          <div class="podiums">
+            <section class="card podium">
+              <h3>Top Call Leader</h3>
+              <div class="winner-line">
+                <div class="winner">
+                  <div class="winner-badge">#1</div>
+                  <div class="winner-meta">
+                    <strong id="callLeaderName">—</strong>
+                    <span>Highest call count in the selected period</span>
+                  </div>
+                </div>
+                <div class="winner-score" id="callLeaderScore">0</div>
+              </div>
+            </section>
+            <section class="card podium">
+              <h3>Top Time Leader</h3>
+              <div class="winner-line">
+                <div class="winner">
+                  <div class="winner-badge">#1</div>
+                  <div class="winner-meta">
+                    <strong id="timeLeaderName">—</strong>
+                    <span>Most time on the phone in the selected period</span>
+                  </div>
+                </div>
+                <div class="winner-score" id="timeLeaderScore">0m</div>
+              </div>
+            </section>
+          </div>
+
+          <div class="boards">
+            <section class="card panel leaderboard">
+              <h3>Call Count Leaderboard</h3>
+              <table class="leader-table">
+                <thead><tr><th>Rank</th><th>Agent</th><th>Calls</th><th>Share</th></tr></thead>
+                <tbody id="callsRows"></tbody>
+              </table>
+            </section>
+
+            <section class="card panel leaderboard">
+              <h3>Time on Phone Leaderboard</h3>
+              <table class="leader-table">
+                <thead><tr><th>Rank</th><th>Agent</th><th>Time</th><th>Share</th></tr></thead>
+                <tbody id="timeRows"></tbody>
+              </table>
+            </section>
+          </div>
+        </section>
+      </section>
+    </div>
+  </div>
+
+  <div class="modal" id="adminModal">
+    <div class="card modal-card">
+      <h2 style="margin-top:0">Admin Portal</h2>
+      <p class="helper">Manage agents and enter call count plus time on the phone.</p>
+      <div id="loginView">
+        <div class="field">
+          <label for="adminPassword">Password</label>
+          <input id="adminPassword" type="password" placeholder="Enter password" />
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px">
+          <button class="btn btn-secondary" id="closeAdmin">Close</button>
+          <button class="btn btn-primary" id="unlockAdmin">Unlock</button>
+        </div>
+      </div>
+      <div id="adminView" style="display:none">
+        <div class="field">
+          <label>Sales agents</label>
+          <div class="agent-list" id="agentList"></div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="newAgent">Add agent</label>
+            <input id="newAgent" type="text" placeholder="Enter agent name" />
+          </div>
+          <div class="field" style="align-content:end">
+            <button class="btn btn-primary" id="addAgent">Add agent</button>
+          </div>
+        </div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:14px 0">
+        <div class="row">
+          <div class="field">
+            <label for="entryAgent">Agent</label>
+            <select id="entryAgent"></select>
+          </div>
+          <div class="field">
+            <label for="entryDate">Date</label>
+            <input id="entryDate" type="date" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="entryCalls">Call count</label>
+            <input id="entryCalls" type="number" min="0" step="1" placeholder="0" />
+          </div>
+          <div class="field">
+            <label for="entryMinutes">Time on phone (minutes)</label>
+            <input id="entryMinutes" type="number" min="0" step="1" placeholder="0" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="entryMode">Save mode</label>
+            <select id="entryMode"><option value="set">Set exact totals</option><option value="add">Add to existing totals</option></select>
+          </div>
+          <div class="field" style="align-content:end">
+            <button class="btn btn-primary" id="saveEntry">Save scorecard entry</button>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
+          <button class="btn btn-secondary" id="lockAdmin">Lock</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ADMIN_PASSWORD = 'JTS1971!';
+    const state = {
+      theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+      mode: 'day',
+      currentMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+      selectedDate: '',
+      selectedMonth: '',
+      search: '',
+      admin: false,
+      agents: ['Grayson','Mike','Colton','Chad'],
+      entries: []
+    };
+
+    const $ = id => document.getElementById(id);
+    const els = {
+      themeToggle:$('themeToggle'), openAdmin:$('openAdmin'), adminModal:$('adminModal'), closeAdmin:$('closeAdmin'), unlockAdmin:$('unlockAdmin'), adminPassword:$('adminPassword'),
+      loginView:$('loginView'), adminView:$('adminView'), dayBtn:$('dayBtn'), monthBtn:$('monthBtn'), dayView:$('dayView'), monthView:$('monthView'),
+      monthLabel:$('monthLabel'), weekdayRow:$('weekdayRow'), calendarDays:$('calendarDays'), monthList:$('monthList'), prevMonth:$('prevMonth'), nextMonth:$('nextMonth'),
+      repSearch:$('repSearch'), selectedPeriod:$('selectedPeriod'), totalCalls:$('totalCalls'), totalTime:$('totalTime'), selectedPeriodRail:$('selectedPeriodRail'), totalCallsRail:$('totalCallsRail'), totalTimeRail:$('totalTimeRail'),
+      callsRows:$('callsRows'), timeRows:$('timeRows'), callLeaderName:$('callLeaderName'), callLeaderScore:$('callLeaderScore'), timeLeaderName:$('timeLeaderName'), timeLeaderScore:$('timeLeaderScore'),
+      agentList:$('agentList'), newAgent:$('newAgent'), addAgent:$('addAgent'), entryAgent:$('entryAgent'), entryDate:$('entryDate'), entryCalls:$('entryCalls'), entryMinutes:$('entryMinutes'),
+      entryMode:$('entryMode'), saveEntry:$('saveEntry'), lockAdmin:$('lockAdmin')
+    };
+
+    seedData();
+    document.documentElement.setAttribute('data-theme', state.theme);
+    bind();
+    render();
+
+    function bind(){
+      els.themeToggle.addEventListener('click',()=>{state.theme=state.theme==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',state.theme);});
+      els.openAdmin.addEventListener('click',()=>els.adminModal.classList.add('open'));
+      els.closeAdmin.addEventListener('click',()=>els.adminModal.classList.remove('open'));
+      els.adminModal.addEventListener('click',e=>{if(e.target===els.adminModal) els.adminModal.classList.remove('open');});
+      els.unlockAdmin.addEventListener('click',unlockAdmin);
+      els.lockAdmin.addEventListener('click',()=>{state.admin=false;renderAdmin();});
+      els.dayBtn.addEventListener('click',()=>{state.mode='day';syncMode();render();});
+      els.monthBtn.addEventListener('click',()=>{state.mode='month';state.selectedMonth=monthKey(state.currentMonth);syncMode();render();});
+      els.prevMonth.addEventListener('click',()=>{state.currentMonth=new Date(state.currentMonth.getFullYear(),state.currentMonth.getMonth()-1,1); if(state.mode==='month') state.selectedMonth=monthKey(state.currentMonth); render();});
+      els.nextMonth.addEventListener('click',()=>{state.currentMonth=new Date(state.currentMonth.getFullYear(),state.currentMonth.getMonth()+1,1); if(state.mode==='month') state.selectedMonth=monthKey(state.currentMonth); render();});
+      els.repSearch.addEventListener('input',e=>{state.search=e.target.value.toLowerCase();renderBoards();});
+      els.addAgent.addEventListener('click',addAgent);
+      els.saveEntry.addEventListener('click',saveEntry);
+    }
+
+    function render(){syncMode();renderCalendar();renderMonthList();renderSummary();renderBoards();renderAdmin();}
+    function syncMode(){els.dayBtn.classList.toggle('active',state.mode==='day');els.monthBtn.classList.toggle('active',state.mode==='month');els.dayView.style.display=state.mode==='day'?'block':'block';els.monthView.style.display=state.mode==='month'?'block':'none';if(state.mode==='day'){els.dayView.style.display='block';} else {els.dayView.style.display='none';}}
+
+    function renderCalendar(){
+      const labels=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      els.weekdayRow.innerHTML = labels.map(d=>`<div class="weekday">${d}</div>`).join('');
+      const current=state.currentMonth; els.monthLabel.textContent=current.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      const first=new Date(current.getFullYear(),current.getMonth(),1).getDay();
+      const daysInMonth=new Date(current.getFullYear(),current.getMonth()+1,0).getDate();
+      const totals = dayTotals(monthKey(current));
+      let html='';
+      for(let i=0;i<first;i++) html += '<div class="day-cell empty"></div>';
+      for(let day=1;day<=daysInMonth;day++){
+        const date=isoDate(new Date(current.getFullYear(),current.getMonth(),day));
+        const calls=(totals[date]?.calls)||0;
+        html += `<button class="day-cell ${state.mode==='day'&&state.selectedDate===date?'active':''}" data-date="${date}"><span class="day-number">${day}</span><span class="day-meta">${calls} calls</span></button>`;
+      }
+      els.calendarDays.innerHTML=html;
+      els.calendarDays.querySelectorAll('[data-date]').forEach(btn=>btn.addEventListener('click',()=>{state.selectedDate=btn.dataset.date;state.mode='day';syncMode();render();}));
+    }
+
+    function renderMonthList(){
+      const months=[...new Set(state.entries.map(e=>e.date.slice(0,7)))].sort();
+      els.monthList.innerHTML=months.map(month=>{const totals=aggregateForMonth(month); return `<button class="month-chip ${state.mode==='month'&&state.selectedMonth===month?'active':''}" data-month="${month}"><strong>${new Date(month+'-01').toLocaleDateString('en-US',{month:'short',year:'numeric'})}</strong><div class="helper">${totals.calls} calls · ${formatMinutes(totals.minutes)}</div></button>`;}).join('');
+      els.monthList.querySelectorAll('[data-month]').forEach(btn=>btn.addEventListener('click',()=>{state.selectedMonth=btn.dataset.month;state.currentMonth=new Date(btn.dataset.month+'-01');state.mode='month';syncMode();render();}));
+    }
+
+    function renderSummary(){
+      const rows=getCurrentRows();
+      const calls = rows.reduce((s,r)=>s+r.calls,0);
+      const mins = rows.reduce((s,r)=>s+r.minutes,0);
+      const label = state.mode==='day' ? formatLongDate(state.selectedDate) : formatLongMonth(state.selectedMonth);
+      els.selectedPeriod.textContent = label;
+      els.totalCalls.textContent = calls;
+      els.totalTime.textContent = formatMinutes(mins);
+      els.selectedPeriodRail.textContent = label;
+      els.totalCallsRail.textContent = calls;
+      els.totalTimeRail.textContent = formatMinutes(mins);
+    }
+
+    function renderBoards(){
+      const baseRows=getCurrentRows().filter(r=>r.name.toLowerCase().includes(state.search));
+      const callRows=[...baseRows].sort((a,b)=>b.calls-a.calls || a.name.localeCompare(b.name));
+      const timeRows=[...baseRows].sort((a,b)=>b.minutes-a.minutes || a.name.localeCompare(b.name));
+      renderTable(els.callsRows, callRows, 'calls');
+      renderTable(els.timeRows, timeRows, 'minutes');
+      els.callLeaderName.textContent = callRows[0]?.name || '—';
+      els.callLeaderScore.textContent = callRows[0] ? callRows[0].calls : '0';
+      els.timeLeaderName.textContent = timeRows[0]?.name || '—';
+      els.timeLeaderScore.textContent = timeRows[0] ? formatMinutes(timeRows[0].minutes) : '0m';
+    }
+
+    function renderTable(target, rows, metric){
+      const total=rows.reduce((s,r)=>s+(metric==='calls'?r.calls:r.minutes),0);
+      target.innerHTML = rows.length ? rows.map((r,idx)=>`<tr><td><span class="rank-chip">#${idx+1}</span></td><td><div class="rep"><div class="avatar">${initials(r.name)}</div><strong>${r.name}</strong></div></td><td><strong>${metric==='calls'?r.calls:formatMinutes(r.minutes)}</strong></td><td>${total?Math.round(((metric==='calls'?r.calls:r.minutes)/total)*100):0}%</td></tr>`).join('') : `<tr><td colspan="4" class="helper">No agents found.</td></tr>`;
+    }
+
+    function renderAdmin(){
+      els.loginView.style.display = state.admin ? 'none' : 'block';
+      els.adminView.style.display = state.admin ? 'block' : 'none';
+      els.agentList.innerHTML = state.agents.map(name=>`<span class="agent-pill">${name}<button type="button" data-remove="${name}" aria-label="Remove ${name}">×</button></span>`).join('');
+      els.agentList.querySelectorAll('[data-remove]').forEach(btn=>btn.addEventListener('click',()=>removeAgent(btn.dataset.remove)));
+      els.entryAgent.innerHTML = state.agents.map(name=>`<option value="${name}">${name}</option>`).join('');
+      if(!els.entryDate.value) els.entryDate.value = state.selectedDate;
+    }
+
+    function unlockAdmin(){ if(els.adminPassword.value!==ADMIN_PASSWORD){ alert('Incorrect password'); return; } state.admin=true; els.adminPassword.value=''; renderAdmin(); }
+    function addAgent(){ if(!state.admin) return; const name=els.newAgent.value.trim(); if(!name) return; if(state.agents.some(a=>a.toLowerCase()===name.toLowerCase())){ alert('Agent already exists'); return; } state.agents.push(name); els.newAgent.value=''; render(); }
+    function removeAgent(name){ if(!state.admin) return; state.agents = state.agents.filter(agent=>agent!==name); state.entries = state.entries.filter(entry=>entry.agent!==name); render(); }
+    function saveEntry(){
+      if(!state.admin) return;
+      const agent=els.entryAgent.value, date=els.entryDate.value, calls=Number(els.entryCalls.value||0), minutes=Number(els.entryMinutes.value||0), mode=els.entryMode.value;
+      if(!agent || !date || calls<0 || minutes<0){ alert('Enter a valid agent, date, call count, and phone time.'); return; }
+      let existing = state.entries.find(e=>e.agent===agent && e.date===date);
+      if(existing){ if(mode==='add'){ existing.calls += calls; existing.minutes += minutes; } else { existing.calls = calls; existing.minutes = minutes; } }
+      else { state.entries.push({agent,date,calls,minutes}); }
+      state.selectedDate = date; state.selectedMonth = date.slice(0,7); state.currentMonth = new Date(date+'T00:00:00'); state.mode='day';
+      els.entryCalls.value=''; els.entryMinutes.value=''; syncMode(); render();
+    }
+
+    function getCurrentRows(){
+      const grouped = Object.fromEntries(state.agents.map(name=>[name,{name,calls:0,minutes:0}]));
+      state.entries.forEach(entry=>{ const match = state.mode==='day' ? entry.date===state.selectedDate : entry.date.startsWith(state.selectedMonth); if(match && grouped[entry.agent]){ grouped[entry.agent].calls += entry.calls; grouped[entry.agent].minutes += entry.minutes; } });
+      return Object.values(grouped);
+    }
+    function dayTotals(month){ return state.entries.filter(e=>e.date.startsWith(month)).reduce((acc,e)=>{acc[e.date] ??= {calls:0,minutes:0}; acc[e.date].calls += e.calls; acc[e.date].minutes += e.minutes; return acc;}, {}); }
+    function aggregateForMonth(month){ return state.entries.filter(e=>e.date.startsWith(month)).reduce((acc,e)=>({calls:acc.calls+e.calls,minutes:acc.minutes+e.minutes}),{calls:0,minutes:0}); }
+
+    function seedData(){
+      const today=new Date();
+      for(let monthOffset=-1; monthOffset<=0; monthOffset++){
+        const base=new Date(today.getFullYear(),today.getMonth()+monthOffset,1);
+        const maxDays=Math.min(new Date(base.getFullYear(),base.getMonth()+1,0).getDate(),18);
+        for(let d=1; d<=maxDays; d++){
+          const date=isoDate(new Date(base.getFullYear(),base.getMonth(),d));
+          state.agents.forEach((agent,i)=>{ state.entries.push({agent,date,calls:0,minutes:0}); });
+        }
+      }
+      state.selectedDate = state.entries[state.entries.length-1].date;
+      state.selectedMonth = state.selectedDate.slice(0,7);
+      state.currentMonth = new Date(state.selectedDate+'T00:00:00');
+    }
+
+    function isoDate(date){ return new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+    function monthKey(date){ return isoDate(date).slice(0,7); }
+    function formatLongDate(date){ return new Date(date+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}); }
+    function formatLongMonth(month){ return new Date(month+'-01T00:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'}); }
+    function formatMinutes(minutes){ const h=Math.floor(minutes/60), m=minutes%60; return h?`${h}h ${m}m`:`${m}m`; }
+    function initials(name){ return name.split(' ').map(v=>v[0]).join('').slice(0,2).toUpperCase(); }
+  </script>
+</body>
+</html>
