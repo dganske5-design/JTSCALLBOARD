@@ -278,13 +278,11 @@ body.m .stop-times .input { flex: 1 1 60%; }
 body.m .stop-times .dwell { margin-left: 0; flex: 1 1 100%; }
 @media print { .stop-times { display: none !important; } }
 
-/* pickup numbers */
-.refs { display: flex; flex-direction: column; gap: 6px; }
-.ref-row { display: flex; gap: 6px; align-items: center; }
-.ref-row input { flex: 1 1 90px; min-width: 0; }
-.ref-row select { flex: 0 0 150px; }
-.ref-row .btn-icon { width: 30px; height: 30px; flex: none; }
-body.m .ref-row select { flex: 0 0 130px; }
+/* pickup numbers on lines */
+.w110 { width: 110px; flex: none; } .w130 { width: 130px; flex: none; }
+.pos-tag { font-size: 10px; letter-spacing: 0.06em; padding: 1px 5px; border: 1px solid var(--color-accent); color: var(--color-accent-700); margin-left: 4px; vertical-align: middle; }
+body.m .line-row .puno { flex: 1 1 45%; width: auto; }
+body.m .line-row .pos { flex: 1 1 45%; width: auto; }
 /* status chips */
 .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 8px; }
 .chip-lbl { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent-700); margin-right: 4px; }
@@ -414,7 +412,7 @@ const COMPANY = {
   phone: '(559) 555-0100',
   email: 'dispatch@johansontransportation.com'
 };
-const STORE_KEY = 'jts_loadboard_v5';
+const STORE_KEY = 'jts_loadboard_v6';
 const LAYOUT_KEY = 'jts_loadboard_layout';
 const SKIN_KEY = 'jts_loadboard_skin';
 const DARK = (bg, surface, text, accent, a600, a700, a800, a100, chrome, chrome2, line, soft, strip, stripLine, hover, ring, onAccent = '#0d1117') => ({
@@ -587,7 +585,7 @@ const CORNERS = '<i class="corner tl"></i><i class="corner tr"></i><i class="cor
 
 // ── Data model helpers ─────────────────────────────────────────────────────
 const blankFac = () => ({ name: '', address: '', city: '', st: '', zip: '', contact: '', phone: '' });
-const blankLine = () => ({ id: uid(), commodity: '', pallets: '', cases: '', weight: '', dropIdx: 0 });
+const blankLine = (no = '', pos = '') => ({ id: uid(), no, pos, commodity: '', pallets: '', cases: '', weight: '', dropIdx: 0 });
 const blankCarrier = () => ({ name: '', email: '', driver: '', driverPhone: '', coDriver: '', coDriverPhone: '', tractor: '', trailer: '', year: '', plate: '' });
 const blankTracking = () => ({ location: '', miles: '', nextStop: 'd0', eta: '', condition: 'On time', notes: '', updatedAt: 0, log: [] });
 const carrierOf = l => ({ ...blankCarrier(), ...(l.carrier || {}), name: l.carrierName || (l.carrier && l.carrier.name) || '', email: l.carrierEmail || (l.carrier && l.carrier.email) || '' });
@@ -596,10 +594,27 @@ const stopList = l => [...l.pickups.map((p, i) => ({ key: 'p' + i, label: `Picku
 const fmtWhen = ts => new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const POSITIONS = ['Nose', 'Middle', 'Tail', 'Load by shipper'];
 const blankRef = (no = '', pos = '') => ({ id: uid(), no, pos });
-const refsOf = p => (p.refs && p.refs.length) ? p.refs : (p.ref ? [blankRef(p.ref, '')] : []);
-const refText = p => refsOf(p).map(r => r.no).filter(Boolean).join(', ');
+function refsOf(p) { // PU numbers on this pickup, de-duplicated, from its lines (legacy: refs[] / ref)
+  const seen = new Set(), out = [];
+  (p.lines || []).forEach(l => { const no = (l.no || '').trim(); if (no && !seen.has(no)) { seen.add(no); out.push({ no, pos: l.pos || '' }); } });
+  if (out.length) return out;
+  if (p.refs && p.refs.length) return p.refs.filter(r => r.no);
+  return p.ref ? [blankRef(p.ref, '')] : [];
+}
+const refText = p => refsOf(p).map(r => r.no).join(', ');
 const refLabel = r => r.no + (r.pos ? ' · ' + r.pos.toUpperCase() : '');
-function normalizeDraft(d) { d.pickups.forEach(p => { p.refs = refsOf(p); if (!p.refs.length) p.refs = [blankRef()]; }); return d; }
+function normalizeDraft(d) { // fold legacy refs[] into lines so every row carries its own PU #
+  d.pickups.forEach(p => {
+    p.lines = p.lines || [];
+    if (p.refs && p.refs.length && !p.lines.some(l => l.no)) {
+      p.refs.forEach((r, k) => { if (p.lines[k]) { p.lines[k].no = r.no; p.lines[k].pos = r.pos || ''; } else p.lines.push({ ...blankLine(r.no, r.pos || ''), dropIdx: 0 }); });
+    } else if (p.ref && !p.lines.some(l => l.no) && p.lines[0]) p.lines[0].no = p.ref;
+    delete p.refs;
+    if (!p.lines.length) p.lines.push(blankLine());
+    p.lines.forEach(l => { l.no = l.no || ''; l.pos = l.pos || ''; });
+  });
+  return d;
+}
 const blankStop = () => ({ id: uid(), facilityId: '', name: '', address: '', city: '', st: '', zip: '', contact: '', phone: '', ref: '', po: '', date: '', time: '', notes: '' });
 function nextFileNo() {
   const max = S.loads.reduce((m, l) => Math.max(m, parseInt((l.fileNo || '').replace(/\D/g, '')) || 0), 2440000);
@@ -609,7 +624,7 @@ function blankDraft() {
   const ini = (S.user && S.user.initials) || '';
   return { id: null, fileNo: nextFileNo(), customer: '', customerEmail: '', status: 'Open', temp: '', fileIn: ini, trIn: ini,
     carrier: blankCarrier(), tracking: blankTracking(),
-    pickups: [{ ...blankStop(), refs: [blankRef()], lines: [blankLine()] }], drops: [blankStop()],
+    pickups: [{ ...blankStop(), lines: [blankLine()] }], drops: [blankStop()],
     linehaul: '', fuel: '', accessorial: '', carrierName: '', carrierEmail: '', createdAt: Date.now() };
 }
 const stopTotals = p => (p.lines || []).reduce((a, l) => ({ plt: a.plt + num(l.pallets), cs: a.cs + num(l.cases), wt: a.wt + num(l.weight) }), { plt: 0, cs: 0, wt: 0 });
@@ -646,12 +661,12 @@ function demoData() {
   const loads = [
     { id: 'L1', fileNo: '2440871', customer: 'Mosqueda Inc.', fileIn: 'DG', trIn: 'DG', status: 'Tendered', temp: '-10°F continuous', createdAt: Date.now() - 36e5,
       linehaul: '1850', fuel: '210', accessorial: '0', carrierName: '', carrierEmail: '',
-      pickups: [{ ...stop(shippers[1], 'test 1234', '2026-09-02', '08:00', 'Check in at guard shack. FCFS 06:00–14:00.'), refs: [blankRef('test 1234', 'Load by shipper')], lines: [line('Frozen entrées — keep at -10°F', 18, 1440, 32400, 0), line('Ice cream novelties', 8, 640, 14200, 1)] }],
+      pickups: [{ ...stop(shippers[1], 'test 1234', '2026-09-02', '08:00', 'Check in at guard shack. FCFS 06:00–14:00.'), lines: [{ ...line('Frozen entrées — keep at -10°F', 18, 1440, 32400, 0), no: 'test 1234', pos: 'Load by shipper' }, { ...line('Ice cream novelties', 8, 640, 14200, 1), no: 'test 1234', pos: 'Tail' }] }],
       drops: [stop(receivers[0], 'test 1234', '2026-09-03', '07:30', ''), stop(receivers[2], 'test 1234', '2026-09-04', '09:00', 'Lumper on site — receipt required.')] },
     { id: 'L2', fileNo: '2440864', customer: 'Mosqueda Inc.', customerEmail: 'logistics@mosqueda.example', fileIn: 'DG', trIn: 'DG', status: 'Booked', temp: '', createdAt: Date.now() - 864e5,
       linehaul: '1425', fuel: '165', accessorial: '75', ...CARRIER,
       carrier: { ...CARRIER_RIG, driver: 'Marcus Reed', driverPhone: '(559) 555-0188', tractor: '4471', trailer: 'R-2210', year: '2022', plate: 'CA 9KLT441' },
-      pickups: [{ ...stop(shippers[2], 'test 1234, test 5678', '2026-09-01', '10:00', ''), refs: [blankRef('test 1234', 'Nose'), blankRef('test 5678', 'Tail')], inAt: localDT(Date.now() - 197 * 60000), lines: [line('Organic rolled oats — 50 lb bags', 14, 560, 28000, 0)] },
+      pickups: [{ ...stop(shippers[2], 'test 1234, test 5678', '2026-09-01', '10:00', ''), inAt: localDT(Date.now() - 197 * 60000), lines: [{ ...line('Organic rolled oats — 50 lb bags', 10, 400, 20000, 0), no: 'test 1234', pos: 'Nose' }, { ...line('Organic steel-cut oats — 25 lb bags', 4, 160, 8000, 0), no: 'test 5678', pos: 'Tail' }] },
                 { ...stop(shippers[0], 'test 1234', '2026-09-01', '15:30', 'Appt required.'), lines: [line('Retail display cartons', 8, 320, 6400, 0)] }],
       drops: [stop(receivers[1], 'test 1234', '2026-09-02', '06:00', '')] },
     { id: 'L3', fileNo: '2440855', customer: 'Mosqueda Inc.', customerEmail: 'logistics@mosqueda.example', fileIn: 'DG', trIn: 'DG', status: 'In Transit', temp: '', createdAt: Date.now() - 1728e5,
@@ -687,7 +702,7 @@ function demoExtra() {
     const orig = i % 3 === 0 ? 'MOSQUEDA INC. - REGIONAL DRIVEN' : 'MOSQUEDA INC.';
     const fileNo = String(fn);
     const pu = { id: uid(), facilityId: '', name: cap(orig) + ' — ' + cap(CITY[a][0]) + ' Shipping', address: '1200 Industrial Pkwy', city: cap(CITY[a][0]), st: CITY[a][1], zip: '', contact: 'Shipping Office', phone: '', ref: 'test 1234', po: '', date, time: '08:00', notes: '',
-      lines: [{ id: uid(), commodity: c[0], pallets: String(c[1]), cases: String(c[2]), weight: String(c[3]), dropIdx: 0 }] };
+      lines: [{ id: uid(), no: 'test 1234', pos: '', commodity: c[0], pallets: String(c[1]), cases: String(c[2]), weight: String(c[3]), dropIdx: 0 }] };
     const dl = { id: uid(), facilityId: '', name: cap(CITY[b][0]) + ' Distribution Center', address: '4400 Commerce Dr', city: cap(CITY[b][0]), st: CITY[b][1], zip: '', contact: 'Receiving', phone: '', ref: 'test 1234', po: '', date, time: '06:00', notes: '' };
     out.push({ id: 'X' + fileNo, fileNo, fileIn: 'DG', trIn: 'DG', customer: orig, status, temp: /34°F/.test(c[0]) ? '34°F continuous' : '',
       linehaul: String(Math.round(rate * 0.86)), fuel: String(rate - Math.round(rate * 0.86)), accessorial: '0',
@@ -986,14 +1001,8 @@ function stopFields(kind, i, s) {
     ...list.map(x => `<option value="${esc(x.id)}"${x.id === s.facilityId ? ' selected' : ''}>${esc(x.name)} — ${esc(x.city)}, ${esc(x.st)}</option>`)].join('');
   const inp = (k, span, label, extra = '') => `<div class="field${span <= 2 ? ' half' : ''}${k === 'city' ? ' ac' : ''}" style="grid-column:span ${span}"><label>${label}</label><input class="input" ${extra} value="${esc(s[k] ?? '')}" data-bind="draft.${kind}.${i}.${k}"></div>`;
   return `<div class="grid6">
-    <div class="field" style="grid-column:span ${isPu ? 3 : 4}"><label>${isPu ? 'Shipper' : 'Receiver'} (from directory)</label><select class="input" data-act="facility" data-kind="${kind}" data-i="${i}">${opts}</select></div>
-    ${isPu ? `<div class="field" style="grid-column:span 3"><label>Pickup numbers &amp; trailer position</label>
-      <div class="refs">${(s.refs || []).map((r, k) => `<div class="ref-row">
-        <input class="input" placeholder="PU #" value="${esc(r.no)}" data-bind="draft.pickups.${i}.refs.${k}.no">
-        <select class="input" data-bind="draft.pickups.${i}.refs.${k}.pos" title="Where it rides in the trailer"><option value="">Position…</option>${POSITIONS.map(x => `<option value="${x}"${r.pos === x ? ' selected' : ''}>${x}</option>`).join('')}</select>
-        <button class="btn btn-icon btn-ghost" title="Remove PU #" data-act="rmRef" data-i="${i}" data-k="${k}" ${(s.refs || []).length === 1 && !r.no ? 'disabled' : ''}>${I.x}</button>
-      </div>`).join('')}
-      <button class="btn btn-ghost" style="align-self:flex-start;padding-inline:4px" data-act="addRef" data-i="${i}">${I.plus}Add PU #</button></div></div>` : inp('ref', 2, 'Delivery number (DEL #)', 'placeholder="e.g. DEL-55102"')}
+    <div class="field" style="grid-column:span 4"><label>${isPu ? 'Shipper' : 'Receiver'} (from directory)</label><select class="input" data-act="facility" data-kind="${kind}" data-i="${i}">${opts}</select></div>
+    ${isPu ? `<div class="field" style="grid-column:span 2"><label>PU numbers</label><div class="input" style="display:flex;align-items:center;min-height:36px;font-size:13px;color:color-mix(in srgb, var(--color-text) 70%, transparent)">Entered per line below ↓</div></div>` : inp('ref', 2, 'Delivery number (DEL #)', 'placeholder="e.g. DEL-55102"')}
     ${inp('name', 3, 'Facility name')}
     ${inp('address', 3, 'Street address')}
     ${inp('city', 2, 'City', `autocomplete="off" data-ac="city" data-kind="${kind}" data-i="${i}"`)}
@@ -1016,19 +1025,21 @@ function renderBuilder() {
         ${d.pickups.length > 1 ? `<button class="btn btn-icon btn-ghost" title="Remove pickup" data-act="rmStop" data-kind="pickups" data-i="${i}">${I.trash}</button>` : ''}</div>
       ${stopFields('pickups', i, p)}
       <div class="lines">
-        <div class="line-head"><div style="flex:2">Commodity</div><div class="w80">Pallets</div><div class="w80">Cases</div><div class="w100">Weight (lbs)</div>${multi ? '<div class="w170">Deliver to</div>' : ''}<div class="w36"></div></div>
+        <div class="line-head"><div class="w110">PU #</div><div class="w130">Position</div><div style="flex:2">Commodity</div><div class="w80">Pallets</div><div class="w80">Pieces</div><div class="w100">Weight (lbs)</div>${multi ? '<div class="w170">Deliver to</div>' : ''}<div class="w36"></div></div>
         ${p.lines.map((ln, li) => `<div class="line-row">
+          <input class="input w110 puno" placeholder="PU #" value="${esc(ln.no || '')}" data-bind="draft.pickups.${i}.lines.${li}.no">
+          <select class="input w130 pos" title="Where it rides in the trailer" data-bind="draft.pickups.${i}.lines.${li}.pos"><option value="">Position…</option>${POSITIONS.map(x => `<option value="${x}"${ln.pos === x ? ' selected' : ''}>${x}</option>`).join('')}</select>
           <input class="input commodity" style="flex:2" placeholder="Commodity, e.g. Frozen entrées" value="${esc(ln.commodity)}" data-bind="draft.pickups.${i}.lines.${li}.commodity">
           <input class="input w80" type="number" min="0" placeholder="Pallets" value="${esc(ln.pallets)}" data-bind="draft.pickups.${i}.lines.${li}.pallets">
-          <input class="input w80" type="number" min="0" placeholder="Cases" value="${esc(ln.cases)}" data-bind="draft.pickups.${i}.lines.${li}.cases">
+          <input class="input w80" type="number" min="0" placeholder="Pieces" value="${esc(ln.cases)}" data-bind="draft.pickups.${i}.lines.${li}.cases">
           <input class="input w100" type="number" min="0" placeholder="Lbs" value="${esc(ln.weight)}" data-bind="draft.pickups.${i}.lines.${li}.weight">
           ${multi ? `<select class="input w170" data-act="dropIdx" data-i="${i}" data-li="${li}" data-dropsel>${dropOptions(d, ln.dropIdx)}</select>` : ''}
           <button class="btn btn-icon btn-ghost" ${p.lines.length === 1 ? 'disabled' : ''} title="Remove line" data-act="rmLine" data-i="${i}" data-li="${li}">${I.x}</button>
         </div>`).join('')}
         <div style="display:flex;align-items:center">
-          <button class="btn btn-ghost" data-act="addLine" data-i="${i}">${I.plus}Add commodity line</button>
+          <button class="btn btn-ghost" data-act="addLine" data-i="${i}">${I.plus}Add PU # / commodity line</button>
           <div class="spacer"></div>
-          <div class="text-muted" style="font-size:12px">Subtotal: <span data-sub="${i}">${fmt(st.plt)} plt · ${fmt(st.cs)} cs · ${fmt(st.wt)} lbs</span></div>
+          <div class="text-muted" style="font-size:12px">Subtotal: <span data-sub="${i}">${fmt(st.plt)} plt · ${fmt(st.cs)} pcs · ${fmt(st.wt)} lbs</span></div>
         </div>
       </div>
     </div>`;
@@ -1037,7 +1048,7 @@ function renderBuilder() {
     const at = assignedTotals(d, i);
     return `<div class="card blueprint">${CORNERS}
       <div class="stop-head"><span class="card-kicker" style="font-size:11px">Drop ${i + 1}</span>
-        ${multi ? `<span class="tag tag-accent" data-assigned="${i}">Receives ${fmt(at.plt)} plt · ${fmt(at.cs)} cs · ${fmt(at.wt)} lbs</span>` : ''}
+        ${multi ? `<span class="tag tag-accent" data-assigned="${i}">Receives ${fmt(at.plt)} plt · ${fmt(at.cs)} pcs · ${fmt(at.wt)} lbs</span>` : ''}
         <div class="spacer"></div>
         ${d.drops.length > 1 ? `<button class="btn btn-icon btn-ghost" title="Remove drop" data-act="rmStop" data-kind="drops" data-i="${i}">${I.trash}</button>` : ''}</div>
       ${stopFields('drops', i, dr)}
@@ -1046,7 +1057,7 @@ function renderBuilder() {
   return `<main id="builder">
     <div class="blueprint elev-sm totals no-print">${CORNERS}
       <div><div class="kicker">Pallets</div><div class="n" id="tot-plt">${fmt(t.plt)}</div></div>
-      <div><div class="kicker">Cases</div><div class="n" id="tot-cs">${fmt(t.cs)}</div></div>
+      <div><div class="kicker">Pieces</div><div class="n" id="tot-cs">${fmt(t.cs)}</div></div>
       <div><div class="kicker">Weight</div><div class="n"><span id="tot-wt">${fmt(t.wt)}</span> <small>lbs</small></div></div>
       <div><div class="kicker">All-in rate</div><div class="n" id="tot-rate">${money(rateTotal(d))}</div></div>
       <div class="spacer"></div>
@@ -1093,13 +1104,13 @@ function builderDerived() {
   const t = loadTotals(d);
   $('#tot-plt').textContent = fmt(t.plt); $('#tot-cs').textContent = fmt(t.cs); $('#tot-wt').textContent = fmt(t.wt);
   $('#tot-rate').textContent = money(rateTotal(d)); $('#rate-allin').textContent = money(rateTotal(d));
-  d.pickups.forEach((p, i) => { const st = stopTotals(p); const el = document.querySelector(`[data-sub="${i}"]`); if (el) el.textContent = `${fmt(st.plt)} plt · ${fmt(st.cs)} cs · ${fmt(st.wt)} lbs`; });
-  d.drops.forEach((dr, i) => { const at = assignedTotals(d, i); const el = document.querySelector(`[data-assigned="${i}"]`); if (el) el.textContent = `Receives ${fmt(at.plt)} plt · ${fmt(at.cs)} cs · ${fmt(at.wt)} lbs`; });
+  d.pickups.forEach((p, i) => { const st = stopTotals(p); const el = document.querySelector(`[data-sub="${i}"]`); if (el) el.textContent = `${fmt(st.plt)} plt · ${fmt(st.cs)} pcs · ${fmt(st.wt)} lbs`; });
+  d.drops.forEach((dr, i) => { const at = assignedTotals(d, i); const el = document.querySelector(`[data-assigned="${i}"]`); if (el) el.textContent = `Receives ${fmt(at.plt)} plt · ${fmt(at.cs)} pcs · ${fmt(at.wt)} lbs`; });
   document.querySelectorAll('select[data-dropsel]').forEach(sel => { const v = sel.value; sel.innerHTML = dropOptions(d, parseInt(v) || 0); });
 }
 function saveDraft() {
   const d = clone(S.draft);
-  d.pickups.forEach(p => { p.refs = (p.refs || []).filter(r => r.no.trim()).map(r => ({ ...r, no: r.no.trim() })); p.ref = refText(p); });
+  d.pickups.forEach(p => { p.lines.forEach(l => { l.no = (l.no || '').trim(); }); delete p.refs; p.ref = refText(p); });
   if (!d.id) { d.id = uid(); d.createdAt = Date.now(); }
   const exists = S.loads.some(l => l.id === d.id);
   const loads = exists ? S.loads.map(l => l.id === d.id ? d : l) : [d, ...S.loads];
@@ -1122,7 +1133,7 @@ function tenderEmail(l) {
     const pus = refsOf(p).filter(r => r.no);
     s.push(`PICKUP ${i + 1} — PU# ${pus.length ? pus.map(refLabel).join(' / ') : 'TBD'}`, `${p.name}`, `${p.address}, ${p.city}, ${p.st} ${p.zip}`, `Appt: ${fmtDate(p.date)}${p.time ? ' ' + p.time : ''}`);
     if (p.po) s.push(`Ref/PO: ${p.po}`);
-    p.lines.forEach(ln => s.push(`  - ${ln.commodity || 'Freight'}: ${fmt(num(ln.pallets))} plt / ${fmt(num(ln.cases))} cs / ${fmt(num(ln.weight))} lbs${multi ? ` -> Drop ${(ln.dropIdx || 0) + 1}` : ''}`));
+    p.lines.forEach(ln => s.push(`  - ${ln.no ? `PU# ${ln.no}${ln.pos ? ' (' + ln.pos.toUpperCase() + ')' : ''} · ` : ''}${ln.commodity || 'Freight'}: ${fmt(num(ln.pallets))} plt / ${fmt(num(ln.cases))} pcs / ${fmt(num(ln.weight))} lbs${multi ? ` -> Drop ${(ln.dropIdx || 0) + 1}` : ''}`));
     if (p.notes) s.push(`Notes: ${p.notes}`);
     s.push('');
   });
@@ -1132,7 +1143,7 @@ function tenderEmail(l) {
     if (d.notes) s.push(`Notes: ${d.notes}`);
     s.push('');
   });
-  s.push(`LOAD TOTALS: ${fmt(t.plt)} pallets / ${fmt(t.cs)} cases / ${fmt(t.wt)} lbs`, '', COMPANY.name, `${COMPANY.phone} · ${COMPANY.email}`);
+  s.push(`LOAD TOTALS: ${fmt(t.plt)} pallets / ${fmt(t.cs)} pieces / ${fmt(t.wt)} lbs`, '', COMPANY.name, `${COMPANY.phone} · ${COMPANY.email}`);
   return `mailto:${l.carrierEmail || ''}?subject=${encodeURIComponent(`Load Tender ${l.fileNo} — ${route(l)} — ${money(total)}`)}&body=${encodeURIComponent(s.join('\n'))}`;
 }
 const nowLocal = () => { const d = new Date(); d.setSeconds(0, 0); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
@@ -1170,24 +1181,24 @@ function renderTender(l) {
       <div class="stop-head"><span class="t-stop-label">Pickup ${i + 1}${l.pickups.length > 1 ? ' of ' + l.pickups.length : ''}</span>${refsOf(p).filter(r => r.no).length ? refsOf(p).filter(r => r.no).map(r => `<span class="tag tag-outline">PU # ${esc(refLabel(r))}</span>`).join('') : '<span class="tag tag-outline">PU # TBD</span>'}<div class="spacer"></div><span style="font-size:13px">Appt: <strong>${esc(appt(p))}</strong></span></div>
       ${head(p)}
       ${stopTimes('pickups', i, p)}
-      <table class="table"><thead><tr><th>Commodity</th>${showDest ? '<th>Deliver to</th>' : ''}<th class="r">Pallets</th><th class="r">Cases</th><th class="r">Weight (lbs)</th></tr></thead><tbody>
-        ${p.lines.map(ln => `<tr><td>${esc(ln.commodity || '—')}</td>${showDest ? `<td>Drop ${(ln.dropIdx || 0) + 1}</td>` : ''}<td class="r">${fmt(num(ln.pallets))}</td><td class="r">${fmt(num(ln.cases))}</td><td class="r">${fmt(num(ln.weight))}</td></tr>`).join('')}
-        <tr style="font-weight:700"><td>Stop total</td>${showDest ? '<td></td>' : ''}<td class="r">${fmt(st.plt)}</td><td class="r">${fmt(st.cs)}</td><td class="r">${fmt(st.wt)}</td></tr>
+      <table class="table"><thead><tr><th>PU #</th><th>Commodity</th>${showDest ? '<th>Deliver to</th>' : ''}<th class="r">Pallets</th><th class="r">Pieces</th><th class="r">Weight (lbs)</th></tr></thead><tbody>
+        ${p.lines.map(ln => `<tr><td style="white-space:nowrap">${esc(ln.no || '—')}${ln.pos ? ` <span class="pos-tag">${esc(ln.pos.toUpperCase())}</span>` : ''}</td><td>${esc(ln.commodity || '—')}</td>${showDest ? `<td>Drop ${(ln.dropIdx || 0) + 1}</td>` : ''}<td class="r">${fmt(num(ln.pallets))}</td><td class="r">${fmt(num(ln.cases))}</td><td class="r">${fmt(num(ln.weight))}</td></tr>`).join('')}
+        <tr style="font-weight:700"><td></td><td>Stop total</td>${showDest ? '<td></td>' : ''}<td class="r">${fmt(st.plt)}</td><td class="r">${fmt(st.cs)}</td><td class="r">${fmt(st.wt)}</td></tr>
       </tbody></table>
       ${notes(p)}
     </div>`;
   }).join('');
   const drops = l.drops.map((dr, i) => {
     const rows = [];
-    l.pickups.forEach((p, pi) => p.lines.forEach(ln => { if ((ln.dropIdx || 0) === i) rows.push(`<tr><td>${esc(ln.commodity || '—')}</td>${showOrigin ? `<td>Pickup ${pi + 1}</td>` : ''}<td class="r">${fmt(num(ln.pallets))}</td><td class="r">${fmt(num(ln.cases))}</td><td class="r">${fmt(num(ln.weight))}</td></tr>`); }));
+    l.pickups.forEach((p, pi) => p.lines.forEach(ln => { if ((ln.dropIdx || 0) === i) rows.push(`<tr><td style="white-space:nowrap">${esc(ln.no || '—')}${ln.pos ? ` <span class="pos-tag">${esc(ln.pos.toUpperCase())}</span>` : ''}</td><td>${esc(ln.commodity || '—')}</td>${showOrigin ? `<td>Pickup ${pi + 1}</td>` : ''}<td class="r">${fmt(num(ln.pallets))}</td><td class="r">${fmt(num(ln.cases))}</td><td class="r">${fmt(num(ln.weight))}</td></tr>`); }));
     const at = assignedTotals(l, i);
     return `<div class="t-stop drop">
       <div class="stop-head"><span class="t-stop-label">Delivery ${i + 1}${l.drops.length > 1 ? ' of ' + l.drops.length : ''}</span><span class="tag tag-outline">DEL # ${esc(dr.ref || 'TBD')}</span><div class="spacer"></div><span style="font-size:13px">Appt: <strong>${esc(appt(dr))}</strong></span></div>
       ${head(dr)}
       ${stopTimes('drops', i, dr)}
-      <table class="table"><thead><tr><th>Commodity</th>${showOrigin ? '<th>From</th>' : ''}<th class="r">Pallets</th><th class="r">Cases</th><th class="r">Weight (lbs)</th></tr></thead><tbody>
+      <table class="table"><thead><tr><th>PU #</th><th>Commodity</th>${showOrigin ? '<th>From</th>' : ''}<th class="r">Pallets</th><th class="r">Pieces</th><th class="r">Weight (lbs)</th></tr></thead><tbody>
         ${rows.join('')}
-        <tr style="font-weight:700"><td>Stop total</td>${showOrigin ? '<td></td>' : ''}<td class="r">${fmt(at.plt)}</td><td class="r">${fmt(at.cs)}</td><td class="r">${fmt(at.wt)}</td></tr>
+        <tr style="font-weight:700"><td></td><td>Stop total</td>${showOrigin ? '<td></td>' : ''}<td class="r">${fmt(at.plt)}</td><td class="r">${fmt(at.cs)}</td><td class="r">${fmt(at.wt)}</td></tr>
       </tbody></table>
       ${notes(dr)}
     </div>`;
@@ -1226,7 +1237,7 @@ function renderTender(l) {
       <div class="blueprint t-totals">${CORNERS}
         <div class="kicker">Load totals</div>
         <div class="n">${fmt(t.plt)} <small>pallets</small></div>
-        <div class="n">${fmt(t.cs)} <small>cases</small></div>
+        <div class="n">${fmt(t.cs)} <small>pieces</small></div>
         <div class="n">${fmt(t.wt)} <small>lbs</small></div>
         <div class="spacer"></div>
         <div class="rate">${money(rateTotal(l))}</div>
@@ -1613,9 +1624,7 @@ const ACT = {
     render();
   },
   dropIdx: el => { S.draft.pickups[+el.dataset.i].lines[+el.dataset.li].dropIdx = parseInt(el.value) || 0; builderDerived(); },
-  addStop: el => { const k = el.dataset.kind; S.draft[k].push(k === 'pickups' ? { ...blankStop(), refs: [blankRef()], lines: [blankLine()] } : blankStop()); render(); },
-  addRef: el => { S.draft.pickups[+el.dataset.i].refs.push(blankRef()); render(); },
-  rmRef: el => { const p = S.draft.pickups[+el.dataset.i]; p.refs.splice(+el.dataset.k, 1); if (!p.refs.length) p.refs.push(blankRef()); render(); },
+  addStop: el => { const k = el.dataset.kind; S.draft[k].push(k === 'pickups' ? { ...blankStop(), lines: [blankLine()] } : blankStop()); render(); },
   rmStop: el => {
     const k = el.dataset.kind, i = +el.dataset.i; S.draft[k].splice(i, 1);
     if (k === 'drops') S.draft.pickups.forEach(p => p.lines.forEach(l => { if (l.dropIdx >= S.draft.drops.length) l.dropIdx = 0; }));
