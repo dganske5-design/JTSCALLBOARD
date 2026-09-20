@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JTS Operations — Load Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Industry design-system tokens ─────────────────────────────────────── */
+:root {
+  --color-bg: #f2f2f3;
+  --color-surface: #e9e9ea;
+  --color-text: #1d1f20;
+  --color-accent: #5980a6;
+  --color-accent-2: #728fab;
+  --color-divider: color-mix(in srgb, #1d1f20 16%, transparent);
+  --color-neutral-100: #f5f5f8; --color-neutral-800: #424244; --color-neutral-900: #2b2b2d;
+  --color-accent-100: #eef6ff; --color-accent-600: #597ea3; --color-accent-700: #416180; --color-accent-800: #2c455d;
+  --font-heading: "Barlow Condensed", system-ui, sans-serif;
+  --font-heading-weight: 600;
+  --font-body: "Barlow", system-ui, sans-serif;
+  --space-1: 3.4px; --space-2: 6.8px; --space-3: 10.2px; --space-4: 13.6px; --space-6: 20.4px; --space-8: 27.2px;
+  --radius-md: 4px;
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #2b2b2d 14%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, #2b2b2d 16%, transparent);
+  --strip-h: 48px;   /* measured at runtime */
+  --shell-h: 100px;  /* measured at runtime */
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+h1, h2, h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); line-height: 1.12; letter-spacing: -0.015em; margin: 0 0 var(--space-2); }
+a { color: var(--color-accent-700); text-decoration: none; }
+a:hover { color: var(--color-accent-800); }
+svg { display: block; }
+button, input, select { font: inherit; }
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
+.text-muted { color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+
+/* blueprint frame */
+.blueprint { position: relative; border: 1px solid var(--color-divider); border-radius: 0; }
+.blueprint > .corner { position: absolute; width: 11px; height: 11px; color: color-mix(in srgb, var(--color-text) 55%, transparent); pointer-events: none; }
+.blueprint > .corner::before, .blueprint > .corner::after { content: ""; position: absolute; background: currentColor; }
+.blueprint > .corner::before { left: 5px; top: 0; width: 1px; height: 100%; }
+.blueprint > .corner::after  { top: 5px; left: 0; width: 100%; height: 1px; }
+.blueprint > .corner.tl { top: -6px; left: -6px; }
+.blueprint > .corner.tr { top: -6px; right: -6px; }
+.blueprint > .corner.bl { bottom: -6px; left: -6px; }
+.blueprint > .corner.br { bottom: -6px; right: -6px; }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; text-decoration: none;
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 14px; line-height: 1.2; color: var(--color-text);
+  background: transparent; border: 1px solid var(--color-divider); padding: var(--space-2) calc(var(--space-3) * 1.2); border-radius: 0; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary { background: var(--color-accent); color: var(--color-bg); border-color: var(--color-accent); }
+.btn-primary:hover { background: var(--color-accent-600); }
+.btn-primary:active { background: var(--color-accent-700); }
+.btn-secondary { border-color: var(--color-divider); }
+.btn-secondary:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.btn-secondary:active { background: color-mix(in srgb, var(--color-text) 14%, transparent); }
+.btn-ghost { color: var(--color-accent); padding-inline: var(--space-1); border-color: transparent; }
+.btn-ghost:hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+.btn-ghost:active { background: color-mix(in srgb, var(--color-accent) 18%, transparent); }
+.btn-icon { width: 36px; height: 36px; padding: 0; }
+.btn-sm { min-height: 0; height: 30px; font-size: 12.5px; }
+
+/* forms */
+.field > label { display: block; font-size: 12px; margin-bottom: 5px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+.input { width: 100%; min-height: 36px; padding: 6px 10px; font: inherit; font-size: 14px; color: var(--color-text); caret-color: var(--color-accent);
+  background: var(--color-surface); border: 1px solid var(--color-divider); border-radius: 0; }
+.input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+.input:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
+.grid6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--space-2) var(--space-3); }
+
+/* cards / tags / tables */
+.card { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); border-radius: 0; background: transparent; border: 1px solid var(--color-divider); }
+.card-kicker { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent); }
+.elev-sm { box-shadow: var(--shadow-sm); }
+.elev-md { box-shadow: var(--shadow-md); }
+.tag { display: inline-flex; align-items: center; font-size: 11px; letter-spacing: 0.02em; padding: 3px 10px; border-radius: 0; }
+.tag-accent { background: var(--color-accent-100); color: var(--color-accent-800); }
+.tag-neutral { background: var(--color-neutral-100); color: var(--color-neutral-800); }
+.tag-outline { border: 1px solid var(--color-accent); color: var(--color-accent); }
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th { text-align: left; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 60%, transparent); padding: var(--space-2); border-bottom: 1px solid var(--color-divider); }
+.table td { padding: var(--space-2); border-bottom: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent); }
+.table .r { text-align: right; }
+.kicker { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent-700); }
+.spacer { flex: 1; }
+
+/* ── App shell ──────────────────────────────────────────────────────────── */
+#strip { position: sticky; top: 0; z-index: 60; background: #f1efec; border-bottom: 1px solid #c8c4bd; }
+#strip .title { display: flex; align-items: center; gap: 6px; padding: 3px 8px; font-size: 12.5px; color: #1b1d1e; }
+#menubar { display: flex; align-items: stretch; border-top: 1px solid #dcd8d1; background: linear-gradient(#fbfaf8, #eceae6); overflow-x: auto; scrollbar-width: none; }
+#menubar::-webkit-scrollbar { display: none; }
+.menu > span { white-space: nowrap; }
+.menu { position: relative; display: flex; align-items: center; gap: 5px; padding: 4px 11px; font-size: 12.5px; color: #1b1d1e; cursor: default; user-select: none; }
+.menu.hot { background: #dfe7ef; }
+.menu.open { box-shadow: inset 0 0 0 1px #a8bed4; }
+.menu-dd { position: absolute; top: 100%; left: 0; min-width: 212px; background: #fbfaf8; border: 1px solid #a8a49d; box-shadow: 2px 3px 7px rgba(0,0,0,0.18); padding: 3px 0; z-index: 70; }
+.menu-it { padding: 4px 14px; font-size: 12.5px; white-space: nowrap; cursor: pointer; color: #1b1d1e; }
+.menu-it:hover { background: #dfe7ef; }
+#nav { position: sticky; top: var(--strip-h); z-index: 50; display: flex; align-items: center; gap: var(--space-2); padding: 10px var(--space-6); border-bottom: 1px solid var(--color-divider); background: var(--color-bg); }
+#nav .brand { display: flex; align-items: center; gap: 10px; margin-right: var(--space-4); }
+#nav .brand-name { font-family: var(--font-heading); font-weight: 600; font-size: 19px; letter-spacing: 0.03em; text-transform: uppercase; }
+#nav .navbtn { color: var(--color-text); opacity: 0.75; }
+#nav .navbtn.on { color: var(--color-accent-700); opacity: 1; box-shadow: inset 0 -2px 0 var(--color-accent); }
+main { width: 100%; margin: 0 auto; }
+.page-head { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
+.page-head h1 { margin: 0; letter-spacing: 0.03em; text-transform: uppercase; }
+
+/* ── Board ──────────────────────────────────────────────────────────────── */
+#board { max-width: 1400px; padding: var(--space-4) var(--space-6) var(--space-8); }
+.ctl-row { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+.stepper { display: flex; align-items: center; border: 1px solid #a8a49d; background: #fbfaf8; }
+.stepper .btn { min-height: 0; padding: 4px 8px; }
+.stepper input { min-height: 0; height: 28px; border: none; border-left: 1px solid #d8d4cd; border-right: 1px solid #d8d4cd; width: 150px; font-size: 12.5px; }
+.seg { display: flex; }
+.seg button { padding: 5px 12px; font-size: 12.5px; font-family: var(--font-body); cursor: pointer; border: 1px solid #a8a49d; background: #fbfaf8; color: #1b1d1e; font-weight: 400; }
+.seg button + button { border-left: none; }
+.seg button.on { background: var(--color-accent); color: #fff; font-weight: 700; }
+.search-wrap { position: relative; flex: 1; }
+.search-wrap svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); opacity: 0.5; }
+.search-wrap input { padding-left: 34px; }
+.stats { display: flex; flex-wrap: wrap; gap: 4px var(--space-4); align-items: center; margin-bottom: 8px; font-size: 12px; white-space: nowrap; }
+.stats > div { flex: none; }
+.grid-wrap { overflow-x: auto; border: 1px solid #808080; background: #fff; }
+.grid { width: 100%; border-collapse: collapse; font-family: var(--font-body); }
+.grid th { padding: 3px 6px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.01em; background: linear-gradient(#fdfdfd, #dadada);
+  border-right: 1px solid #7f7f7f; border-bottom: 1px solid #7f7f7f; color: #1b1d1e; cursor: pointer; white-space: nowrap; position: sticky; top: 0; user-select: none; }
+.grid th.on { color: #0a2fbd; }
+.grid th.nosort { cursor: default; }
+.grid td { padding: 2px 6px; border-right: 1px solid #7f7f7f; border-bottom: 1px solid #7f7f7f; font-size: 12px; line-height: 18px; white-space: nowrap; font-weight: 700; color: #1b1d1e; background: #fff; }
+.grid .c { text-align: center; } .grid .l { text-align: left; } .grid .r { text-align: right; }
+.grid td.pale { background: #fbf7d3; }
+.grid td.file { color: #0a2fbd; cursor: pointer; }
+.grid td.hot { background: #f00000 !important; color: #fff !important; }
+.grid td.trin { background: #eef0f3; font-weight: 600; }
+.grid td.orig { color: #3b3405; }
+.grid td.driven { background: #b5a24d; color: #241f04; }
+.grid td.green { background: #8cef8c; color: #0d2e0d; }
+.grid td.carrier { font-size: 11.5px; font-weight: 600; }
+.grid td.carrier.unc { color: #c40000; font-weight: 700; }
+.grid td.status { font-size: 11px; font-weight: 600; }
+.grid td.status.hot-txt { color: #c40000; }
+.grid td.act { font-weight: 400; padding: 1px 4px; }
+.grid td.act > div { display: flex; gap: 2px; justify-content: flex-end; align-items: center; }
+.grid td.act .btn { min-height: 0; }
+.grid td.act .tender { padding: 1px 7px; font-size: 11px; }
+.grid td.act .btn-icon { width: 22px; height: 20px; }
+.empty { padding: var(--space-6); text-align: center; font-size: 14px; }
+
+/* ── Builder ────────────────────────────────────────────────────────────── */
+#builder { max-width: 980px; padding: var(--space-6) var(--space-6) var(--space-8); display: flex; flex-direction: column; gap: 32px; }
+.totals { position: sticky; top: calc(var(--shell-h) + 8px); z-index: 40; display: flex; align-items: center; gap: 32px; padding: var(--space-3) var(--space-4); background: var(--color-surface); }
+.totals .n { font-family: var(--font-heading); font-size: 26px; line-height: 1.1; }
+.totals .n small { font-size: 13px; }
+.sec { display: flex; flex-direction: column; gap: var(--space-3); }
+.sec-head { display: flex; align-items: center; gap: var(--space-2); }
+.sec-head h2 { margin: 0; font-size: 22px; text-transform: uppercase; letter-spacing: 0.04em; }
+.stop-head { display: flex; align-items: center; gap: var(--space-2); }
+.lines { border-top: 1px solid var(--color-divider); padding-top: var(--space-2); display: flex; flex-direction: column; gap: 8px; }
+.line-head { display: flex; gap: 8px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-accent-700); }
+.line-row { display: flex; gap: 8px; align-items: center; }
+.w80 { width: 80px; flex: none; } .w100 { width: 100px; flex: none; } .w170 { width: 170px; flex: none; } .w36 { width: 36px; flex: none; }
+.allin { min-height: 36px; display: flex; align-items: center; font-family: var(--font-heading); font-size: 22px; }
+
+/* ── Tender ─────────────────────────────────────────────────────────────── */
+#tender-wrap { max-width: 940px; padding: var(--space-6); }
+#tender-sheet { background: var(--color-surface); padding: 40px; display: flex; flex-direction: column; gap: 24px; }
+.t-head { display: flex; align-items: flex-start; gap: var(--space-4); }
+.t-co { font-family: var(--font-heading); font-weight: 600; font-size: 24px; text-transform: uppercase; letter-spacing: 0.03em; }
+.t-title { font-family: var(--font-heading); font-size: 30px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-accent-700); line-height: 1; }
+.t-band { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); border-top: 1px solid var(--color-divider); border-bottom: 1px solid var(--color-divider); padding: var(--space-3) 0; }
+.t-row { display: flex; justify-content: space-between; }
+.t-row.total { font-weight: 700; border-top: 1px solid var(--color-divider); margin-top: 4px; padding-top: 4px; }
+.t-stop { display: flex; flex-direction: column; gap: var(--space-2); }
+.t-stop.drop { border-top: 1px solid var(--color-divider); padding-top: var(--space-3); }
+.t-stop-label { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent-700); font-weight: 600; }
+.t-totals { display: flex; gap: var(--space-6); padding: var(--space-3) var(--space-4); align-items: center; border-color: var(--color-accent); }
+.t-totals .n { font-family: var(--font-heading); font-size: 20px; }
+.t-totals .n small { font-size: 12px; }
+.t-totals .rate { font-family: var(--font-heading); font-size: 22px; color: var(--color-accent-700); }
+.sig { display: flex; gap: var(--space-6); margin-top: var(--space-2); }
+.sig .rule { border-bottom: 1px solid var(--color-text); height: 26px; }
+
+/* ── Directory ──────────────────────────────────────────────────────────── */
+#directory { max-width: 1160px; padding: var(--space-6) var(--space-6) var(--space-8); }
+.dir-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); align-items: start; }
+.fac { display: flex; gap: var(--space-2); align-items: center; padding: 10px 0; border-top: 1px solid var(--color-divider); }
+.dir-form { border-top: 1px solid var(--color-divider); padding-top: var(--space-3); }
+
+@media (max-width: 760px) {
+  #nav { flex-wrap: wrap; padding-inline: 16px; }
+  #board, #builder, #tender-wrap, #directory { padding-inline: 16px; }
+  #tender-sheet { padding: 20px; }
+  .t-head { flex-wrap: wrap; }
+  .t-head > div:last-child { text-align: left !important; }
+  .t-head > div:last-child > div { justify-content: flex-start !important; }
+  .t-stop table { display: block; overflow-x: auto; }
+  .t-totals { flex-wrap: wrap; gap: 8px 16px; }
+  .t-band, .t-stop, .t-head { min-width: 0; }
+  .line-head, .line-row { flex-wrap: wrap; }
+  .line-head { display: none; }
+  .line-row .w170 { width: 100%; }
+  .grid6 { grid-template-columns: repeat(2, 1fr); }
+  .grid6 > * { grid-column: span 2 !important; }
+  .dir-grid, .t-band { grid-template-columns: 1fr; }
+  .totals { flex-wrap: wrap; gap: 16px; }
+  .rate-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+  #tender-wrap { padding: 0 !important; max-width: none !important; }
+  #tender-sheet { border: none !important; box-shadow: none !important; background: #fff !important; padding: 0 !important; }
+  #tender-sheet .corner { display: none !important; }
+  .grid-wrap { border-color: #000; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="strip" class="no-print">
+    <div class="title" id="strip-title"></div>
+    <div id="menubar" data-menubar="1"></div>
+  </div>
+  <nav id="nav" class="no-print"></nav>
+  <div id="view"></div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   JTS Operations — Load Board · Load Builder · Load Tender · Directory
+   Single-file, no build step. Persists to localStorage.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+// ── Company (edit these) ───────────────────────────────────────────────────
+const COMPANY = {
+  name: 'Johanson Transportation Services',
+  phone: '(559) 555-0100',
+  email: 'dispatch@johansontransportation.com'
+};
+const STORE_KEY = 'jts_loadboard_v1';
+const STATUSES = ['Quoted', 'Tendered', 'Booked', 'Dispatched', 'In Transit', 'Delivered', 'Invoiced', 'Cancelled'];
+const HOT = ['Quoted', 'Tendered'];
+const COVERED = ['Booked', 'Dispatched', 'In Transit', 'Delivered', 'Invoiced'];
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Math.random().toString(36).slice(2, 10);
+const num = v => parseFloat(v) || 0;
+const fmt = n => n.toLocaleString('en-US');
+const money = v => '$' + num(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const localISO = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const todayISO = () => localISO(new Date());
+const shift = (iso, days) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + days); return localISO(d); };
+const weekStart = iso => { const d = new Date(iso + 'T12:00:00'); return shift(iso, -((d.getDay() + 6) % 7)); };
+const longDate = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+function fmtDate(s) {
+  if (!s) return 'TBD';
+  const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const p = s.split('-'); if (p.length !== 3) return s;
+  return `${M[+p[1] - 1]} ${+p[2]}, ${p[0]}`;
+}
+const clone = o => JSON.parse(JSON.stringify(o));
+function setPath(obj, path, val) { const ks = path.split('.'); let o = obj; for (let i = 0; i < ks.length - 1; i++) o = o[ks[i]]; o[ks[ks.length - 1]] = val; }
+
+// ── Icons (Lucide, stroke 1.5) ─────────────────────────────────────────────
+const svg = (d, size = 14, stroke = 'currentColor', sw = 1.5, extra = '') =>
+  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" ${extra}>${d}</svg>`;
+const TRUCK = '<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle>';
+const I = {
+  plus: svg('<path d="M12 5v14M5 12h14"></path>'),
+  trash: svg('<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>'),
+  trash12: svg('<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>', 12),
+  pencil: svg('<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>'),
+  pencil12: svg('<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>', 12),
+  x: svg('<path d="M18 6 6 18M6 6l12 12"></path>'),
+  chevL: svg('<path d="m15 18-6-6 6-6"></path>'),
+  chevR: svg('<path d="m9 18 6-6-6-6"></path>'),
+  refresh: svg('<path d="M21 12a9 9 0 1 1-2.64-6.36"></path><path d="M21 3v6h-6"></path>'),
+  search: svg('<circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path>', 15),
+  back: svg('<path d="M19 12H5m7 7-7-7 7-7"></path>'),
+  mail: svg('<rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 5L2 7"></path>'),
+  print: svg('<path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect>'),
+  truckRed: svg(TRUCK, 15, '#a12b1f', 2),
+  truckNav: svg(TRUCK, 22, 'var(--color-accent)', 1.5),
+  mUsers: svg('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0 .01M22 21v-2a4 4 0 0 0-3-3.87"></path>', 13, '#3f6f9f', 1.6),
+  mTruck: svg('<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2m12 0h2a1 1 0 0 0 1-1v-4l-4-5h-2"></path>', 13, '#7a5a2c', 1.6),
+  mPin: svg('<path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12Z"></path>', 13, '#2f5c8f', 1.6),
+  mOffice: svg('<path d="M3 21V7l6-4v18M9 21h12V11l-6-2M13 13h.01M13 17h.01"></path>', 13, '#8a6f2a', 1.6)
+};
+const CORNERS = '<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>';
+
+// ── Data model helpers ─────────────────────────────────────────────────────
+const blankFac = () => ({ name: '', address: '', city: '', st: '', zip: '', contact: '', phone: '' });
+const blankLine = () => ({ id: uid(), commodity: '', pallets: '', cases: '', weight: '', dropIdx: 0 });
+const blankStop = () => ({ id: uid(), facilityId: '', name: '', address: '', city: '', st: '', zip: '', contact: '', phone: '', ref: '', po: '', date: '', time: '', notes: '' });
+function nextFileNo() {
+  const max = S.loads.reduce((m, l) => Math.max(m, parseInt((l.fileNo || '').replace(/\D/g, '')) || 0), 2440000);
+  return String(max + 1);
+}
+function blankDraft() {
+  return { id: null, fileNo: nextFileNo(), customer: '', status: 'Tendered', temp: '', fileIn: '', trIn: '',
+    pickups: [{ ...blankStop(), lines: [blankLine()] }], drops: [blankStop()],
+    linehaul: '', fuel: '', accessorial: '', carrierName: '', carrierEmail: '', createdAt: Date.now() };
+}
+const stopTotals = p => (p.lines || []).reduce((a, l) => ({ plt: a.plt + num(l.pallets), cs: a.cs + num(l.cases), wt: a.wt + num(l.weight) }), { plt: 0, cs: 0, wt: 0 });
+const loadTotals = l => l.pickups.reduce((a, p) => { const s = stopTotals(p); return { plt: a.plt + s.plt, cs: a.cs + s.cs, wt: a.wt + s.wt }; }, { plt: 0, cs: 0, wt: 0 });
+function assignedTotals(l, di) {
+  const a = { plt: 0, cs: 0, wt: 0 };
+  l.pickups.forEach(p => p.lines.forEach(ln => { if ((ln.dropIdx || 0) === di) { a.plt += num(ln.pallets); a.cs += num(ln.cases); a.wt += num(ln.weight); } }));
+  return a;
+}
+const rateTotal = l => num(l.linehaul) + num(l.fuel) + num(l.accessorial);
+function route(l) {
+  const p = l.pickups[0] || {}, d = l.drops[l.drops.length - 1] || {};
+  return `${p.city || '?'}, ${p.st || ''} → ${d.city || '?'}, ${d.st || ''}`;
+}
+const tagFor = s => ({ Quoted: 'tag-neutral', Tendered: 'tag-outline', Booked: 'tag-accent', Dispatched: 'tag-accent', 'In Transit': 'tag-accent' }[s] || 'tag-neutral');
+
+// ── Demo data (deterministic) ──────────────────────────────────────────────
+function demoData() {
+  const shippers = [
+    { id: 's1', name: 'Great Lakes Packaging', address: '1450 Velp Ave', city: 'Green Bay', st: 'WI', zip: '54303', contact: 'Dana Kowalski', phone: '(920) 555-0142' },
+    { id: 's2', name: 'Midwest Cold Storage', address: '220 Remington Blvd', city: 'Bolingbrook', st: 'IL', zip: '60440', contact: 'Luis Herrera', phone: '(630) 555-0177' },
+    { id: 's3', name: 'Prairie Foods — Plant 2', address: '3801 Vandalia Rd', city: 'Des Moines', st: 'IA', zip: '50317', contact: 'Shift Office', phone: '(515) 555-0109' },
+    { id: 's4', name: 'Lakeside Paper Mill', address: '900 Mill St', city: 'Kalamazoo', st: 'MI', zip: '49001', contact: 'Dock 4', phone: '(269) 555-0130' }];
+  const receivers = [
+    { id: 'r1', name: 'Bluegrass Distribution Center', address: '7200 Cedar Grove Rd', city: 'Louisville', st: 'KY', zip: '40219', contact: 'Receiving', phone: '(502) 555-0168' },
+    { id: 'r2', name: 'Summit Grocery DC', address: '2100 Rohr Rd', city: 'Columbus', st: 'OH', zip: '43137', contact: 'Appt Desk', phone: '(614) 555-0122' },
+    { id: 'r3', name: 'Riverport Warehouse', address: '4550 Pidgeon Rd', city: 'Memphis', st: 'TN', zip: '38109', contact: 'Gate Office', phone: '(901) 555-0184' },
+    { id: 'r4', name: 'Northgate Retail DC', address: '5959 Decatur Blvd', city: 'Indianapolis', st: 'IN', zip: '46241', contact: 'Receiving', phone: '(317) 555-0151' }];
+  const stop = (f, ref, date, time, notes) => ({ id: uid(), facilityId: f.id, name: f.name, address: f.address, city: f.city, st: f.st, zip: f.zip, contact: f.contact, phone: f.phone, ref, po: '', date, time, notes: notes || '' });
+  const line = (c, p, cs, w, di) => ({ id: uid(), commodity: c, pallets: String(p), cases: String(cs), weight: String(w), dropIdx: di || 0 });
+  const CARRIER = { carrierName: 'Ganske Truck', carrierEmail: 'dispatch@gansketruck.com' };
+  const loads = [
+    { id: 'L1', fileNo: '2440871', customer: 'Mosqueda Inc.', fileIn: 'DG', trIn: 'DG', status: 'Tendered', temp: '-10°F continuous', createdAt: Date.now() - 36e5,
+      linehaul: '1850', fuel: '210', accessorial: '0', carrierName: '', carrierEmail: '',
+      pickups: [{ ...stop(shippers[1], 'PU-77341', '2026-09-02', '08:00', 'Check in at guard shack. FCFS 06:00–14:00.'), lines: [line('Frozen entrées — keep at -10°F', 18, 1440, 32400, 0), line('Ice cream novelties', 8, 640, 14200, 1)] }],
+      drops: [stop(receivers[0], 'DEL-55102', '2026-09-03', '07:30', ''), stop(receivers[2], 'DEL-55103', '2026-09-04', '09:00', 'Lumper on site — receipt required.')] },
+    { id: 'L2', fileNo: '2440864', customer: 'Mosqueda Inc.', fileIn: 'DG', trIn: 'DG', status: 'Booked', temp: '', createdAt: Date.now() - 864e5,
+      linehaul: '1425', fuel: '165', accessorial: '75', ...CARRIER,
+      pickups: [{ ...stop(shippers[2], 'PU-20981', '2026-09-01', '10:00', ''), lines: [line('Organic rolled oats — 50 lb bags', 14, 560, 28000, 0)] },
+                { ...stop(shippers[0], 'PU-20990', '2026-09-01', '15:30', 'Appt required.'), lines: [line('Retail display cartons', 8, 320, 6400, 0)] }],
+      drops: [stop(receivers[1], 'DEL-88410', '2026-09-02', '06:00', '')] },
+    { id: 'L3', fileNo: '2440855', customer: 'Mosqueda Inc.', fileIn: 'DG', trIn: 'DG', status: 'In Transit', temp: '', createdAt: Date.now() - 1728e5,
+      linehaul: '980', fuel: '120', accessorial: '0', ...CARRIER,
+      pickups: [{ ...stop(shippers[3], 'PU-66104', '2026-08-30', '09:00', ''), lines: [line('Kraft paper rolls', 20, 20, 42000, 0)] }],
+      drops: [stop(receivers[3], 'DEL-30277', '2026-08-31', '08:00', '')] },
+    { id: 'L4', fileNo: '2440848', customer: 'Mosqueda Inc.', fileIn: 'DG', trIn: 'DG', status: 'Delivered', temp: '', createdAt: Date.now() - 3456e5,
+      linehaul: '1210', fuel: '140', accessorial: '0', ...CARRIER,
+      pickups: [{ ...stop(shippers[1], 'PU-77102', '2026-08-27', '07:00', ''), lines: [line('Frozen vegetables — mixed', 22, 1760, 39600, 0)] }],
+      drops: [stop(receivers[0], 'DEL-54980', '2026-08-28', '06:30', '')] }];
+  return { shippers, receivers, loads: [...loads, ...demoExtra()] };
+}
+function demoExtra() {
+  const CITY = [['FRESNO','CA'],['BAKERSFIELD','CA'],['SALINAS','CA'],['STOCKTON','CA'],['YUMA','AZ'],['NOGALES','AZ'],['MCALLEN','TX'],['LAREDO','TX'],['SPRINGDALE','AR'],['JOPLIN','MO'],['OMAHA','NE'],['DES MOINES','IA'],['GREEN BAY','WI'],['ELK GROVE VLG','IL'],['COLUMBUS','OH'],['GRAND RAPIDS','MI'],['LOUISVILLE','KY'],['NASHVILLE','TN'],['ATLANTA','GA'],['LAKELAND','FL'],['CHARLOTTE','NC'],['RICHMOND','VA'],['ALLENTOWN','PA'],['EDISON','NJ'],['WORCESTER','MA'],['DENVER','CO'],['SALT LAKE CITY','UT'],['BOISE','ID'],['PORTLAND','OR'],['KENT','WA'],['ALBUQUERQUE','NM'],['OKLAHOMA CITY','OK']];
+  const COMM = [['Table grapes — 34°F',20,1200,39000],['Melons — 34°F',22,1100,40200],['Leafy greens — 34°F',20,1080,39600],['Stone fruit — 34°F',22,1320,40800],['Citrus — 38°F',24,1440,42000],['Dry grocery',26,2080,44200],['Paper products',24,960,38400],['Canned goods',22,1760,41800],['Beverages',26,1560,43800],['Almonds',24,1200,42600],['Frozen entrées — -10°F',18,1440,32400],['Broccoli — 34°F',20,1000,37500]];
+  const ST = ['Quoted','Tendered','Tendered','Booked','Booked','Booked','Dispatched','In Transit','Delivered','Invoiced'];
+  let seed = 20260908;
+  const rnd = n => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; seed &= 0x7fffffff; return seed % n; };
+  let fn = 2441000 + rnd(400);
+  const cap = s => s.replace(/\b[A-Z]{2,}\b/g, w => w.charAt(0) + w.slice(1).toLowerCase());
+  const out = [];
+  for (let i = 0; i < 32; i++) {
+    fn += 1 + rnd(9);
+    let a = rnd(CITY.length), b = rnd(CITY.length);
+    if (b === a) b = (b + 7) % CITY.length;
+    const c = COMM[rnd(COMM.length)];
+    const status = ST[rnd(ST.length)];
+    const date = '2026-09-' + String(1 + rnd(20)).padStart(2, '0');
+    const rate = 1800 + rnd(70) * 100;
+    const orig = i % 3 === 0 ? 'MOSQUEDA INC. - REGIONAL DRIVEN' : 'MOSQUEDA INC.';
+    const fileNo = String(fn);
+    const pu = { id: uid(), facilityId: '', name: cap(orig) + ' — ' + cap(CITY[a][0]) + ' Shipping', address: '1200 Industrial Pkwy', city: cap(CITY[a][0]), st: CITY[a][1], zip: '', contact: 'Shipping Office', phone: '', ref: 'PU-' + fileNo.slice(-5), po: '', date, time: '08:00', notes: '',
+      lines: [{ id: uid(), commodity: c[0], pallets: String(c[1]), cases: String(c[2]), weight: String(c[3]), dropIdx: 0 }] };
+    const dl = { id: uid(), facilityId: '', name: cap(CITY[b][0]) + ' Distribution Center', address: '4400 Commerce Dr', city: cap(CITY[b][0]), st: CITY[b][1], zip: '', contact: 'Receiving', phone: '', ref: 'DEL-' + fileNo.slice(-5), po: '', date, time: '06:00', notes: '' };
+    out.push({ id: 'X' + fileNo, fileNo, fileIn: 'DG', trIn: 'DG', customer: orig, status, temp: /34°F/.test(c[0]) ? '34°F continuous' : '',
+      linehaul: String(Math.round(rate * 0.86)), fuel: String(rate - Math.round(rate * 0.86)), accessorial: '0',
+      carrierName: COVERED.includes(status) ? 'Ganske Truck' : '', carrierEmail: COVERED.includes(status) ? 'dispatch@gansketruck.com' : '',
+      pickups: [pu], drops: [dl], createdAt: new Date(date + 'T12:00:00').getTime() });
+  }
+  return out;
+}
+
+// ── State ──────────────────────────────────────────────────────────────────
+function readStore() { try { return JSON.parse(localStorage.getItem(STORE_KEY)); } catch (e) { return null; } }
+const S = (() => {
+  const p = readStore(), d = demoData();
+  return {
+    view: 'board', search: '', statusFilter: 'All', draft: null, tenderId: null,
+    sortKey: 'shipDate', sortDir: 1, openMenu: null, hoverMenu: null,
+    boardDate: todayISO(), dateScope: 'day', refreshedAt: Date.now(),
+    dirDraft: { shippers: blankFac(), receivers: blankFac() },
+    loads: p && p.loads ? p.loads : d.loads,
+    shippers: p && p.shippers ? p.shippers : d.shippers,
+    receivers: p && p.receivers ? p.receivers : d.receivers
+  };
+})();
+function persist() { try { localStorage.setItem(STORE_KEY, JSON.stringify({ loads: S.loads, shippers: S.shippers, receivers: S.receivers })); } catch (e) {} }
+function set(patch) { Object.assign(S, patch); persist(); render(); }
+function reloadFromStore() {
+  const p = readStore();
+  S.refreshedAt = Date.now();
+  if (p && p.loads) { S.loads = p.loads; S.shippers = p.shippers || S.shippers; S.receivers = p.receivers || S.receivers; }
+  if (S.view === 'board') renderBoardBody(); else if (S.view !== 'builder') render();
+}
+
+// ── Menus ──────────────────────────────────────────────────────────────────
+const go = (patch) => () => set({ openMenu: null, ...patch });
+const MENUS = [
+  { label: 'File', items: [
+    { label: 'New load…', act: () => set({ draft: blankDraft(), view: 'builder', openMenu: null }) },
+    { label: 'Load board', act: go({ view: 'board' }) },
+    { label: 'Print current view', act: () => { set({ openMenu: null }); setTimeout(() => window.print(), 60); } } ] },
+  { label: 'Tracing', items: [{ label: 'Loads in transit', act: go({ view: 'board', statusFilter: 'In Transit' }) }, { label: 'Delivered — needs POD', act: go({ view: 'board', statusFilter: 'Delivered' }) }] },
+  { label: 'EDI', items: [{ label: 'Tendered files', act: go({ view: 'board', statusFilter: 'Tendered' }) }, { label: 'Quotes awaiting response', act: go({ view: 'board', statusFilter: 'Quoted' }) }] },
+  { label: 'Reports', items: [{ label: 'Booked revenue — all files', act: go({ view: 'board', statusFilter: 'All' }) }, { label: 'Invoiced files', act: go({ view: 'board', statusFilter: 'Invoiced' }) }] },
+  { label: 'Clients', icon: I.mUsers, items: [{ label: 'Shippers & receivers', act: go({ view: 'directory' }) }] },
+  { label: 'Carriers', icon: I.mTruck, items: [{ label: 'Files by carrier', act: go({ view: 'board', search: '' }) }] },
+  { label: 'PC Miler', icon: I.mPin, items: [{ label: 'Route & mileage (external)', act: go({}) }] },
+  { label: 'Sales', items: [{ label: 'Quote a new file', act: () => set({ draft: blankDraft(), view: 'builder', openMenu: null }) }] },
+  { label: 'Accounting', items: [{ label: 'Ready to invoice', act: go({ view: 'board', statusFilter: 'Delivered' }) }, { label: 'Invoiced', act: go({ view: 'board', statusFilter: 'Invoiced' }) }] },
+  { label: 'Offices', icon: I.mOffice, items: [{ label: 'All offices', act: go({}) }] },
+  { label: 'Help', items: [{ label: 'About this board', act: go({}) }] }
+];
+
+function renderMenubar() {
+  $('#menubar').innerHTML = MENUS.map((m, mi) => {
+    const open = S.openMenu === m.label, hot = open || S.hoverMenu === m.label;
+    return `<div class="menu${hot ? ' hot' : ''}${open ? ' open' : ''}" data-menu="${esc(m.label)}">
+      ${m.icon ? `<span style="display:inline-flex">${m.icon}</span>` : ''}<span>${esc(m.label)}</span>
+      ${open ? `<div class="menu-dd">${m.items.map((it, ii) => `<div class="menu-it" data-act="menu" data-mi="${mi}" data-ii="${ii}">${esc(it.label)}</div>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── Shell ──────────────────────────────────────────────────────────────────
+function renderShell() {
+  $('#strip-title').innerHTML = `${I.truckRed}<span>JTS Operations</span>`;
+  renderMenubar();
+  $('#nav').innerHTML = `
+    <div class="brand">${I.truckNav}<div class="brand-name">${esc(COMPANY.name)}</div><span class="tag tag-outline">Dispatch</span></div>
+    <button class="btn btn-ghost navbtn${S.view === 'board' ? ' on' : ''}" data-act="goBoard">Load board</button>
+    <button class="btn btn-ghost navbtn${S.view === 'directory' ? ' on' : ''}" data-act="goDirectory">Shippers &amp; receivers</button>
+    <div class="spacer"></div>
+    <button class="btn btn-primary blueprint" data-act="newLoad">${CORNERS}${I.plus}New load</button>`;
+}
+
+// ── Board ──────────────────────────────────────────────────────────────────
+const COLS = [
+  { key: 'fileNo', label: 'File #', align: 'c', w: 78 },
+  { key: 'fileIn', label: 'File IN', align: 'c', w: 52 },
+  { key: 'trIn', label: 'Tr… IN', align: 'c', w: 52 },
+  { key: 'shipDate', label: 'Ship Date', align: 'c', w: 86 },
+  { key: 'originator', label: 'Originator', align: 'l', w: 0 },
+  { key: 'puCity', label: 'First Pickup', align: 'r', w: 0 },
+  { key: 'puSt', label: 'ST', align: 'c', w: 40 },
+  { key: 'delCity', label: 'Final Destination', align: 'r', w: 0 },
+  { key: 'delSt', label: 'ST', align: 'c', w: 40 },
+  { key: 'carrier', label: 'Carrier', align: 'l', w: 148 },
+  { key: 'status', label: 'Status', align: 'c', w: 88 },
+  { key: 'rate', label: 'Rate', align: 'r', w: 86 },
+  { key: '', label: '', align: 'r', w: 118 }
+];
+function inScope(iso) {
+  if (S.dateScope === 'all') return true;
+  if (!iso) return false;
+  if (S.dateScope === 'day') return iso === S.boardDate;
+  const s = weekStart(S.boardDate);
+  return iso >= s && iso <= shift(s, 6);
+}
+function boardRows() {
+  const q = S.search.trim().toLowerCase();
+  const match = l => {
+    if (!inScope((l.pickups[0] || {}).date)) return false;
+    if (S.statusFilter !== 'All' && l.status !== S.statusFilter) return false;
+    if (!q) return true;
+    const hay = [l.fileNo, l.customer, l.carrierName,
+      ...l.pickups.map(p => `${p.name} ${p.city} ${p.ref}`),
+      ...l.drops.map(d => `${d.name} ${d.city} ${d.ref}`)].join(' ').toLowerCase();
+    return hay.includes(q);
+  };
+  const vm = l => {
+    const p = l.pickups[0] || {}, d = l.drops[l.drops.length - 1] || {};
+    return { l, fileNo: l.fileNo, fileIn: l.fileIn || '', trIn: l.trIn || '', shipDate: p.date || '',
+      originator: (l.customer || '—').toUpperCase(), puCity: (p.city || '—').toUpperCase(), puSt: (p.st || '').toUpperCase(),
+      delCity: (d.city || '—').toUpperCase(), delSt: (d.st || '').toUpperCase(), status: l.status, rate: rateTotal(l), carrier: l.carrierName || '' };
+  };
+  return S.loads.filter(match).map(vm).sort((a, b) => {
+    const k = S.sortKey, x = a[k], y = b[k];
+    if (typeof x === 'number' && typeof y === 'number') return (x - y) * S.sortDir;
+    return String(x).localeCompare(String(y)) * S.sortDir;
+  });
+}
+function dateLabel() {
+  if (S.dateScope === 'all') return 'All ship dates';
+  if (S.dateScope === 'week') return 'Week of ' + longDate(weekStart(S.boardDate));
+  return (S.boardDate === todayISO() ? "Today's loads — " : '') + longDate(S.boardDate);
+}
+function renderBoard() {
+  const scopes = [['day', 'Day'], ['week', 'Week'], ['all', 'All dates']];
+  return `<main id="board">
+    <div class="page-head" style="margin-bottom:var(--space-3)">
+      <h1 style="font-size:28px">Load board</h1>
+      <span class="text-muted" style="font-size:13px">Click any column header to sort · red = uncovered file · click a file number to open its tender</span>
+    </div>
+    <div class="ctl-row no-print" style="margin-bottom:8px">
+      <div class="stepper">
+        <button class="btn btn-ghost" title="Previous" data-act="datePrev">${I.chevL}</button>
+        <input class="input" type="date" value="${esc(S.boardDate)}" data-act="dateSet">
+        <button class="btn btn-ghost" title="Next" data-act="dateNext">${I.chevR}</button>
+      </div>
+      <button class="btn btn-secondary btn-sm" data-act="dateToday">Today</button>
+      <div class="seg">${scopes.map(([k, label]) => `<button class="${S.dateScope === k ? 'on' : ''}" data-act="scope" data-scope="${k}">${label}</button>`).join('')}</div>
+      <div class="text-muted" style="font-size:12px" id="date-label">${esc(dateLabel())}</div>
+      <div class="spacer"></div>
+      <button class="btn btn-secondary btn-sm" title="Reload the board so carrier bookings made by others show up" data-act="refresh">${I.refresh}Refresh</button>
+      <div class="text-muted" style="font-size:11.5px" id="refreshed-at"></div>
+    </div>
+    <div class="ctl-row no-print" style="margin-bottom:var(--space-3);flex-wrap:nowrap">
+      <div class="search-wrap">${I.search}<input class="input" placeholder="Search file #, originator, city, carrier or PU / DEL number…" value="${esc(S.search)}" data-bind="search"></div>
+      <select class="input" style="width:170px;flex:none" data-act="statusFilter">
+        <option value="All">All statuses</option>
+        ${STATUSES.map(s => `<option value="${s}"${S.statusFilter === s ? ' selected' : ''}>${s}</option>`).join('')}
+      </select>
+    </div>
+    <div id="board-body"></div>
+  </main>`;
+}
+function renderBoardBody() {
+  const rows = boardRows();
+  const shown = rows.length, all = S.loads.length;
+  const unc = S.loads.filter(l => HOT.includes(l.status)).length;
+  const transit = S.loads.filter(l => l.status === 'In Transit').length;
+  const delivered = S.loads.filter(l => l.status === 'Delivered').length;
+  const revenue = money(S.loads.filter(l => l.status !== 'Cancelled').reduce((s, l) => s + rateTotal(l), 0));
+  const head = COLS.map(c => `<th class="${c.align}${S.sortKey === c.key && c.key ? ' on' : ''}${c.key ? '' : ' nosort'}" style="${c.w ? `width:${c.w}px` : ''}" ${c.key ? `title="Sort" data-act="sort" data-key="${c.key}"` : ''}>${c.label}${S.sortKey === c.key && c.key ? (S.sortDir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('');
+  const body = rows.map(r => {
+    const l = r.l, hot = HOT.includes(l.status);
+    const dt = r.shipDate ? r.shipDate.slice(5).replace('-', '/') + '/' + r.shipDate.slice(2, 4) : '—';
+    const driven = /DRIVEN/.test(r.originator);
+    const H = hot ? ' hot' : '';
+    return `<tr>
+      <td class="c pale file${H}" title="Open load tender" data-act="view" data-id="${esc(l.id)}">${esc(r.fileNo)}</td>
+      <td class="c pale${H}">${esc(r.fileIn)}</td>
+      <td class="c trin">${esc(r.trIn)}</td>
+      <td class="c pale${H}">${dt}</td>
+      <td class="l ${driven ? 'driven' : 'pale orig'}">${esc(r.originator)}</td>
+      <td class="r pale">${esc(r.puCity)}</td>
+      <td class="c pale">${esc(r.puSt)}</td>
+      <td class="r green">${esc(r.delCity)}</td>
+      <td class="c green">${esc(r.delSt)}</td>
+      <td class="l carrier${r.carrier ? '' : ' unc'}">${r.carrier ? esc(r.carrier) : 'UNCOVERED'}</td>
+      <td class="c status${hot ? ' hot-txt' : ''}">${esc(l.status)}</td>
+      <td class="r">${money(r.rate)}</td>
+      <td class="r act"><div>
+        <button class="btn btn-ghost tender" data-act="view" data-id="${esc(l.id)}">Tender</button>
+        <button class="btn btn-icon btn-ghost" title="Edit load" data-act="edit" data-id="${esc(l.id)}">${I.pencil12}</button>
+        <button class="btn btn-icon btn-ghost" title="Delete load" data-act="delete" data-id="${esc(l.id)}">${I.trash12}</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  $('#board-body').innerHTML = `
+    <div class="stats">
+      <div><span class="text-muted">Showing</span> <strong>${shown}</strong> <span class="text-muted">of ${all} files</span></div>
+      <div><span class="text-muted">Uncovered</span> <strong style="color:#c40000">${unc}</strong></div>
+      <div><span class="text-muted">In transit</span> <strong>${transit}</strong></div>
+      <div><span class="text-muted">Delivered</span> <strong>${delivered}</strong></div>
+      <div><span class="text-muted">Booked revenue</span> <strong>${revenue}</strong></div>
+    </div>
+    <div class="grid-wrap">
+      <table class="grid"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
+      ${shown === 0 ? '<div class="text-muted empty">No files ship on this date. Step the date, widen to Week or All dates, or create a new load.</div>' : ''}
+    </div>`;
+  const ra = $('#refreshed-at');
+  if (ra) ra.textContent = 'Updated ' + new Date(S.refreshedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+  const dl = $('#date-label'); if (dl) dl.textContent = dateLabel();
+}
+
+// ── Builder ────────────────────────────────────────────────────────────────
+function dropOptions(d, sel) {
+  return d.drops.map((dr, i) => `<option value="${i}"${i === (sel || 0) ? ' selected' : ''}>Drop ${i + 1}${dr.name ? ' — ' + esc(dr.name) : (dr.city ? ' — ' + esc(dr.city) : '')}</option>`).join('');
+}
+function stopFields(kind, i, s) {
+  const isPu = kind === 'pickups';
+  const list = isPu ? S.shippers : S.receivers;
+  const opts = [`<option value="">Type a new / one-time ${isPu ? 'shipper' : 'receiver'}…</option>`,
+    ...list.map(x => `<option value="${esc(x.id)}"${x.id === s.facilityId ? ' selected' : ''}>${esc(x.name)} — ${esc(x.city)}, ${esc(x.st)}</option>`)].join('');
+  const inp = (k, span, label, extra = '') => `<div class="field" style="grid-column:span ${span}"><label>${label}</label><input class="input" ${extra} value="${esc(s[k] ?? '')}" data-bind="draft.${kind}.${i}.${k}"></div>`;
+  return `<div class="grid6">
+    <div class="field" style="grid-column:span 4"><label>${isPu ? 'Shipper' : 'Receiver'} (from directory)</label><select class="input" data-act="facility" data-kind="${kind}" data-i="${i}">${opts}</select></div>
+    ${inp('ref', 2, isPu ? 'Pickup number (PU #)' : 'Delivery number (DEL #)', `placeholder="${isPu ? 'e.g. PU-88213' : 'e.g. DEL-55102'}"`)}
+    ${inp('name', 3, 'Facility name')}
+    ${inp('address', 3, 'Street address')}
+    ${inp('city', 2, 'City')}
+    ${inp('st', 1, 'State')}
+    ${inp('zip', 1, 'ZIP')}
+    ${inp('contact', 2, 'Contact')}
+    ${inp('phone', 2, 'Phone')}
+    ${inp('date', 2, isPu ? 'Pickup date' : 'Delivery date', 'type="date"')}
+    ${inp('time', 2, 'Appt time', 'type="time"')}
+    ${inp('notes', 6, 'Notes / special instructions', `placeholder="${isPu ? 'Check-in procedure, FCFS window, temp requirements…' : 'Lumper, receiving hours, dock notes…'}"`)}
+  </div>`;
+}
+function renderBuilder() {
+  const d = S.draft, multi = d.drops.length > 1, t = loadTotals(d);
+  const f = (k, span, label, extra = '') => `<div class="field" style="grid-column:span ${span}"><label>${label}</label><input class="input" ${extra} value="${esc(d[k] ?? '')}" data-bind="draft.${k}"></div>`;
+  const pickups = d.pickups.map((p, i) => {
+    const st = stopTotals(p);
+    return `<div class="card blueprint">${CORNERS}
+      <div class="stop-head"><span class="card-kicker" style="font-size:11px">Pickup ${i + 1}</span><div class="spacer"></div>
+        ${d.pickups.length > 1 ? `<button class="btn btn-icon btn-ghost" title="Remove pickup" data-act="rmStop" data-kind="pickups" data-i="${i}">${I.trash}</button>` : ''}</div>
+      ${stopFields('pickups', i, p)}
+      <div class="lines">
+        <div class="line-head"><div style="flex:2">Commodity</div><div class="w80">Pallets</div><div class="w80">Cases</div><div class="w100">Weight (lbs)</div>${multi ? '<div class="w170">Deliver to</div>' : ''}<div class="w36"></div></div>
+        ${p.lines.map((ln, li) => `<div class="line-row">
+          <input class="input" style="flex:2" placeholder="e.g. Frozen entrées" value="${esc(ln.commodity)}" data-bind="draft.pickups.${i}.lines.${li}.commodity">
+          <input class="input w80" type="number" min="0" value="${esc(ln.pallets)}" data-bind="draft.pickups.${i}.lines.${li}.pallets">
+          <input class="input w80" type="number" min="0" value="${esc(ln.cases)}" data-bind="draft.pickups.${i}.lines.${li}.cases">
+          <input class="input w100" type="number" min="0" value="${esc(ln.weight)}" data-bind="draft.pickups.${i}.lines.${li}.weight">
+          ${multi ? `<select class="input w170" data-act="dropIdx" data-i="${i}" data-li="${li}" data-dropsel>${dropOptions(d, ln.dropIdx)}</select>` : ''}
+          <button class="btn btn-icon btn-ghost" ${p.lines.length === 1 ? 'disabled' : ''} title="Remove line" data-act="rmLine" data-i="${i}" data-li="${li}">${I.x}</button>
+        </div>`).join('')}
+        <div style="display:flex;align-items:center">
+          <button class="btn btn-ghost" data-act="addLine" data-i="${i}">${I.plus}Add commodity line</button>
+          <div class="spacer"></div>
+          <div class="text-muted" style="font-size:12px">Subtotal: <span data-sub="${i}">${fmt(st.plt)} plt · ${fmt(st.cs)} cs · ${fmt(st.wt)} lbs</span></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  const drops = d.drops.map((dr, i) => {
+    const at = assignedTotals(d, i);
+    return `<div class="card blueprint">${CORNERS}
+      <div class="stop-head"><span class="card-kicker" style="font-size:11px">Drop ${i + 1}</span>
+        ${multi ? `<span class="tag tag-accent" data-assigned="${i}">Receives ${fmt(at.plt)} plt · ${fmt(at.cs)} cs · ${fmt(at.wt)} lbs</span>` : ''}
+        <div class="spacer"></div>
+        ${d.drops.length > 1 ? `<button class="btn btn-icon btn-ghost" title="Remove drop" data-act="rmStop" data-kind="drops" data-i="${i}">${I.trash}</button>` : ''}</div>
+      ${stopFields('drops', i, dr)}
+    </div>`;
+  }).join('');
+  return `<main id="builder">
+    <div class="blueprint elev-sm totals no-print">${CORNERS}
+      <div><div class="kicker">Pallets</div><div class="n" id="tot-plt">${fmt(t.plt)}</div></div>
+      <div><div class="kicker">Cases</div><div class="n" id="tot-cs">${fmt(t.cs)}</div></div>
+      <div><div class="kicker">Weight</div><div class="n"><span id="tot-wt">${fmt(t.wt)}</span> <small>lbs</small></div></div>
+      <div><div class="kicker">All-in rate</div><div class="n" id="tot-rate">${money(rateTotal(d))}</div></div>
+      <div class="spacer"></div>
+      <button class="btn btn-secondary" data-act="cancel">Cancel</button>
+      <button class="btn btn-primary blueprint" data-act="save">${CORNERS}${d.id ? 'Update load tender' : 'Create load tender'}</button>
+    </div>
+    <section class="card blueprint">${CORNERS}
+      <div class="card-kicker">Load</div>
+      <div class="grid6" style="gap:var(--space-3)">
+        ${f('fileNo', 1, 'File number')}
+        ${f('customer', 3, 'Originator / customer', 'placeholder="Who is this load for?"')}
+        ${f('fileIn', 1, 'File IN', 'placeholder="Initials"')}
+        ${f('trIn', 1, 'Tr… IN', 'placeholder="Initials"')}
+        <div class="field" style="grid-column:span 2"><label>Status</label><select class="input" data-act="draftStatus">${STATUSES.map(s => `<option${d.status === s ? ' selected' : ''}>${s}</option>`).join('')}</select></div>
+        ${f('temp', 2, 'Temperature requirement', 'placeholder="e.g. 34°F continuous"')}
+      </div>
+    </section>
+    <section class="sec">
+      <div class="sec-head"><h2>Pickups</h2><div class="spacer"></div><button class="btn btn-ghost" data-act="addStop" data-kind="pickups">${I.plus}Add second pickup</button></div>
+      ${pickups}
+    </section>
+    <section class="sec">
+      <div class="sec-head"><h2>Drops</h2><div class="spacer"></div><button class="btn btn-ghost" data-act="addStop" data-kind="drops">${I.plus}Add drop</button></div>
+      ${multi ? '<div class="text-muted" style="font-size:12.5px;margin-top:-6px">Multiple drops — assign each commodity line to its drop with the “Deliver to” column in the pickup sections above.</div>' : ''}
+      ${drops}
+    </section>
+    <section class="card blueprint">${CORNERS}
+      <div class="card-kicker">Rate &amp; carrier</div>
+      <div class="rate-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3)">
+        ${f('linehaul', 1, 'Line haul ($)', 'type="number" min="0"')}
+        ${f('fuel', 1, 'Fuel surcharge ($)', 'type="number" min="0"')}
+        ${f('accessorial', 1, 'Accessorials ($)', 'type="number" min="0"')}
+        <div class="field"><label>All-in rate</label><div class="allin" id="rate-allin">${money(rateTotal(d))}</div></div>
+        ${f('carrierName', 2, 'Carrier (can be added later)', 'placeholder="Carrier name"')}
+        ${f('carrierEmail', 2, 'Carrier email', 'placeholder="dispatch@carrier.com"')}
+      </div>
+    </section>
+  </main>`;
+}
+// Cheap live update of derived numbers while typing — no full re-render, no lost focus.
+function builderDerived() {
+  const d = S.draft; if (!d) return;
+  const t = loadTotals(d);
+  $('#tot-plt').textContent = fmt(t.plt); $('#tot-cs').textContent = fmt(t.cs); $('#tot-wt').textContent = fmt(t.wt);
+  $('#tot-rate').textContent = money(rateTotal(d)); $('#rate-allin').textContent = money(rateTotal(d));
+  d.pickups.forEach((p, i) => { const st = stopTotals(p); const el = document.querySelector(`[data-sub="${i}"]`); if (el) el.textContent = `${fmt(st.plt)} plt · ${fmt(st.cs)} cs · ${fmt(st.wt)} lbs`; });
+  d.drops.forEach((dr, i) => { const at = assignedTotals(d, i); const el = document.querySelector(`[data-assigned="${i}"]`); if (el) el.textContent = `Receives ${fmt(at.plt)} plt · ${fmt(at.cs)} cs · ${fmt(at.wt)} lbs`; });
+  document.querySelectorAll('select[data-dropsel]').forEach(sel => { const v = sel.value; sel.innerHTML = dropOptions(d, parseInt(v) || 0); });
+}
+function saveDraft() {
+  const d = clone(S.draft);
+  if (!d.id) { d.id = uid(); d.createdAt = Date.now(); }
+  const exists = S.loads.some(l => l.id === d.id);
+  const loads = exists ? S.loads.map(l => l.id === d.id ? d : l) : [d, ...S.loads];
+  const addFac = (list, st) => (st.name && !list.some(x => x.name.toLowerCase() === st.name.toLowerCase()))
+    ? [...list, { id: uid(), name: st.name, address: st.address, city: st.city, st: st.st, zip: st.zip, contact: st.contact, phone: st.phone }] : list;
+  let shippers = S.shippers, receivers = S.receivers;
+  d.pickups.forEach(p => { shippers = addFac(shippers, p); });
+  d.drops.forEach(p => { receivers = addFac(receivers, p); });
+  set({ loads, shippers, receivers, draft: null, tenderId: d.id, view: 'tender' });
+  window.scrollTo(0, 0);
+}
+
+// ── Tender ─────────────────────────────────────────────────────────────────
+function tenderEmail(l) {
+  const t = loadTotals(l), total = rateTotal(l), multi = l.drops.length > 1, s = [];
+  s.push(`Please find load tender ${l.fileNo} below. Reply to confirm acceptance.`, '', `All-in rate: ${money(total)}`);
+  if (l.temp) s.push(`Temperature: ${l.temp}`);
+  s.push('');
+  l.pickups.forEach((p, i) => {
+    s.push(`PICKUP ${i + 1} — PU# ${p.ref || 'TBD'}`, `${p.name}`, `${p.address}, ${p.city}, ${p.st} ${p.zip}`, `Appt: ${fmtDate(p.date)}${p.time ? ' ' + p.time : ''}`);
+    if (p.po) s.push(`Ref/PO: ${p.po}`);
+    p.lines.forEach(ln => s.push(`  - ${ln.commodity || 'Freight'}: ${fmt(num(ln.pallets))} plt / ${fmt(num(ln.cases))} cs / ${fmt(num(ln.weight))} lbs${multi ? ` -> Drop ${(ln.dropIdx || 0) + 1}` : ''}`));
+    if (p.notes) s.push(`Notes: ${p.notes}`);
+    s.push('');
+  });
+  l.drops.forEach((d, i) => {
+    s.push(`DROP ${i + 1} — DEL# ${d.ref || 'TBD'}`, `${d.name}`, `${d.address}, ${d.city}, ${d.st} ${d.zip}`, `Appt: ${fmtDate(d.date)}${d.time ? ' ' + d.time : ''}`);
+    if (d.po) s.push(`Ref/PO: ${d.po}`);
+    if (d.notes) s.push(`Notes: ${d.notes}`);
+    s.push('');
+  });
+  s.push(`LOAD TOTALS: ${fmt(t.plt)} pallets / ${fmt(t.cs)} cases / ${fmt(t.wt)} lbs`, '', COMPANY.name, `${COMPANY.phone} · ${COMPANY.email}`);
+  return `mailto:${l.carrierEmail || ''}?subject=${encodeURIComponent(`Load Tender ${l.fileNo} — ${route(l)} — ${money(total)}`)}&body=${encodeURIComponent(s.join('\n'))}`;
+}
+function renderTender(l) {
+  const t = loadTotals(l), showDest = l.drops.length > 1, showOrigin = l.pickups.length > 1;
+  const head = s => `<div>
+      <div style="font-weight:600;font-size:15px">${esc(s.name || '—')}</div>
+      <div style="font-size:13px">${esc(s.address || '—')} · ${esc(s.city)}, ${esc(s.st)} ${esc(s.zip)}</div>
+      ${(s.contact || s.phone) ? `<div class="text-muted" style="font-size:12px">${esc(s.contact || '')}${s.contact && s.phone ? ' · ' : ''}${esc(s.phone || '')}</div>` : ''}
+    </div>`;
+  const appt = s => fmtDate(s.date) + (s.time ? ' · ' + s.time : '');
+  const notes = s => s.notes ? `<div style="font-size:12px"><strong>Notes:</strong> ${esc(s.notes)}</div>` : '';
+  const pickups = l.pickups.map((p, i) => {
+    const st = stopTotals(p);
+    return `<div class="t-stop">
+      <div class="stop-head"><span class="t-stop-label">Pickup ${i + 1}${l.pickups.length > 1 ? ' of ' + l.pickups.length : ''}</span><span class="tag tag-outline">PU # ${esc(p.ref || 'TBD')}</span><div class="spacer"></div><span style="font-size:13px">Appt: <strong>${esc(appt(p))}</strong></span></div>
+      ${head(p)}
+      <table class="table"><thead><tr><th>Commodity</th>${showDest ? '<th>Deliver to</th>' : ''}<th class="r">Pallets</th><th class="r">Cases</th><th class="r">Weight (lbs)</th></tr></thead><tbody>
+        ${p.lines.map(ln => `<tr><td>${esc(ln.commodity || '—')}</td>${showDest ? `<td>Drop ${(ln.dropIdx || 0) + 1}</td>` : ''}<td class="r">${fmt(num(ln.pallets))}</td><td class="r">${fmt(num(ln.cases))}</td><td class="r">${fmt(num(ln.weight))}</td></tr>`).join('')}
+        <tr style="font-weight:700"><td>Stop total</td>${showDest ? '<td></td>' : ''}<td class="r">${fmt(st.plt)}</td><td class="r">${fmt(st.cs)}</td><td class="r">${fmt(st.wt)}</td></tr>
+      </tbody></table>
+      ${notes(p)}
+    </div>`;
+  }).join('');
+  const drops = l.drops.map((dr, i) => {
+    const rows = [];
+    l.pickups.forEach((p, pi) => p.lines.forEach(ln => { if ((ln.dropIdx || 0) === i) rows.push(`<tr><td>${esc(ln.commodity || '—')}</td>${showOrigin ? `<td>Pickup ${pi + 1}</td>` : ''}<td class="r">${fmt(num(ln.pallets))}</td><td class="r">${fmt(num(ln.cases))}</td><td class="r">${fmt(num(ln.weight))}</td></tr>`); }));
+    const at = assignedTotals(l, i);
+    return `<div class="t-stop drop">
+      <div class="stop-head"><span class="t-stop-label">Delivery ${i + 1}${l.drops.length > 1 ? ' of ' + l.drops.length : ''}</span><span class="tag tag-outline">DEL # ${esc(dr.ref || 'TBD')}</span><div class="spacer"></div><span style="font-size:13px">Appt: <strong>${esc(appt(dr))}</strong></span></div>
+      ${head(dr)}
+      <table class="table"><thead><tr><th>Commodity</th>${showOrigin ? '<th>From</th>' : ''}<th class="r">Pallets</th><th class="r">Cases</th><th class="r">Weight (lbs)</th></tr></thead><tbody>
+        ${rows.join('')}
+        <tr style="font-weight:700"><td>Stop total</td>${showOrigin ? '<td></td>' : ''}<td class="r">${fmt(at.plt)}</td><td class="r">${fmt(at.cs)}</td><td class="r">${fmt(at.wt)}</td></tr>
+      </tbody></table>
+      ${notes(dr)}
+    </div>`;
+  }).join('');
+  return `<main id="tender-wrap">
+    <div class="ctl-row no-print" style="margin-bottom:var(--space-4)">
+      <button class="btn btn-secondary" data-act="goBoard">${I.back}Back to board</button>
+      <button class="btn btn-secondary" data-act="edit" data-id="${esc(l.id)}">${I.pencil}Edit load</button>
+      <div class="spacer"></div>
+      <a class="btn btn-secondary" href="${tenderEmail(l)}">${I.mail}Email to carrier</a>
+      <button class="btn btn-primary blueprint" data-act="print">${CORNERS}${I.print}Print / PDF</button>
+    </div>
+    <div id="tender-sheet" class="blueprint elev-md">${CORNERS}
+      <div class="t-head">
+        <div><div class="t-co">${esc(COMPANY.name)}</div><div class="text-muted" style="font-size:12px">${esc(COMPANY.phone)} · ${esc(COMPANY.email)}</div></div>
+        <div class="spacer"></div>
+        <div style="text-align:right">
+          <div class="t-title">Load tender</div>
+          <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center;margin-top:6px"><span class="tag tag-accent" style="font-size:12px">FILE ${esc(l.fileNo)}</span><span class="tag ${tagFor(l.status)}">${esc(l.status)}</span></div>
+          <div class="text-muted" style="font-size:11px;margin-top:4px">Issued ${new Date(l.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })} · ${esc(route(l))}</div>
+        </div>
+      </div>
+      <div class="t-band">
+        <div>
+          <div class="kicker" style="margin-bottom:4px">Carrier</div>
+          <div style="font-size:15px;font-weight:600">${esc(l.carrierName || '________________')}</div>
+          <div class="text-muted" style="font-size:12px">${esc(l.carrierEmail || '—')}</div>
+          <div class="text-muted" style="font-size:12px;margin-top:6px">Customer: ${esc(l.customer || '—')}</div>
+          ${l.temp ? `<div style="font-size:12px;margin-top:6px"><strong>Temperature:</strong> ${esc(l.temp)}</div>` : ''}
+        </div>
+        <div style="font-size:13px">
+          <div class="kicker" style="margin-bottom:4px">Rate</div>
+          <div class="t-row"><span>Line haul</span><span>${money(l.linehaul)}</span></div>
+          <div class="t-row"><span>Fuel surcharge</span><span>${money(l.fuel)}</span></div>
+          <div class="t-row"><span>Accessorials</span><span>${money(l.accessorial)}</span></div>
+          <div class="t-row total"><span>All-in rate</span><span>${money(rateTotal(l))}</span></div>
+        </div>
+      </div>
+      ${pickups}
+      ${drops}
+      <div class="blueprint t-totals">${CORNERS}
+        <div class="kicker">Load totals</div>
+        <div class="n">${fmt(t.plt)} <small>pallets</small></div>
+        <div class="n">${fmt(t.cs)} <small>cases</small></div>
+        <div class="n">${fmt(t.wt)} <small>lbs</small></div>
+        <div class="spacer"></div>
+        <div class="rate">${money(rateTotal(l))}</div>
+      </div>
+      <div class="text-muted" style="font-size:11.5px;line-height:1.5">Carrier must reference the PU and DEL numbers above at every stop. Detention, layover and any additional accessorials must be approved in writing before billing. Please confirm receipt of this tender by reply to ${esc(COMPANY.email)}.</div>
+      <div class="sig">
+        <div style="flex:1"><div class="rule"></div><div class="text-muted" style="font-size:11px">Carrier signature</div></div>
+        <div style="width:180px"><div class="rule"></div><div class="text-muted" style="font-size:11px">Date</div></div>
+      </div>
+    </div>
+  </main>`;
+}
+
+// ── Directory ──────────────────────────────────────────────────────────────
+function renderDirectory() {
+  const spans = { name: 6, address: 6, city: 3, st: 1, zip: 2, contact: 3, phone: 3 };
+  const labels = [['name', 'Facility name'], ['address', 'Street address'], ['city', 'City'], ['st', 'State'], ['zip', 'ZIP'], ['contact', 'Contact'], ['phone', 'Phone']];
+  const col = (key, title, sub, singular) => {
+    const dd = S.dirDraft[key];
+    return `<div class="card blueprint">${CORNERS}
+      <div class="card-kicker">${title}</div>
+      <div class="text-muted" style="font-size:12px;margin-top:-6px">${sub}</div>
+      <div style="display:flex;flex-direction:column">
+        ${S[key].map(x => `<div class="fac">
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:14px">${esc(x.name)}</div>
+            <div style="font-size:12px">${esc(x.address)}, ${esc(x.city)}, ${esc(x.st)} ${esc(x.zip)}</div>
+            ${(x.contact || x.phone) ? `<div class="text-muted" style="font-size:11px">${esc(x.contact || '')}${x.contact && x.phone ? ' · ' : ''}${esc(x.phone || '')}</div>` : ''}
+          </div>
+          <button class="btn btn-icon btn-ghost" title="Remove facility" data-act="rmFac" data-kind="${key}" data-id="${esc(x.id)}">${I.trash}</button>
+        </div>`).join('')}
+      </div>
+      <div class="grid6 dir-form">
+        ${labels.map(([k, label]) => `<div class="field" style="grid-column:span ${spans[k]}"><label>${label}</label><input class="input" value="${esc(dd[k] ?? '')}" data-bind="dirDraft.${key}.${k}"></div>`).join('')}
+        <button class="btn btn-primary blueprint" style="grid-column:span 6" data-act="addFac" data-kind="${key}">${CORNERS}${I.plus}Add ${singular}</button>
+      </div>
+    </div>`;
+  };
+  return `<main id="directory">
+    <div class="page-head" style="margin-bottom:var(--space-4)">
+      <h1 style="font-size:30px">Shippers &amp; receivers</h1>
+      <span class="text-muted" style="font-size:13px">Saved facilities appear in the load builder dropdowns — facilities on saved loads are added automatically</span>
+    </div>
+    <div class="dir-grid">
+      ${col('shippers', 'Shippers', 'Pickup facilities', 'shipper')}
+      ${col('receivers', 'Receivers', 'Delivery facilities', 'receiver')}
+    </div>
+  </main>`;
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function render() {
+  if (S.view === 'builder' && !S.draft) S.view = 'board';
+  if (S.view === 'tender' && !S.loads.some(l => l.id === S.tenderId)) S.view = 'board';
+  renderShell();
+  const v = $('#view');
+  if (S.view === 'board') { v.innerHTML = renderBoard(); renderBoardBody(); }
+  else if (S.view === 'builder') v.innerHTML = renderBuilder();
+  else if (S.view === 'tender') v.innerHTML = renderTender(S.loads.find(l => l.id === S.tenderId));
+  else if (S.view === 'directory') v.innerHTML = renderDirectory();
+  measureShell();
+}
+function measureShell() {
+  const strip = $('#strip'), nav = $('#nav');
+  document.documentElement.style.setProperty('--strip-h', strip.offsetHeight + 'px');
+  document.documentElement.style.setProperty('--shell-h', (strip.offsetHeight + nav.offsetHeight) + 'px');
+}
+
+// ── Actions ────────────────────────────────────────────────────────────────
+const ACT = {
+  goBoard: () => { set({ view: 'board', openMenu: null }); window.scrollTo(0, 0); },
+  goDirectory: () => { set({ view: 'directory', openMenu: null }); window.scrollTo(0, 0); },
+  newLoad: () => { set({ draft: blankDraft(), view: 'builder', openMenu: null }); window.scrollTo(0, 0); },
+  menu: el => { const it = MENUS[+el.dataset.mi].items[+el.dataset.ii]; it.act(); },
+  datePrev: () => set({ boardDate: shift(S.boardDate, S.dateScope === 'week' ? -7 : -1), dateScope: S.dateScope === 'all' ? 'day' : S.dateScope }),
+  dateNext: () => set({ boardDate: shift(S.boardDate, S.dateScope === 'week' ? 7 : 1), dateScope: S.dateScope === 'all' ? 'day' : S.dateScope }),
+  dateToday: () => set({ boardDate: todayISO(), dateScope: 'day' }),
+  dateSet: el => set({ boardDate: el.value || S.boardDate, dateScope: S.dateScope === 'all' ? 'day' : S.dateScope }),
+  scope: el => set({ dateScope: el.dataset.scope }),
+  refresh: () => reloadFromStore(),
+  statusFilter: el => { S.statusFilter = el.value; renderBoardBody(); },
+  sort: el => { const k = el.dataset.key; S.sortDir = S.sortKey === k ? -S.sortDir : 1; S.sortKey = k; renderBoardBody(); },
+  view: el => { set({ tenderId: el.dataset.id, view: 'tender' }); window.scrollTo(0, 0); },
+  edit: el => { const l = S.loads.find(x => x.id === el.dataset.id); if (l) { set({ draft: clone(l), view: 'builder' }); window.scrollTo(0, 0); } },
+  delete: el => { const l = S.loads.find(x => x.id === el.dataset.id); if (l && confirm('Delete file ' + l.fileNo + '?')) set({ loads: S.loads.filter(x => x.id !== l.id) }); },
+  print: () => window.print(),
+  // builder
+  cancel: () => { set({ draft: null, view: 'board' }); window.scrollTo(0, 0); },
+  save: () => saveDraft(),
+  draftStatus: el => { S.draft.status = el.value; },
+  facility: el => {
+    const kind = el.dataset.kind, i = +el.dataset.i, id = el.value;
+    const src = (kind === 'pickups' ? S.shippers : S.receivers).find(x => x.id === id);
+    const st = S.draft[kind][i]; st.facilityId = id;
+    if (src) { st.name = src.name; st.address = src.address; st.city = src.city; st.st = src.st; st.zip = src.zip; st.contact = src.contact; st.phone = src.phone; }
+    render();
+  },
+  dropIdx: el => { S.draft.pickups[+el.dataset.i].lines[+el.dataset.li].dropIdx = parseInt(el.value) || 0; builderDerived(); },
+  addStop: el => { const k = el.dataset.kind; S.draft[k].push(k === 'pickups' ? { ...blankStop(), lines: [blankLine()] } : blankStop()); render(); },
+  rmStop: el => {
+    const k = el.dataset.kind, i = +el.dataset.i; S.draft[k].splice(i, 1);
+    if (k === 'drops') S.draft.pickups.forEach(p => p.lines.forEach(l => { if (l.dropIdx >= S.draft.drops.length) l.dropIdx = 0; }));
+    render();
+  },
+  addLine: el => { S.draft.pickups[+el.dataset.i].lines.push(blankLine()); render(); },
+  rmLine: el => { S.draft.pickups[+el.dataset.i].lines.splice(+el.dataset.li, 1); render(); },
+  // directory
+  addFac: el => { const k = el.dataset.kind, cur = S.dirDraft[k]; if (!cur.name.trim()) return; S[k] = [...S[k], { id: uid(), ...cur }]; S.dirDraft[k] = blankFac(); persist(); render(); },
+  rmFac: el => { const k = el.dataset.kind; S[k] = S[k].filter(x => x.id !== el.dataset.id); persist(); render(); }
+};
+const CHANGE_ACTS = new Set(['dateSet', 'statusFilter', 'draftStatus', 'facility', 'dropIdx']);
+
+const app = $('#app');
+app.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el || CHANGE_ACTS.has(el.dataset.act)) return;
+  if (el.tagName === 'BUTTON' && el.disabled) return;
+  e.stopPropagation();
+  ACT[el.dataset.act](el, e);
+});
+app.addEventListener('change', e => {
+  const el = e.target.closest('[data-act]');
+  if (el && CHANGE_ACTS.has(el.dataset.act)) ACT[el.dataset.act](el, e);
+});
+app.addEventListener('input', e => {
+  const el = e.target; const path = el.dataset.bind; if (!path) return;
+  setPath(S, path, el.value);
+  if (path === 'search') renderBoardBody();
+  else if (path.startsWith('draft.')) builderDerived();
+});
+
+// menubar: click toggles, hover switches once one is open, outside click / Escape closes
+const menubar = $('#menubar');
+menubar.addEventListener('click', e => {
+  if (e.target.closest('[data-act]')) return;
+  const m = e.target.closest('[data-menu]'); if (!m) return;
+  e.stopPropagation();
+  S.openMenu = S.openMenu === m.dataset.menu ? null : m.dataset.menu; renderMenubar();
+});
+menubar.addEventListener('mouseover', e => {
+  const m = e.target.closest('[data-menu]'); const label = m ? m.dataset.menu : null;
+  if (label === S.hoverMenu) return;
+  S.hoverMenu = label; if (S.openMenu && label) S.openMenu = label; renderMenubar();
+});
+menubar.addEventListener('mouseleave', () => { if (S.hoverMenu) { S.hoverMenu = null; renderMenubar(); } });
+document.addEventListener('pointerdown', e => { if (S.openMenu && !(e.target.closest && e.target.closest('[data-menubar]'))) { S.openMenu = null; renderMenubar(); } }, true);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.openMenu) { S.openMenu = null; renderMenubar(); } });
+window.addEventListener('storage', e => { if (!e.key || e.key === STORE_KEY) reloadFromStore(); });
+window.addEventListener('resize', measureShell);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(measureShell);
+
+persist();
+render();
+</script>
+</body>
+</html>
