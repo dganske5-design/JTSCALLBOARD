@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f1efec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="JTS Ops">
 <title>JTS Operations — Load Board</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -117,7 +121,7 @@ button, input, select { font: inherit; }
 .menu-dd { position: absolute; top: 100%; left: 0; min-width: 212px; background: #fbfaf8; border: 1px solid #a8a49d; box-shadow: 2px 3px 7px rgba(0,0,0,0.18); padding: 3px 0; z-index: 70; }
 .menu-it { padding: 4px 14px; font-size: 12.5px; white-space: nowrap; cursor: pointer; color: #1b1d1e; }
 .menu-it:hover { background: #dfe7ef; }
-#nav { position: sticky; top: var(--strip-h); z-index: 50; display: flex; align-items: center; gap: var(--space-2); padding: 10px var(--space-6); border-bottom: 1px solid var(--color-divider); background: var(--color-bg); }
+#nav { position: sticky; top: var(--strip-h); z-index: 50; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: 10px var(--space-6); border-bottom: 1px solid var(--color-divider); background: var(--color-bg); }
 #nav .brand { display: flex; align-items: center; gap: 10px; margin-right: var(--space-4); }
 #nav .brand-name { font-family: var(--font-heading); font-weight: 600; font-size: 19px; letter-spacing: 0.03em; text-transform: uppercase; }
 #nav .navbtn { color: var(--color-text); opacity: 0.75; }
@@ -208,25 +212,67 @@ main { width: 100%; margin: 0 auto; }
 .fac { display: flex; gap: var(--space-2); align-items: center; padding: 10px 0; border-top: 1px solid var(--color-divider); }
 .dir-form { border-top: 1px solid var(--color-divider); padding-top: var(--space-3); }
 
-@media (max-width: 760px) {
-  #nav { flex-wrap: wrap; padding-inline: 16px; }
-  #board, #builder, #tender-wrap, #directory { padding-inline: 16px; }
-  #tender-sheet { padding: 20px; }
-  .t-head { flex-wrap: wrap; }
-  .t-head > div:last-child { text-align: left !important; }
-  .t-head > div:last-child > div { justify-content: flex-start !important; }
-  .t-stop table { display: block; overflow-x: auto; }
-  .t-totals { flex-wrap: wrap; gap: 8px 16px; }
-  .t-band, .t-stop, .t-head { min-width: 0; }
-  .line-head, .line-row { flex-wrap: wrap; }
-  .line-head { display: none; }
-  .line-row .w170 { width: 100%; }
-  .grid6 { grid-template-columns: repeat(2, 1fr); }
-  .grid6 > * { grid-column: span 2 !important; }
-  .dir-grid, .t-band { grid-template-columns: 1fr; }
-  .totals { flex-wrap: wrap; gap: 16px; }
-  .rate-grid { grid-template-columns: repeat(2, 1fr) !important; }
-}
+/* ── Mobile layout (body.m) — set automatically under 760px or by the toggle ── */
+body.m { padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)); overflow-x: hidden; }
+body.m #strip { display: none; }
+body.m #nav { top: 0; padding: 8px 12px; gap: 8px; flex-wrap: nowrap; }
+body.m #nav .brand { margin-right: 0; flex: 1; min-width: 0; gap: 8px; }
+body.m #nav .brand-name { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.m #nav .brand .tag, body.m #nav .navbtn, body.m #nav .newload, body.m #nav .user-chip .uname, body.m #nav .signout { display: none; }
+body.m #nav .user-chip .tag { font-size: 10px; }
+#tabbar { display: none; }
+body.m #tabbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 55; background: #fbfaf8; border-top: 1px solid #c8c4bd; padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); gap: 6px; }
+#tabbar .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: var(--font-heading); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text); opacity: 0.7; background: none; border: 0; padding: 4px 0; cursor: pointer; }
+#tabbar .tab.on { color: var(--color-accent-700); opacity: 1; }
+#tabbar .tab.primary { background: var(--color-accent); color: #fff; opacity: 1; }
+#tabbar .btn { flex: 1; min-height: 40px; }
+body.m main { padding-inline: 16px; }
+body.m #board, body.m #builder, body.m #tender-wrap, body.m #directory, body.m #users { padding-top: 12px; }
+body.m .page-head h1 { font-size: 24px !important; }
+body.m .page-head .text-muted { display: none; }
+body.m .stepper input { width: 130px; }
+body.m .ctl-row[style*="nowrap"] { flex-wrap: nowrap !important; }
+body.m .search-wrap { min-width: 0; }
+body.m .stats { font-size: 11.5px; gap: 2px 12px; }
+body.m .grid-wrap { display: none; }
+.cards { display: none; }
+body.m .cards { display: flex; flex-direction: column; gap: 8px; }
+.lc { background: #fff; border: 1px solid #808080; border-left: 5px solid #8cef8c; padding: 8px 10px; display: flex; flex-direction: column; gap: 3px; font-size: 13px; font-weight: 600; color: #1b1d1e; }
+.lc.hot { border-left-color: #f00000; }
+.lc .row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.lc .row > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lc .file { color: #0a2fbd; font-weight: 700; font-size: 15px; }
+.lc .st { margin-left: auto; font-size: 11px; padding: 2px 8px; background: #eef0f3; flex: none; }
+.lc.hot .st { background: #f00000; color: #fff; }
+.lc .orig { background: #fbf7d3; color: #3b3405; padding: 0 4px; }
+.lc .orig.driven { background: #b5a24d; color: #241f04; }
+.lc .unc { color: #c40000; font-weight: 700; }
+.lc .rate { margin-left: auto; font-weight: 700; flex: none; }
+.lc .acts { display: flex; gap: 4px; margin-top: 4px; }
+.lc .acts .btn { min-height: 0; padding: 3px 10px; font-size: 12px; }
+body.m .grid6 { grid-template-columns: repeat(2, 1fr); }
+body.m .grid6 > * { grid-column: span 2 !important; }
+body.m .grid6 > .half { grid-column: span 1 !important; }
+body.m .dir-grid, body.m .t-band { grid-template-columns: 1fr; }
+body.m .rate-grid { grid-template-columns: repeat(2, 1fr) !important; }
+body.m .rate-grid > .field[style*="span 2"] { grid-column: span 2 !important; }
+body.m #builder { gap: 20px; }
+body.m .totals { position: static; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+body.m .totals .spacer, body.m .totals .btn { display: none; }
+body.m .line-head { display: none; }
+body.m .line-row { flex-wrap: wrap; border-top: 1px dashed var(--color-divider); padding-top: 8px; }
+body.m .line-row .commodity { flex: 1 1 100%; }
+body.m .line-row .w80, body.m .line-row .w100 { flex: 1; width: auto; }
+body.m .line-row .w170 { flex: 1 1 100%; width: auto; }
+body.m #tender-wrap .ctl-row { display: none; }
+body.m #tender-sheet { padding: 20px 16px; }
+body.m .t-head { flex-wrap: wrap; }
+body.m .t-head > div:last-child { text-align: left !important; }
+body.m .t-head > div:last-child > div { justify-content: flex-start !important; }
+body.m .t-stop table { display: block; overflow-x: auto; }
+body.m .t-totals { flex-wrap: wrap; gap: 8px 16px; }
+body.m .t-band, body.m .t-stop, body.m .t-head { min-width: 0; }
+body.m #users .fac { flex-wrap: wrap; }
 @media print {
   .no-print { display: none !important; }
   body { background: #fff; }
@@ -246,6 +292,7 @@ main { width: 100%; margin: 0 auto; }
   </div>
   <nav id="nav" class="no-print"></nav>
   <div id="view"></div>
+  <nav id="tabbar" class="no-print"></nav>
 </div>
 
 <script>
@@ -261,6 +308,8 @@ const COMPANY = {
   email: 'dispatch@johansontransportation.com'
 };
 const STORE_KEY = 'jts_loadboard_v2';
+const LAYOUT_KEY = 'jts_loadboard_layout';
+const MOBILE_BP = 760;
 const STATUSES = ['Quoted', 'Tendered', 'Booked', 'Dispatched', 'In Transit', 'Delivered', 'Invoiced', 'Cancelled'];
 const HOT = ['Quoted', 'Tendered'];
 const COVERED = ['Booked', 'Dispatched', 'In Transit', 'Delivered', 'Invoiced'];
@@ -358,6 +407,13 @@ const I = {
   mPin: svg('<path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12Z"></path>', 13, '#2f5c8f', 1.6),
   userSm: svg('<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>', 13),
   gear: svg('<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle>', 16),
+  phone: svg('<rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path>', 16),
+  monitor: svg('<rect x="2" y="3" width="20" height="14" rx="2"></rect><path d="M8 21h8M12 17v4"></path>', 16),
+  list: svg('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path>', 18),
+  building: svg('<path d="M3 21V7l6-4v18M9 21h12V11l-6-2M13 13h.01M13 17h.01"></path>', 18),
+  gear18: svg('<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle>', 18),
+  plus18: svg('<path d="M12 5v14M5 12h14"></path>', 18),
+  logout: svg('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"></path>', 16),
   mOffice: svg('<path d="M3 21V7l6-4v18M9 21h12V11l-6-2M13 13h.01M13 17h.01"></path>', 13, '#8a6f2a', 1.6)
 };
 const CORNERS = '<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>';
@@ -460,6 +516,7 @@ function readStore() { try { return JSON.parse(localStorage.getItem(STORE_KEY));
 const S = (() => {
   const p = readStore(), d = demoData();
   return {
+    layout: (() => { try { return localStorage.getItem(LAYOUT_KEY) || 'auto'; } catch (e) { return 'auto'; } })(),
     user: readSession(), users: loadUsers(), loginErr: '', userDraft: { name: '', initials: '', username: '', password: '', role: 'dispatcher' },
     view: 'board', search: '', statusFilter: 'All', draft: null, tenderId: null,
     sortKey: 'shipDate', sortDir: 1, openMenu: null, hoverMenu: null,
@@ -470,6 +527,8 @@ const S = (() => {
     receivers: p && p.receivers ? p.receivers : d.receivers
   };
 })();
+const isMobile = () => S.layout === 'mobile' || (S.layout === 'auto' && window.innerWidth <= MOBILE_BP);
+function setLayout(v) { S.layout = v; try { localStorage.setItem(LAYOUT_KEY, v); } catch (e) {} render(); }
 function persist() { try { localStorage.setItem(STORE_KEY, JSON.stringify({ loads: S.loads, shippers: S.shippers, receivers: S.receivers })); } catch (e) {} }
 function set(patch) { Object.assign(S, patch); persist(); render(); }
 function reloadFromStore() {
@@ -510,17 +569,39 @@ function renderMenubar() {
 
 // ── Shell ──────────────────────────────────────────────────────────────────
 function renderShell() {
+  const m = isMobile();
   $('#strip-title').innerHTML = `${I.truckRed}<span>JTS Operations</span>`;
   renderMenubar();
   $('#nav').innerHTML = `
-    <div class="brand">${I.truckNav}<div class="brand-name">${esc(COMPANY.name)}</div><span class="tag tag-outline">Dispatch</span></div>
+    <div class="brand">${I.truckNav}<div class="brand-name">${m ? 'JTS Operations' : esc(COMPANY.name)}</div><span class="tag tag-outline">Dispatch</span></div>
     <button class="btn btn-ghost navbtn${S.view === 'board' ? ' on' : ''}" data-act="goBoard">Load board</button>
     <button class="btn btn-ghost navbtn${S.view === 'directory' ? ' on' : ''}" data-act="goDirectory">Shippers &amp; receivers</button>
     <div class="spacer"></div>
-    <span class="user-chip">${I.userSm}${esc(S.user.name)}<span class="tag tag-outline">${S.user.role === 'admin' ? 'Admin' : 'Dispatch'}</span></span>
-    <button class="btn btn-ghost" style="font-size:12.5px" data-act="signOut">Sign out</button>
+    <span class="user-chip">${I.userSm}<span class="uname">${esc(S.user.name)}</span><span class="tag tag-outline">${m ? esc(S.user.initials || S.user.username) : (S.user.role === 'admin' ? 'Admin' : 'Dispatch')}</span></span>
+    <button class="btn btn-ghost signout" style="font-size:12.5px" data-act="signOut">Sign out</button>
+    <button class="btn btn-icon btn-secondary" title="${m ? 'Switch to desktop view' : 'Switch to mobile view'}" data-act="toggleLayout">${m ? I.monitor : I.phone}</button>
     ${S.user.role === 'admin' ? `<button class="btn btn-icon btn-secondary${S.view === 'users' ? ' on' : ''}" title="Settings — users" data-act="goUsers">${I.gear}</button>` : ''}
-    <button class="btn btn-primary blueprint" data-act="newLoad">${CORNERS}${I.plus}New load</button>`;
+    ${m ? `<button class="btn btn-icon btn-secondary" title="Sign out" data-act="signOut">${I.logout}</button>` : ''}
+    <button class="btn btn-primary blueprint newload" data-act="newLoad">${CORNERS}${I.plus}New load</button>`;
+  renderTabbar();
+}
+
+function renderTabbar() {
+  const tb = $('#tabbar'); if (!tb) return;
+  if (S.view === 'builder' && S.draft) {
+    tb.innerHTML = `<button class="btn btn-secondary" data-act="cancel">Cancel</button><button class="btn btn-primary" data-act="save">${S.draft.id ? 'Update load tender' : 'Create load tender'}</button>`;
+    return;
+  }
+  if (S.view === 'tender') {
+    const l = S.loads.find(x => x.id === S.tenderId) || {};
+    tb.innerHTML = `<button class="btn btn-secondary" data-act="goBoard">${I.back}Board</button><button class="btn btn-secondary" data-act="edit" data-id="${esc(l.id || '')}">${I.pencil}Edit</button><a class="btn btn-secondary" href="${l.id ? tenderEmail(l) : '#'}">${I.mail}Email</a><button class="btn btn-primary" data-act="print">${I.print}Print</button>`;
+    return;
+  }
+  const tab = (act, icon, label, on) => `<button class="tab${on ? ' on' : ''}" data-act="${act}">${icon}<span>${label}</span></button>`;
+  tb.innerHTML = tab('goBoard', I.list, 'Board', S.view === 'board')
+    + `<button class="tab primary" data-act="newLoad">${I.plus18}<span>New load</span></button>`
+    + tab('goDirectory', I.building, 'Facilities', S.view === 'directory')
+    + (S.user.role === 'admin' ? tab('goUsers', I.gear18, 'Settings', S.view === 'users') : '');
 }
 
 // ── Board ──────────────────────────────────────────────────────────────────
@@ -601,6 +682,11 @@ function renderBoard() {
         ${STATUSES.map(s => `<option value="${s}"${S.statusFilter === s ? ' selected' : ''}>${s}</option>`).join('')}
       </select>
     </div>
+    ${isMobile() ? `<div class="ctl-row no-print" style="margin-bottom:var(--space-3);flex-wrap:nowrap">
+      <span class="text-muted" style="font-size:12px;flex:none">Sort</span>
+      <select class="input" data-act="sortSel">${COLS.filter(c => c.key).map(c => `<option value="${c.key}"${S.sortKey === c.key ? ' selected' : ''}>${c.label === 'ST' ? (c.key === 'puSt' ? 'Pickup ST' : 'Dest ST') : c.label}</option>`).join('')}</select>
+      <button class="btn btn-secondary btn-sm" style="flex:none" data-act="sortDir">${S.sortDir > 0 ? '▲ Asc' : '▼ Desc'}</button>
+    </div>` : ''}
     <div id="board-body"></div>
   </main>`;
 }
@@ -637,6 +723,18 @@ function renderBoardBody() {
       </div></td>
     </tr>`;
   }).join('');
+  const cards = rows.map(r => {
+    const l = r.l, hot = HOT.includes(l.status);
+    const dt = r.shipDate ? r.shipDate.slice(5).replace('-', '/') + '/' + r.shipDate.slice(2, 4) : '—';
+    const driven = /DRIVEN/.test(r.originator);
+    return `<div class="lc${hot ? ' hot' : ''}" data-act="view" data-id="${esc(l.id)}">
+      <div class="row"><span class="file">${esc(r.fileNo)}</span><span class="text-muted" style="font-weight:600">${dt}</span><span class="st">${esc(l.status)}</span></div>
+      <div class="row"><span class="orig${driven ? ' driven' : ''}">${esc(r.originator)}</span></div>
+      <div class="row"><span>${esc(r.puCity)}, ${esc(r.puSt)} → ${esc(r.delCity)}, ${esc(r.delSt)}</span></div>
+      <div class="row"><span class="${r.carrier ? '' : 'unc'}">${r.carrier ? esc(r.carrier) : 'UNCOVERED'}</span><span class="rate">${money(r.rate)}</span></div>
+      <div class="acts"><button class="btn btn-ghost" data-act="view" data-id="${esc(l.id)}">Tender</button><button class="btn btn-ghost" data-act="edit" data-id="${esc(l.id)}">Edit</button><button class="btn btn-ghost" style="color:#c40000" data-act="delete" data-id="${esc(l.id)}">Delete</button></div>
+    </div>`;
+  }).join('');
   $('#board-body').innerHTML = `
     <div class="stats">
       <div><span class="text-muted">Showing</span> <strong>${shown}</strong> <span class="text-muted">of ${all} files</span></div>
@@ -648,7 +746,8 @@ function renderBoardBody() {
     <div class="grid-wrap">
       <table class="grid"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
       ${shown === 0 ? '<div class="text-muted empty">No files ship on this date. Step the date, widen to Week or All dates, or create a new load.</div>' : ''}
-    </div>`;
+    </div>
+    <div class="cards">${cards}${shown === 0 ? '<div class="text-muted empty">No files ship on this date. Step the date, widen to Week or All dates, or create a new load.</div>' : ''}</div>`;
   const ra = $('#refreshed-at');
   if (ra) ra.textContent = 'Updated ' + new Date(S.refreshedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' });
   const dl = $('#date-label'); if (dl) dl.textContent = dateLabel();
@@ -663,7 +762,7 @@ function stopFields(kind, i, s) {
   const list = isPu ? S.shippers : S.receivers;
   const opts = [`<option value="">Type a new / one-time ${isPu ? 'shipper' : 'receiver'}…</option>`,
     ...list.map(x => `<option value="${esc(x.id)}"${x.id === s.facilityId ? ' selected' : ''}>${esc(x.name)} — ${esc(x.city)}, ${esc(x.st)}</option>`)].join('');
-  const inp = (k, span, label, extra = '') => `<div class="field" style="grid-column:span ${span}"><label>${label}</label><input class="input" ${extra} value="${esc(s[k] ?? '')}" data-bind="draft.${kind}.${i}.${k}"></div>`;
+  const inp = (k, span, label, extra = '') => `<div class="field${span <= 2 ? ' half' : ''}" style="grid-column:span ${span}"><label>${label}</label><input class="input" ${extra} value="${esc(s[k] ?? '')}" data-bind="draft.${kind}.${i}.${k}"></div>`;
   return `<div class="grid6">
     <div class="field" style="grid-column:span 4"><label>${isPu ? 'Shipper' : 'Receiver'} (from directory)</label><select class="input" data-act="facility" data-kind="${kind}" data-i="${i}">${opts}</select></div>
     ${inp('ref', 2, isPu ? 'Pickup number (PU #)' : 'Delivery number (DEL #)', `placeholder="${isPu ? 'e.g. PU-88213' : 'e.g. DEL-55102'}"`)}
@@ -681,7 +780,7 @@ function stopFields(kind, i, s) {
 }
 function renderBuilder() {
   const d = S.draft, multi = d.drops.length > 1, t = loadTotals(d);
-  const f = (k, span, label, extra = '') => `<div class="field" style="grid-column:span ${span}"><label>${label}</label><input class="input" ${extra} value="${esc(d[k] ?? '')}" data-bind="draft.${k}"></div>`;
+  const f = (k, span, label, extra = '') => `<div class="field${span <= 1 ? ' half' : ''}" style="grid-column:span ${span}"><label>${label}</label><input class="input" ${extra} value="${esc(d[k] ?? '')}" data-bind="draft.${k}"></div>`;
   const pickups = d.pickups.map((p, i) => {
     const st = stopTotals(p);
     return `<div class="card blueprint">${CORNERS}
@@ -691,10 +790,10 @@ function renderBuilder() {
       <div class="lines">
         <div class="line-head"><div style="flex:2">Commodity</div><div class="w80">Pallets</div><div class="w80">Cases</div><div class="w100">Weight (lbs)</div>${multi ? '<div class="w170">Deliver to</div>' : ''}<div class="w36"></div></div>
         ${p.lines.map((ln, li) => `<div class="line-row">
-          <input class="input" style="flex:2" placeholder="e.g. Frozen entrées" value="${esc(ln.commodity)}" data-bind="draft.pickups.${i}.lines.${li}.commodity">
-          <input class="input w80" type="number" min="0" value="${esc(ln.pallets)}" data-bind="draft.pickups.${i}.lines.${li}.pallets">
-          <input class="input w80" type="number" min="0" value="${esc(ln.cases)}" data-bind="draft.pickups.${i}.lines.${li}.cases">
-          <input class="input w100" type="number" min="0" value="${esc(ln.weight)}" data-bind="draft.pickups.${i}.lines.${li}.weight">
+          <input class="input commodity" style="flex:2" placeholder="Commodity, e.g. Frozen entrées" value="${esc(ln.commodity)}" data-bind="draft.pickups.${i}.lines.${li}.commodity">
+          <input class="input w80" type="number" min="0" placeholder="Pallets" value="${esc(ln.pallets)}" data-bind="draft.pickups.${i}.lines.${li}.pallets">
+          <input class="input w80" type="number" min="0" placeholder="Cases" value="${esc(ln.cases)}" data-bind="draft.pickups.${i}.lines.${li}.cases">
+          <input class="input w100" type="number" min="0" placeholder="Lbs" value="${esc(ln.weight)}" data-bind="draft.pickups.${i}.lines.${li}.weight">
           ${multi ? `<select class="input w170" data-act="dropIdx" data-i="${i}" data-li="${li}" data-dropsel>${dropOptions(d, ln.dropIdx)}</select>` : ''}
           <button class="btn btn-icon btn-ghost" ${p.lines.length === 1 ? 'disabled' : ''} title="Remove line" data-act="rmLine" data-i="${i}" data-li="${li}">${I.x}</button>
         </div>`).join('')}
@@ -955,6 +1054,10 @@ function renderUsers() {
       <div class="spacer"></div>
       <button class="btn btn-secondary btn-sm" data-act="goBoard">${I.back}Back to board</button>
     </div>
+    <div class="card blueprint" style="margin-bottom:var(--space-4)">${CORNERS}
+      <div class="card-kicker">Layout</div>
+      <div class="ctl-row"><div class="seg">${[['auto', 'Auto'], ['desktop', 'Desktop'], ['mobile', 'Mobile']].map(([k, l]) => `<button class="${S.layout === k ? 'on' : ''}" data-act="layoutPref" data-v="${k}">${l}</button>`).join('')}</div><span class="text-muted" style="font-size:12px">Auto picks mobile under ${MOBILE_BP}px. The phone / monitor button in the header switches any time.</span></div>
+    </div>
     <div class="card blueprint">${CORNERS}
       <div class="card-kicker">Accounts</div>
       <div style="display:flex;flex-direction:column">
@@ -982,11 +1085,13 @@ function renderUsers() {
 // ── Render ─────────────────────────────────────────────────────────────────
 function render() {
   const login = $('#login'), strip = $('#strip'), nav = $('#nav'), view = $('#view');
+  document.body.classList.toggle('m', isMobile());
   if (!S.user) {
     login.classList.remove('hidden'); strip.classList.add('hidden'); nav.classList.add('hidden'); view.innerHTML = '';
     login.innerHTML = renderLogin(); const u = $('#login-user'); if (u) u.focus();
     return;
   }
+  document.body.classList.toggle('m', isMobile());
   login.classList.add('hidden'); strip.classList.remove('hidden'); nav.classList.remove('hidden');
   if (S.view === 'users' && S.user.role !== 'admin') S.view = 'board';
   if (S.view === 'builder' && !S.draft) S.view = 'board';
@@ -1044,6 +1149,10 @@ const ACT = {
   },
   addLine: el => { S.draft.pickups[+el.dataset.i].lines.push(blankLine()); render(); },
   rmLine: el => { S.draft.pickups[+el.dataset.i].lines.splice(+el.dataset.li, 1); render(); },
+  layoutPref: el => setLayout(el.dataset.v),
+  toggleLayout: () => setLayout(isMobile() ? 'desktop' : 'mobile'),
+  sortSel: el => { S.sortKey = el.value; renderBoardBody(); },
+  sortDir: el => { S.sortDir = -S.sortDir; el.textContent = S.sortDir > 0 ? '▲ Asc' : '▼ Desc'; renderBoardBody(); },
   // auth + users
   goUsers: () => { set({ view: 'users', openMenu: null }); window.scrollTo(0, 0); },
   signOut: () => { clearSession(); S.user = null; S.draft = null; S.view = 'board'; S.openMenu = null; render(); },
@@ -1067,7 +1176,7 @@ const ACT = {
   addFac: el => { const k = el.dataset.kind, cur = S.dirDraft[k]; if (!cur.name.trim()) return; S[k] = [...S[k], { id: uid(), ...cur }]; S.dirDraft[k] = blankFac(); persist(); render(); },
   rmFac: el => { const k = el.dataset.kind; S[k] = S[k].filter(x => x.id !== el.dataset.id); persist(); render(); }
 };
-const CHANGE_ACTS = new Set(['dateSet', 'statusFilter', 'draftStatus', 'facility', 'dropIdx', 'userRole']);
+const CHANGE_ACTS = new Set(['dateSet', 'statusFilter', 'draftStatus', 'facility', 'dropIdx', 'userRole', 'sortSel']);
 
 const app = $('#app');
 app.addEventListener('click', e => {
@@ -1114,7 +1223,8 @@ menubar.addEventListener('mouseleave', () => { if (S.hoverMenu) { S.hoverMenu = 
 document.addEventListener('pointerdown', e => { if (S.openMenu && !(e.target.closest && e.target.closest('[data-menubar]'))) { S.openMenu = null; renderMenubar(); } }, true);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.openMenu) { S.openMenu = null; renderMenubar(); } });
 window.addEventListener('storage', e => { if (!e.key || e.key === STORE_KEY) reloadFromStore(); });
-window.addEventListener('resize', measureShell);
+let wasMobile = isMobile();
+window.addEventListener('resize', () => { measureShell(); if (isMobile() !== wasMobile) { wasMobile = isMobile(); render(); } });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(measureShell);
 
 persist();
