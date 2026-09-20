@@ -1535,7 +1535,7 @@ app.addEventListener('keydown', e => {
   else if (e.key === 'Enter') { e.preventDefault(); acPick(AC.idx >= 0 ? AC.idx : 0); }
   else if (e.key === 'Escape') acClose();
 });
-app.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.ac) setTimeout(() => { if (AC.el === e.target && document.activeElement !== e.target) { if (e.target.dataset.ac === 'track' && !S.trackDraft.geo) refreshDistances(); acClose(); } }, 150); });
+app.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.ac) setTimeout(() => { if (document.activeElement === e.target) return; if (AC.el === e.target) acClose(); if (e.target.dataset.ac === 'track' && S.trackDraft && !S.trackDraft.geo) refreshDistances(); }, 150); });
 app.addEventListener('submit', e => {
   const form = e.target.closest('[data-form="login"]'); if (!form) return;
   e.preventDefault();
