@@ -234,8 +234,9 @@ body.m .rail button { flex: 1; text-align: center; padding: 8px 4px; font-size: 
 body.m .rail .sub { display: none; }
 
 /* detention alert */
-body.dwell-alert { background: #ffe600; }
-body.dwell-alert #nav { background: #ffe600; }
+html.dwell-alert, html.dwell-alert body, body.dwell-alert { background: #ffe600 !important; }
+body.dwell-alert #nav, body.dwell-alert #strip, body.dwell-alert #tabbar, body.dwell-alert .rail button:not(.on), body.dwell-alert .stepper { background: #ffe600; }
+body.dwell-alert #menubar { background: #ffec4d; }
 body.dwell-alert .card, body.dwell-alert #tender-sheet { background: #fff8b8; }
 .dwell-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #ff6a00; color: #1b1d1e; border: 2px solid #1b1d1e; padding: 10px 14px; margin-bottom: var(--space-4); font-family: var(--font-heading); font-weight: 700; font-size: 16px; letter-spacing: 0.03em; text-transform: uppercase; }
 .dwell-banner .dwell-tag { background: #1b1d1e; color: #ff6a00; padding: 2px 10px; font-size: 13px; }
@@ -244,6 +245,14 @@ body.dwell-alert .card, body.dwell-alert #tender-sheet { background: #fff8b8; }
 .stop-times.alert { background: #ff6a00; border: 2px solid #1b1d1e; }
 .stop-times.alert .st-lbl { color: #1b1d1e; }
 @media print { body.dwell-alert { background: #fff; } }
+.call-log { margin-top: 6px; padding: 8px 10px; border: 1px solid var(--color-divider); background: color-mix(in srgb, var(--color-surface) 60%, #fff); display: flex; flex-direction: column; gap: 6px; }
+.call-form { display: flex; gap: 6px; flex-wrap: wrap; }
+.call-form input:first-child { flex: 1 1 160px; }
+.call-form input:nth-child(2) { flex: 3 1 260px; }
+.call-form .input { min-height: 32px; padding: 4px 8px; font-size: 13px; }
+.call-log .log > div { padding: 5px 0; font-size: 12.5px; }
+body.m .call-form input { flex: 1 1 100%; }
+.stop-times .btn-primary { min-height: 30px; }
 /* autocomplete + distances + stop times */
 .ac { position: relative; }
 .ac-list { position: absolute; left: 0; right: 0; top: 100%; z-index: 80; background: #fbfaf8; border: 1px solid #a8a49d; box-shadow: 2px 3px 7px rgba(0,0,0,0.18); max-height: 260px; overflow-y: auto; }
@@ -261,6 +270,15 @@ body.dwell-alert .card, body.dwell-alert #tender-sheet { background: #fff8b8; }
 body.m .stop-times .input { flex: 1 1 60%; }
 body.m .stop-times .dwell { margin-left: 0; flex: 1 1 100%; }
 @media print { .stop-times { display: none !important; } }
+
+/* dialogs */
+.dialog-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, #2b2b2d 50%, transparent); }
+.dialog { width: min(440px, 100%); display: flex; flex-direction: column; gap: 10px; padding: 18px; background: var(--color-bg); border: 1px solid var(--color-divider); box-shadow: 0 12px 32px rgba(43,43,45,0.22); }
+.dialog-title { font-family: var(--font-heading); font-weight: 600; font-size: 20px; line-height: 1.2; }
+.dialog-body { font-size: 14px; opacity: 0.85; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.btn-danger { background: #c40000; color: #fff; border-color: #c40000; }
+.btn-danger:hover { background: #a10000; }
 
 /* ── Directory ──────────────────────────────────────────────────────────── */
 #directory { max-width: 1160px; padding: var(--space-6) var(--space-6) var(--space-8); }
@@ -437,6 +455,22 @@ function signIn(username, pw) {
   const u = loadUsers().find(x => x.username.toLowerCase() === String(username).trim().toLowerCase());
   return u && hashPw(u.salt, pw) === u.hash ? u : null;
 }
+
+// ── In-page dialogs (the artifact/iframe host blocks native alert/confirm/prompt) ──
+function dialog({ title, body = '', input = null, okLabel = 'OK', cancelLabel = 'Cancel', danger = false, placeholder = '' }) {
+  return new Promise(res => {
+    const bd = document.createElement('div'); bd.className = 'dialog-backdrop';
+    bd.innerHTML = `<div class="dialog blueprint" role="dialog" aria-modal="true">${CORNERS}<div class="dialog-title">${esc(title)}</div>${body ? `<div class="dialog-body">${esc(body)}</div>` : ''}${input ? `<input class="input" id="dlg-input" type="${input === 'password' ? 'password' : 'text'}" placeholder="${esc(placeholder)}" autocomplete="${input === 'password' ? 'new-password' : 'off'}">` : ''}<div class="dialog-actions">${cancelLabel ? `<button class="btn btn-secondary" data-dlg="cancel">${esc(cancelLabel)}</button>` : ''}<button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-dlg="ok">${esc(okLabel)}</button></div></div>`;
+    document.body.appendChild(bd);
+    const val = () => input ? bd.querySelector('#dlg-input').value : true;
+    const done = v => { bd.remove(); res(v); };
+    bd.addEventListener('click', e => { const b = e.target.closest('[data-dlg]'); if (b) done(b.dataset.dlg === 'ok' ? val() : null); else if (e.target === bd) done(null); });
+    bd.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); done(null); } else if (e.key === 'Enter') { e.preventDefault(); done(val()); } });
+    (bd.querySelector('#dlg-input') || bd.querySelector('[data-dlg="ok"]')).focus();
+  });
+}
+const confirmUI = (title, body = '', okLabel = 'Delete') => dialog({ title, body, okLabel, danger: true });
+const notify = (title, body = '') => dialog({ title, body, cancelLabel: '', okLabel: 'OK' });
 
 // ── Icons (Lucide, stroke 1.5) ─────────────────────────────────────────────
 const svg = (d, size = 14, stroke = 'currentColor', sw = 1.5, extra = '') =>
@@ -992,9 +1026,20 @@ const fmtLocal = v => v ? new Date(v).toLocaleString('en-US', { month: 'short', 
 function dwell(a, b) { if (!a || !b) return ''; const m = Math.round((new Date(b) - new Date(a)) / 60000); if (isNaN(m) || m < 0) return ''; return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`; }
 function stopTimes(kind, i, s) {
   const dw = dwell(s.inAt, s.outAt), live = dwellMins(s), alert = live >= DWELL_ALERT_MIN;
-  const ctl = (f, label) => `<span class="st-lbl">${label}</span><input class="input" type="datetime-local" value="${esc(s[f] || '')}" data-act="stopTime" data-kind="${kind}" data-i="${i}" data-f="${f}"><button class="btn btn-secondary btn-sm" data-act="stopNow" data-kind="${kind}" data-i="${i}" data-f="${f}">Now</button>`;
-  return `<div class="stop-times no-print${alert ? ' alert' : ''}">${ctl('inAt', 'Checked in')}${ctl('outAt', 'Checked out')}${dw ? `<span class="dwell">Dwell ${dw}</span>` : (s.inAt && !s.outAt ? `<span class="dwell">On site ${fmtMins(live)}</span>` : '')}</div>
-    ${(s.inAt || s.outAt) ? `<div class="stop-times-print" style="font-size:12px">${s.inAt ? `<strong>Checked in</strong> ${fmtLocal(s.inAt)}` : ''}${s.inAt && s.outAt ? ' · ' : ''}${s.outAt ? `<strong>Checked out</strong> ${fmtLocal(s.outAt)}` : ''}${dw ? ` · Dwell ${dw}` : ''}</div>` : ''}`;
+  const id = `${kind}-${i}`;
+  const ctl = (f, label) => `<span class="st-lbl">${label}</span><input class="input" type="datetime-local" id="${f}-${id}" value="${esc(s[f] || '')}"><button class="btn btn-secondary btn-sm" title="Fill with the current time" data-act="fillNow" data-target="${f}-${id}">Now</button>`;
+  const calls = (s.calls || []).slice().reverse();
+  return `<div class="stop-times no-print${alert ? ' alert' : ''}">${ctl('inAt', 'Checked in')}${ctl('outAt', 'Checked out')}<button class="btn btn-primary btn-sm" data-act="saveTimes" data-kind="${kind}" data-i="${i}">Save</button>${dw ? `<span class="dwell">Dwell ${dw}</span>` : (s.inAt && !s.outAt ? `<span class="dwell">On site ${fmtMins(live)}</span>` : '')}</div>
+    ${(s.inAt || s.outAt) ? `<div class="stop-times-print" style="font-size:12px">${s.inAt ? `<strong>Checked in</strong> ${fmtLocal(s.inAt)}` : ''}${s.inAt && s.outAt ? ' · ' : ''}${s.outAt ? `<strong>Checked out</strong> ${fmtLocal(s.outAt)}` : ''}${dw ? ` · Dwell ${dw}` : ''}</div>` : ''}
+    <div class="call-log no-print">
+      <div class="kicker">Internal call log · ${kind === 'pickups' ? 'Pickup' : 'Delivery'} ${i + 1}${s.name ? ' · ' + esc(s.name) : ''}</div>
+      <div class="call-form">
+        <input class="input" id="who-${id}" placeholder="Spoke to (name / role)" autocomplete="off" data-enter="call-${id}">
+        <input class="input" id="note-${id}" placeholder="What they told you — load ready? dock time? anything to document…" autocomplete="off" data-enter="call-${id}">
+        <button class="btn btn-primary btn-sm" id="call-${id}" data-act="addCall" data-kind="${kind}" data-i="${i}">Add note</button>
+      </div>
+      <div class="log">${calls.length ? calls.map(c => `<div><time>${fmtWhen(c.at)} · <strong>${esc(c.by || '')}</strong>${c.who ? ` · spoke to ${esc(c.who)}` : ''}</time><div>${esc(c.text)}</div></div>`).join('') : '<div class="text-muted" style="font-size:12px">No calls logged yet. Notes here are internal — they never print or email.</div>'}</div>
+    </div>`;
 }
 function renderTender(l) {
   const t = loadTotals(l), showDest = l.drops.length > 1, showOrigin = l.pickups.length > 1;
@@ -1281,7 +1326,7 @@ function customerUpdateMail(l, ev, stopEntry, note) {
   s.push('', 'Thank you,', S.user ? S.user.name : '', COMPANY.name, `${COMPANY.phone} · ${COMPANY.email}`);
   return `mailto:${l.customerEmail || ''}?subject=${encodeURIComponent(`Load update — File ${l.fileNo} — ${ev[1]} — ${route(l)}`)}&body=${encodeURIComponent(s.join('\n'))}`;
 }
-function setStopTime(kind, i, f, value) {
+function setStopTime(kind, i, f, value, rerender = true) {
   const id = S.tenderId;
   updateLoad(id, l => {
     const st = l[kind][i]; if (!st) return; st[f] = value;
@@ -1293,7 +1338,7 @@ function setStopTime(kind, i, f, value) {
     if (kind === 'pickups' && f === 'outAt' && early.includes(l.status)) l.status = 'In Transit';
     if (kind === 'drops' && f === 'outAt' && i === l.drops.length - 1 && !['Invoiced', 'Cancelled'].includes(l.status)) l.status = 'Delivered';
   });
-  render();
+  if (rerender) render();
 }
 function updateLoad(id, fn) { S.loads = S.loads.map(l => { if (l.id !== id) return l; const c = clone(l); fn(c); return c; }); persist(); }
 
@@ -1392,14 +1437,14 @@ function render() {
   const login = $('#login'), strip = $('#strip'), nav = $('#nav'), view = $('#view');
   document.body.classList.toggle('m', isMobile());
   if (!S.user) {
-    document.body.classList.remove('dwell-alert');
+    document.body.classList.remove('dwell-alert'); document.documentElement.classList.remove('dwell-alert');
     login.classList.remove('hidden'); strip.classList.add('hidden'); nav.classList.add('hidden'); view.innerHTML = '';
     login.innerHTML = renderLogin(); const u = $('#login-user'); if (u) u.focus();
     return;
   }
   document.body.classList.toggle('m', isMobile());
   const cur = S.view === 'tender' ? S.loads.find(l => l.id === S.tenderId) : null;
-  document.body.classList.toggle('dwell-alert', !!(cur && delayAt(cur)));
+  const alertOn = !!(cur && delayAt(cur)); document.body.classList.toggle('dwell-alert', alertOn); document.documentElement.classList.toggle('dwell-alert', alertOn);
   login.classList.add('hidden'); strip.classList.remove('hidden'); nav.classList.remove('hidden');
   if (S.view === 'users' && S.user.role !== 'admin') S.view = 'board';
   if (S.view === 'builder' && !S.draft) S.view = 'board';
@@ -1435,7 +1480,7 @@ const ACT = {
   sort: el => { const k = el.dataset.key; S.sortDir = S.sortKey === k ? -S.sortDir : 1; S.sortKey = k; renderBoardBody(); },
   view: el => { S.fileTab = 'tender'; set({ tenderId: el.dataset.id, view: 'tender' }); window.scrollTo(0, 0); },
   edit: el => { const l = S.loads.find(x => x.id === el.dataset.id); if (l) { set({ draft: clone(l), view: 'builder' }); window.scrollTo(0, 0); } },
-  delete: el => { const l = S.loads.find(x => x.id === el.dataset.id); if (l && confirm('Delete file ' + l.fileNo + '?')) set({ loads: S.loads.filter(x => x.id !== l.id) }); },
+  delete: el => { const l = S.loads.find(x => x.id === el.dataset.id); if (!l) return; confirmUI('Delete file ' + l.fileNo + '?', 'This removes the file from the board for everyone on this computer.').then(ok => { if (ok) set({ loads: S.loads.filter(x => x.id !== l.id) }); }); },
   print: () => window.print(),
   // builder
   cancel: () => { set({ draft: null, view: 'board' }); window.scrollTo(0, 0); },
@@ -1475,12 +1520,32 @@ const ACT = {
   },
   resetCarrier: () => { S.carrierDraft = null; render(); },
   clearCarrier: () => {
-    const id = S.carrierDraft._id; if (!confirm('Remove the carrier from this file and set it back to Open?')) return;
+    const id = S.carrierDraft._id;
+    confirmUI('Remove carrier from this file?', 'The file goes back to Open and the driver / equipment details are cleared.', 'Remove carrier').then(ok => { if (!ok) return;
     updateLoad(id, l => { l.carrier = blankCarrier(); l.carrierName = ''; l.carrierEmail = ''; if (!['Delivered', 'Invoiced', 'Cancelled'].includes(l.status)) l.status = 'Open'; l.tracking = trackOf(l); l.tracking.log.push({ at: Date.now(), by: S.user.name, kind: 'carrier', text: 'Carrier removed — file back to Open' }); });
-    S.carrierDraft = null; render();
+    S.carrierDraft = null; render(); });
   },
-  stopTime: el => setStopTime(el.dataset.kind, +el.dataset.i, el.dataset.f, el.value),
-  stopNow: el => setStopTime(el.dataset.kind, +el.dataset.i, el.dataset.f, nowLocal()),
+  fillNow: el => { const inp = document.getElementById(el.dataset.target); if (inp) { inp.value = nowLocal(); inp.focus(); } },
+  saveTimes: el => {
+    const kind = el.dataset.kind, i = +el.dataset.i, id = `${kind}-${i}`;
+    const inV = document.getElementById('inAt-' + id).value, outV = document.getElementById('outAt-' + id).value;
+    if (inV && outV && new Date(outV) < new Date(inV)) { notify('Check the times', 'Check-out is earlier than check-in. Fix one of them and save again.'); return; }
+    const l = S.loads.find(x => x.id === S.tenderId), st = l && l[kind][i]; if (!st) return;
+    if (st.inAt !== inV) setStopTime(kind, i, 'inAt', inV, false);
+    if ((st.outAt || '') !== outV) setStopTime(kind, i, 'outAt', outV, false);
+    render();
+  },
+  addCall: el => {
+    const kind = el.dataset.kind, i = +el.dataset.i, id = `${kind}-${i}`;
+    const who = document.getElementById('who-' + id).value.trim(), text = document.getElementById('note-' + id).value.trim();
+    if (!text) { document.getElementById('note-' + id).focus(); return; }
+    updateLoad(S.tenderId, l => {
+      const st = l[kind][i]; if (!st) return;
+      st.calls = st.calls || []; st.calls.push({ at: Date.now(), by: S.user.name, who, text });
+      const t = trackOf(l); t.log.push({ at: Date.now(), by: S.user.name, kind: 'call', text: `Call · ${kind === 'pickups' ? 'Pickup' : 'Delivery'} ${i + 1} — ${st.name || st.city || 'stop'}${who ? ` · spoke to ${who}` : ''}: ${text}` }); l.tracking = t;
+    });
+    render();
+  },
   pickStop: el => { S.trackDraft.nextStop = el.dataset.key; const sel = document.querySelector('[data-bind="trackDraft.nextStop"]'); if (sel) sel.value = el.dataset.key; refreshDistances(); },
   cond: el => { S.trackDraft.condition = el.dataset.v; document.querySelectorAll('.cond button').forEach(b => { b.className = b.dataset.v === el.dataset.v ? 'on ' + ({ 'On time': 'ok', 'Running late': 'late', 'Breakdown': 'down' }[el.dataset.v]) : ''; }); },
   saveCheck: () => {
@@ -1519,24 +1584,26 @@ const ACT = {
   userRole: el => { S.userDraft.role = el.value; },
   addUser: () => {
     const d = S.userDraft, uname = d.username.trim().toLowerCase();
-    if (!d.name.trim() || !uname || !d.password) { alert('Name, username and password are required.'); return; }
-    if (S.users.some(x => x.username.toLowerCase() === uname)) { alert('That username is already taken.'); return; }
+    if (!d.name.trim() || !uname || !d.password) { notify('Missing info', 'Name, username and password are required.'); return; }
+    if (S.users.some(x => x.username.toLowerCase() === uname)) { notify('Username taken', 'That username is already in use.'); return; }
     const salt = newSalt();
     S.users = [...S.users, { id: 'u-' + uid(), name: d.name.trim(), initials: (d.initials || d.name.split(/\s+/).map(w => w[0]).join('')).toUpperCase().slice(0, 3), username: uname, role: d.role, salt, hash: hashPw(salt, d.password) }];
     S.userDraft = { name: '', initials: '', username: '', password: '', role: 'dispatcher' };
     saveUsers(S.users); render();
   },
-  rmUser: el => { const u = S.users.find(x => x.id === el.dataset.id); if (!u || u.id === S.user.id) return; if (confirm('Remove user ' + u.username + '?')) { S.users = S.users.filter(x => x.id !== u.id); saveUsers(S.users); render(); } },
+  rmUser: el => { const u = S.users.find(x => x.id === el.dataset.id); if (!u || u.id === S.user.id) return; confirmUI('Remove user ' + u.username + '?', u.name + ' will no longer be able to sign in.', 'Remove').then(ok => { if (ok) { S.users = S.users.filter(x => x.id !== u.id); saveUsers(S.users); render(); } }); },
   resetPw: el => {
     const u = S.users.find(x => x.id === el.dataset.id); if (!u) return;
-    const pw = prompt('New password for ' + u.username + ':'); if (!pw) return;
-    u.salt = newSalt(); u.hash = hashPw(u.salt, pw); saveUsers(S.users); alert('Password updated for ' + u.username + '.');
+    dialog({ title: 'New password for ' + u.username, input: 'password', okLabel: 'Set password', placeholder: 'New password' }).then(pw => {
+      if (!pw) return;
+      u.salt = newSalt(); u.hash = hashPw(u.salt, pw); saveUsers(S.users); notify('Password updated', 'New password set for ' + u.username + '.');
+    });
   },
   // directory
   addFac: el => { const k = el.dataset.kind, cur = S.dirDraft[k]; if (!cur.name.trim()) return; S[k] = [...S[k], { id: uid(), ...cur }]; S.dirDraft[k] = blankFac(); persist(); render(); },
   rmFac: el => { const k = el.dataset.kind; S[k] = S[k].filter(x => x.id !== el.dataset.id); persist(); render(); }
 };
-const CHANGE_ACTS = new Set(['dateSet', 'statusFilter', 'draftStatus', 'facility', 'dropIdx', 'userRole', 'sortSel', 'evType', 'stopTime']);
+const CHANGE_ACTS = new Set(['dateSet', 'statusFilter', 'draftStatus', 'facility', 'dropIdx', 'userRole', 'sortSel', 'evType']);
 
 const app = $('#app');
 app.addEventListener('click', e => {
@@ -1560,6 +1627,7 @@ app.addEventListener('input', e => {
 });
 
 app.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.dataset && e.target.dataset.enter) { e.preventDefault(); const b = document.getElementById(e.target.dataset.enter); if (b) b.click(); return; }
   if (!AC.el || e.target !== AC.el) return;
   if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); AC.idx = (AC.idx + (e.key === 'ArrowDown' ? 1 : -1) + AC.items.length) % AC.items.length; document.querySelectorAll('.ac-it').forEach((x, i) => x.classList.toggle('on', i === AC.idx)); }
   else if (e.key === 'Enter') { e.preventDefault(); acPick(AC.idx >= 0 ? AC.idx : 0); }
