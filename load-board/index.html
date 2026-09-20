@@ -295,6 +295,16 @@ body.m .stop-times .dwell { margin-left: 0; flex: 1 1 100%; }
 .pos-tag { font-size: 10px; letter-spacing: 0.06em; padding: 1px 5px; border: 1px solid var(--color-accent); color: var(--color-accent-700); margin-left: 4px; vertical-align: middle; }
 body.m .line-row .puno { flex: 1 1 45%; width: auto; }
 body.m .line-row .pos { flex: 1 1 45%; width: auto; }
+/* carrier directory */
+.car-grid td { font-weight: 500; }
+.car-grid td.file { font-weight: 700; }
+.pct.good { color: #1b6e2a; font-weight: 700; } .pct.warn { color: #b8670a; font-weight: 700; } .pct.bad { color: #c40000; font-weight: 700; }
+.lc .st.good { background: #cdeccd; } .lc .st.warn { background: #ffe1b8; } .lc .st.bad { background: #ffd0d0; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+.tiles .n { font-family: var(--font-heading); font-size: 28px; line-height: 1.1; }
+.offices { display: flex; flex-wrap: wrap; gap: 6px 14px; min-height: 36px; align-items: center; }
+.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+body.m .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 /* status chips */
 .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 8px; }
 .chip-lbl { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent-700); margin-right: 4px; }
@@ -424,7 +434,8 @@ const COMPANY = {
   phone: '(559) 555-0100',
   email: 'dispatch@johansontransportation.com'
 };
-const STORE_KEY = 'jts_loadboard_v6';
+const OFFICES = ['Fresno', 'Dallas', 'Chicago', 'Atlanta']; // branch offices — first one is the default
+const STORE_KEY = 'jts_loadboard_v7';
 const LAYOUT_KEY = 'jts_loadboard_layout';
 const SKIN_KEY = 'jts_loadboard_skin';
 const RAIL_KEY = 'jts_loadboard_rail';
@@ -523,11 +534,12 @@ function sha256(str) {
 }
 const hashPw = (salt, pw) => sha256(salt + ':' + pw);
 const newSalt = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join('');
-const SEED_ADMIN = { id: 'u-dganske', name: 'Drew Ganske', initials: 'DG', username: 'dganske', role: 'admin', salt: '98db597830b13e72d84e6d4b', hash: '1557bc9b621ac3ac8e3a02a9e7d0a743f4cffbb414e30013c2cbab2c8cc58737' };
+const SEED_ADMIN = { id: 'u-dganske', name: 'Drew Ganske', initials: 'DG', username: 'dganske', role: 'admin', office: 'Fresno', salt: '98db597830b13e72d84e6d4b', hash: '1557bc9b621ac3ac8e3a02a9e7d0a743f4cffbb414e30013c2cbab2c8cc58737' };
 function loadUsers() {
   let u = null; try { u = JSON.parse(localStorage.getItem(USERS_KEY)); } catch (e) {}
   if (!Array.isArray(u) || !u.length) u = [SEED_ADMIN];
   if (!u.some(x => x.role === 'admin')) u.unshift(SEED_ADMIN);
+  u.forEach(x => { if (!x.office) x.office = OFFICES[0]; });
   return u;
 }
 function saveUsers(u) { try { localStorage.setItem(USERS_KEY, JSON.stringify(u)); } catch (e) {} }
@@ -640,7 +652,7 @@ function nextFileNo() {
 }
 function blankDraft() {
   const ini = (S.user && S.user.initials) || '';
-  return { id: null, fileNo: nextFileNo(), customer: '', customerEmail: '', status: 'Open', temp: '', fileIn: ini, trIn: ini,
+  return { id: null, fileNo: nextFileNo(), customer: '', customerEmail: '', status: 'Open', temp: '', fileIn: ini, trIn: ini, office: (S.user && S.user.office) || OFFICES[0],
     carrier: blankCarrier(), tracking: blankTracking(),
     pickups: [{ ...blankStop(), lines: [blankLine()] }], drops: [blankStop()],
     linehaul: '', fuel: '', accessorial: '', carrierName: '', carrierEmail: '', createdAt: Date.now() };
@@ -698,12 +710,23 @@ function demoData() {
       linehaul: '1210', fuel: '140', accessorial: '0', ...CARRIER,
       pickups: [{ ...stop(shippers[1], 'test 1234', '2026-08-27', '07:00', ''), lines: [line('Frozen vegetables — mixed', 22, 1760, 39600, 0)] }],
       drops: [stop(receivers[0], 'test 1234', '2026-08-28', '06:30', '')] }];
-  return { shippers, receivers, loads: [...loads, ...demoExtra()] };
+  loads.forEach((l, i) => { l.office = OFFICES[i % 2]; });
+  const carriers = [
+    { id: 'c1', name: 'Ganske Truck', mc: 'MC-884210', dot: '3312077', address: '2210 E Jensen Ave', city: 'Fresno', st: 'CA', zip: '93706', phone: '(559) 555-0180', email: 'dispatch@gansketruck.com', dispatchName: 'Rosa Delgado', dispatchPhone: '(559) 555-0181', ownerName: 'Mike Ganske', ownerPhone: '(559) 555-0189', powerUnits: '42', trailerUnits: '68', equipment: 'Reefer, dry van', offices: ['Fresno', 'Dallas'], salesRep: 'Drew Ganske', status: 'Active', createdAt: Date.now() - 400 * 864e5,
+      notes: [{ at: Date.now() - 12 * 864e5, by: 'Drew Ganske', text: 'Owner wants more Fresno → Texas produce lanes. Can take 5/week starting October.' }, { at: Date.now() - 40 * 864e5, by: 'Drew Ganske', text: 'Rosa is the go-to for same-day coverage. Don\'t call after 6pm PT.' }] },
+    { id: 'c2', name: 'Sierra Reefer Lines', mc: 'MC-702118', dot: '2450912', address: '880 W Shaw Ave', city: 'Clovis', st: 'CA', zip: '93612', phone: '(559) 555-0244', email: 'ops@sierrareefer.example', dispatchName: 'Tom Nakamura', dispatchPhone: '(559) 555-0245', ownerName: 'Alicia Sierra', ownerPhone: '', powerUnits: '18', trailerUnits: '24', equipment: 'Reefer', offices: ['Fresno'], salesRep: 'Drew Ganske', status: 'Active', createdAt: Date.now() - 200 * 864e5, notes: [{ at: Date.now() - 5 * 864e5, by: 'Drew Ganske', text: 'Quoted them the Salinas–Denver lane at $4,100. Waiting on Tom.' }] },
+    { id: 'c3', name: 'Valley Star Transport', mc: 'MC-655400', dot: '2117733', address: '1400 N Golden State Blvd', city: 'Turlock', st: 'CA', zip: '95380', phone: '(209) 555-0133', email: 'dispatch@valleystar.example', dispatchName: 'Priya Shah', dispatchPhone: '(209) 555-0134', ownerName: 'Hector Ruiz', ownerPhone: '(209) 555-0130', powerUnits: '9', trailerUnits: '12', equipment: 'Dry van, flatbed', offices: ['Fresno', 'Chicago'], salesRep: '', status: 'Active', createdAt: Date.now() - 150 * 864e5, notes: [] },
+    { id: 'c4', name: 'Rio Grande Freight', mc: 'MC-911032', dot: '3588120', address: '6100 Mines Rd', city: 'Laredo', st: 'TX', zip: '78045', phone: '(956) 555-0170', email: 'dispatch@riograndefreight.example', dispatchName: 'Luis Cantu', dispatchPhone: '(956) 555-0171', ownerName: 'Marisol Cantu', ownerPhone: '', powerUnits: '27', trailerUnits: '40', equipment: 'Dry van, reefer', offices: ['Dallas'], salesRep: '', status: 'Active', createdAt: Date.now() - 90 * 864e5, notes: [{ at: Date.now() - 2 * 864e5, by: 'Drew Ganske', text: 'Cross-border capable. Ask about Nogales.' }] },
+    { id: 'c5', name: 'Great Lakes Haulers', mc: 'MC-540001', dot: '1892204', address: '3300 S Cicero Ave', city: 'Cicero', st: 'IL', zip: '60804', phone: '(708) 555-0150', email: 'ops@greatlakeshaulers.example', dispatchName: 'Dana Whitfield', dispatchPhone: '(708) 555-0151', ownerName: 'Bill Kowalczyk', ownerPhone: '', powerUnits: '55', trailerUnits: '90', equipment: 'Dry van', offices: ['Chicago'], salesRep: '', status: 'Active', createdAt: Date.now() - 300 * 864e5, notes: [] },
+    { id: 'c6', name: 'Peach State Logistics', mc: 'MC-778902', dot: '2903318', address: '2450 Fulton Industrial Blvd', city: 'Atlanta', st: 'GA', zip: '30336', phone: '(404) 555-0122', email: 'dispatch@peachstate.example', dispatchName: 'Kim Jarrett', dispatchPhone: '(404) 555-0123', ownerName: 'Andre Whitlock', ownerPhone: '', powerUnits: '14', trailerUnits: '20', equipment: 'Reefer', offices: ['Atlanta'], salesRep: '', status: 'Do not use', createdAt: Date.now() - 60 * 864e5, notes: [{ at: Date.now() - 20 * 864e5, by: 'Drew Ganske', text: 'Two temp claims in August. On hold until insurance paperwork clears.' }] }
+  ];
+  return { shippers, receivers, carriers, loads: [...loads, ...demoExtra()] };
 }
 function demoExtra() {
   const CITY = [['FRESNO','CA'],['BAKERSFIELD','CA'],['SALINAS','CA'],['STOCKTON','CA'],['YUMA','AZ'],['NOGALES','AZ'],['MCALLEN','TX'],['LAREDO','TX'],['SPRINGDALE','AR'],['JOPLIN','MO'],['OMAHA','NE'],['DES MOINES','IA'],['GREEN BAY','WI'],['ELK GROVE VLG','IL'],['COLUMBUS','OH'],['GRAND RAPIDS','MI'],['LOUISVILLE','KY'],['NASHVILLE','TN'],['ATLANTA','GA'],['LAKELAND','FL'],['CHARLOTTE','NC'],['RICHMOND','VA'],['ALLENTOWN','PA'],['EDISON','NJ'],['WORCESTER','MA'],['DENVER','CO'],['SALT LAKE CITY','UT'],['BOISE','ID'],['PORTLAND','OR'],['KENT','WA'],['ALBUQUERQUE','NM'],['OKLAHOMA CITY','OK']];
   const COMM = [['Table grapes — 34°F',20,1200,39000],['Melons — 34°F',22,1100,40200],['Leafy greens — 34°F',20,1080,39600],['Stone fruit — 34°F',22,1320,40800],['Citrus — 38°F',24,1440,42000],['Dry grocery',26,2080,44200],['Paper products',24,960,38400],['Canned goods',22,1760,41800],['Beverages',26,1560,43800],['Almonds',24,1200,42600],['Frozen entrées — -10°F',18,1440,32400],['Broccoli — 34°F',20,1000,37500]];
   const ST = ['Quoted','Tendered','Tendered','Booked','Booked','Booked','Dispatched','In Transit','Delivered','Invoiced'];
+  const CARR = ['Ganske Truck', 'Ganske Truck', 'Sierra Reefer Lines', 'Ganske Truck', 'Valley Star Transport', 'Rio Grande Freight', 'Great Lakes Haulers'];
   let seed = 20260908;
   const rnd = n => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; seed &= 0x7fffffff; return seed % n; };
   let fn = 2441000 + rnd(400);
@@ -724,8 +747,15 @@ function demoExtra() {
     const dl = { id: uid(), facilityId: '', name: cap(CITY[b][0]) + ' Distribution Center', address: '4400 Commerce Dr', city: cap(CITY[b][0]), st: CITY[b][1], zip: '', contact: 'Receiving', phone: '', ref: 'test 1234', po: '', date, time: '06:00', notes: '' };
     out.push({ id: 'X' + fileNo, fileNo, fileIn: 'DG', trIn: 'DG', customer: orig, status, temp: /34°F/.test(c[0]) ? '34°F continuous' : '',
       linehaul: String(Math.round(rate * 0.86)), fuel: String(rate - Math.round(rate * 0.86)), accessorial: '0',
-      carrierName: COVERED.includes(status) ? 'Ganske Truck' : '', carrierEmail: COVERED.includes(status) ? 'dispatch@gansketruck.com' : '',
+      carrierName: COVERED.includes(status) ? CARR[rnd(CARR.length)] : '', carrierEmail: COVERED.includes(status) ? 'dispatch@gansketruck.com' : '',
+      office: OFFICES[rnd(OFFICES.length)],
       pickups: [pu], drops: [dl], createdAt: new Date(date + 'T12:00:00').getTime() });
+    const last = out[out.length - 1];
+    if (['Delivered', 'Invoiced'].includes(status)) { // record arrival at the receiver: mostly on time, sometimes late
+      const lateMin = rnd(10) < 7 ? -(15 + rnd(90)) : 20 + rnd(240);
+      const t = new Date(date + 'T06:00:00'); t.setMinutes(t.getMinutes() + lateMin);
+      last.drops[0].inAt = localDT(t.getTime()); const o2 = new Date(t.getTime() + (45 + rnd(90)) * 60000); last.drops[0].outAt = localDT(o2.getTime());
+    }
   }
   return out;
 }
@@ -738,24 +768,25 @@ const S = (() => {
     layout: (() => { try { return localStorage.getItem(LAYOUT_KEY) || 'auto'; } catch (e) { return 'auto'; } })(),
     skin: (() => { try { return localStorage.getItem(SKIN_KEY) || 'industry'; } catch (e) { return 'industry'; } })(),
     railCollapsed: (() => { try { return localStorage.getItem(RAIL_KEY) === '1'; } catch (e) { return false; } })(),
-    user: readSession(), users: loadUsers(), loginErr: '', userDraft: { name: '', initials: '', username: '', password: '', role: 'dispatcher' },
+    user: readSession(), users: loadUsers(), loginErr: '', userDraft: { name: '', initials: '', username: '', password: '', role: 'dispatcher', office: OFFICES[0] },
     view: 'board', search: '', statusFilter: [], onlyDelayed: false, draft: null, tenderId: null, fileTab: 'tender', carrierDraft: null, trackDraft: null,
     sortKey: 'shipDate', sortDir: 1, openMenu: null, hoverMenu: null,
     boardDate: todayISO(), dateScope: 'day', refreshedAt: Date.now(),
     dirDraft: { shippers: blankFac(), receivers: blankFac() },
     loads: p && p.loads ? p.loads : d.loads,
+    carriers: p && p.carriers ? p.carriers : d.carriers, carTab: 'branch', carSearch: '', carrierId: null, carrierTab: 'profile', carDraft: null,
     shippers: p && p.shippers ? p.shippers : d.shippers,
     receivers: p && p.receivers ? p.receivers : d.receivers
   };
 })();
 const isMobile = () => S.layout === 'mobile' || (S.layout === 'auto' && window.innerWidth <= MOBILE_BP);
 function setLayout(v) { S.layout = v; try { localStorage.setItem(LAYOUT_KEY, v); } catch (e) {} render(); }
-function persist() { try { localStorage.setItem(STORE_KEY, JSON.stringify({ loads: S.loads, shippers: S.shippers, receivers: S.receivers })); } catch (e) {} }
+function persist() { try { localStorage.setItem(STORE_KEY, JSON.stringify({ loads: S.loads, shippers: S.shippers, receivers: S.receivers, carriers: S.carriers })); } catch (e) {} }
 function set(patch) { Object.assign(S, patch); persist(); render(); }
 function reloadFromStore() {
   const p = readStore();
   S.refreshedAt = Date.now();
-  if (p && p.loads) { S.loads = p.loads; S.shippers = p.shippers || S.shippers; S.receivers = p.receivers || S.receivers; }
+  if (p && p.loads) { S.loads = p.loads; S.shippers = p.shippers || S.shippers; S.receivers = p.receivers || S.receivers; S.carriers = p.carriers || S.carriers; }
   if (S.view === 'board') renderBoardBody(); else if (S.view !== 'builder') render();
 }
 
@@ -770,7 +801,7 @@ const MENUS = [
   { label: 'EDI', items: [{ label: 'Tendered files', act: go({ view: 'board', statusFilter: ['Tendered'] }) }, { label: 'Quotes awaiting response', act: go({ view: 'board', statusFilter: ['Quoted'] }) }] },
   { label: 'Reports', items: [{ label: 'Booked revenue — all files', act: go({ view: 'board', statusFilter: [] }) }, { label: 'Invoiced files', act: go({ view: 'board', statusFilter: ['Invoiced'] }) }] },
   { label: 'Clients', icon: I.mUsers, items: [{ label: 'Shippers & receivers', act: go({ view: 'directory' }) }] },
-  { label: 'Carriers', icon: I.mTruck, items: [{ label: 'Files by carrier', act: go({ view: 'board', search: '' }) }] },
+  { label: 'Carriers', icon: I.mTruck, items: [{ label: 'Branch carriers', act: go({ view: 'carriers', carTab: 'branch' }) }, { label: 'Corporate carriers', act: go({ view: 'carriers', carTab: 'corporate' }) }, { label: 'Add a carrier…', act: () => { S.carrierId = null; S.carDraft = null; S.carrierTab = 'profile'; set({ view: 'carrier', openMenu: null }); } }] },
   { label: 'PC Miler', icon: I.mPin, items: [{ label: 'Route & mileage (external)', act: go({}) }] },
   { label: 'Sales', items: [{ label: 'Quote a new file', act: () => set({ draft: blankDraft(), view: 'builder', openMenu: null }) }] },
   { label: 'Accounting', items: [{ label: 'Ready to invoice', act: go({ view: 'board', statusFilter: ['Delivered'] }) }, { label: 'Invoiced', act: go({ view: 'board', statusFilter: ['Invoiced'] }) }] },
@@ -801,6 +832,7 @@ function renderShell() {
     <div class="brand">${I.truckNav}<div class="brand-name">${m ? 'JTS Operations' : esc(COMPANY.name)}</div><span class="tag tag-outline">Dispatch</span></div>
     <button class="btn btn-ghost navbtn${S.view === 'board' ? ' on' : ''}" data-act="goBoard">Load board</button>
     <button class="btn btn-ghost navbtn${S.view === 'directory' ? ' on' : ''}" data-act="goDirectory">Shippers &amp; receivers</button>
+    <button class="btn btn-ghost navbtn${S.view === 'carriers' || S.view === 'carrier' ? ' on' : ''}" data-act="goCarriers">Carriers</button>
     <div class="spacer"></div>
     <span class="user-chip">${I.userSm}<span class="uname">${esc(S.user.name)}</span><span class="tag tag-outline">${m ? esc(S.user.initials || S.user.username) : (S.user.role === 'admin' ? 'Admin' : 'Dispatch')}</span></span>
     <button class="btn btn-ghost signout" style="font-size:12.5px" data-act="signOut">Sign out</button>
@@ -826,6 +858,7 @@ function renderTabbar() {
   tb.innerHTML = tab('goBoard', I.list, 'Board', S.view === 'board')
     + `<button class="tab primary" data-act="newLoad">${I.plus18}<span>New load</span></button>`
     + tab('goDirectory', I.building, 'Facilities', S.view === 'directory')
+    + tab('goCarriers', I.truck18, 'Carriers', S.view === 'carriers' || S.view === 'carrier')
     + tab('goUsers', I.gear18, 'Settings', S.view === 'users');
 }
 
@@ -1247,7 +1280,7 @@ function renderTender(l) {
           <div style="font-size:15px;font-weight:600">${esc(l.carrierName || '________________')}</div>
           <div class="text-muted" style="font-size:12px">${esc(l.carrierEmail || '—')}</div>
           ${rig.map(r => `<div style="font-size:12px">${esc(r)}</div>`).join('')}
-          <div class="text-muted" style="font-size:12px;margin-top:6px">Customer: ${esc(l.customer || '—')}</div>
+          <div class="text-muted" style="font-size:12px;margin-top:6px">Customer: ${esc(l.customer || '—')}${l.office ? ` · ${esc(l.office)} office` : ''}</div>
           ${l.temp ? `<div style="font-size:12px;margin-top:6px"><strong>Temperature:</strong> ${esc(l.temp)}</div>` : ''}
         </div>
         <div style="font-size:13px">
@@ -1274,6 +1307,134 @@ function renderTender(l) {
         <div style="width:180px"><div class="rule"></div><div class="text-muted" style="font-size:11px">Date</div></div>
       </div>
     </div>`;
+}
+
+// ── Carrier directory ──────────────────────────────────────────────────────
+const blankCarrierRec = () => ({ id: null, name: '', mc: '', dot: '', address: '', city: '', st: '', zip: '', phone: '', email: '', dispatchName: '', dispatchPhone: '', ownerName: '', ownerPhone: '', powerUnits: '', trailerUnits: '', equipment: '', offices: [(S.user && S.user.office) || OFFICES[0]], salesRep: '', status: 'Active', notes: [], createdAt: 0 });
+const carKey = n => String(n || '').trim().toLowerCase();
+const findCarrier = name => S.carriers.find(c => carKey(c.name) === carKey(name));
+function isOnTime(l) { // null = can't tell yet
+  const d = l.drops[l.drops.length - 1]; if (!d) return null;
+  const arr = d.inAt || d.outAt;
+  if (arr && d.date) { const appt = parseLocal(d.date + 'T' + (d.time || '23:59')); const a = parseLocal(arr); if (appt && a) return a <= appt; }
+  const c = (l.tracking || {}).condition;
+  if (c === 'Running late' || c === 'Breakdown') return false;
+  if (c === 'On time' && (l.tracking || {}).updatedAt) return true;
+  return null;
+}
+function carrierStats(name) {
+  const loads = S.loads.filter(l => carKey(l.carrierName) === carKey(name)).sort((a, b) => ((b.pickups[0] || {}).date || '').localeCompare((a.pickups[0] || {}).date || ''));
+  const byOffice = {}; loads.forEach(l => { const o = l.office || 'Unassigned'; byOffice[o] = (byOffice[o] || 0) + 1; });
+  const delivered = loads.filter(l => ['Delivered', 'Invoiced'].includes(l.status));
+  const judged = delivered.map(l => isOnTime(l)).filter(x => x !== null);
+  const onTimePct = judged.length ? Math.round(100 * judged.filter(Boolean).length / judged.length) : null;
+  const mine = (S.user && S.user.office) || OFFICES[0];
+  return { loads, byOffice, delivered: delivered.length, judged: judged.length, onTimePct, myOffice: byOffice[mine] || 0 };
+}
+function upsertCarrierFromLoad(name, email) { // a carrier saved on a file joins the directory for this office
+  const n = String(name || '').trim(); if (!n) return;
+  const office = (S.user && S.user.office) || OFFICES[0];
+  const c = findCarrier(n);
+  if (c) { if (!c.offices.includes(office)) c.offices.push(office); if (!c.email && email) c.email = email; return; }
+  S.carriers.push({ ...blankCarrierRec(), id: 'c-' + uid(), name: n, email: email || '', offices: [office], createdAt: Date.now() });
+}
+const pctClass = p => p == null ? '' : p >= 95 ? 'good' : p >= 85 ? 'warn' : 'bad';
+function renderCarriers() {
+  const mine = (S.user && S.user.office) || OFFICES[0], q = S.carSearch.trim().toLowerCase();
+  const list = S.carriers.filter(c => S.carTab === 'corporate' || (c.offices || []).includes(mine)).filter(c => !q || [c.name, c.mc, c.dot, c.city, c.st, c.dispatchName, c.ownerName].join(' ').toLowerCase().includes(q)).sort((a, b) => a.name.localeCompare(b.name));
+  const rows = list.map(c => { const st = carrierStats(c.name); return { c, st }; });
+  const m = isMobile();
+  return `<main id="carriers">
+    <div class="page-head" style="margin-bottom:var(--space-3)">
+      <h1 style="font-size:28px">${S.carTab === 'corporate' ? 'Corporate carriers' : 'Branch carriers'}</h1>
+      <span class="text-muted" style="font-size:13px">${S.carTab === 'corporate' ? 'Master directory — every carrier across all JTS offices' : `Carriers used by the ${esc(mine)} office`}</span>
+      <div class="spacer"></div>
+      <button class="btn btn-primary blueprint" data-act="carNew">${CORNERS}${I.plus}Add carrier</button>
+    </div>
+    <div class="ctl-row no-print" style="margin-bottom:var(--space-3)">
+      <div class="seg"><button class="${S.carTab === 'branch' ? 'on' : ''}" data-act="carTab" data-v="branch">Branch carriers</button><button class="${S.carTab === 'corporate' ? 'on' : ''}" data-act="carTab" data-v="corporate">Corporate carriers</button></div>
+      <div class="search-wrap" style="min-width:220px">${I.search}<input class="input" placeholder="Search name, MC #, DOT #, city, dispatch, owner…" value="${esc(S.carSearch)}" data-bind="carSearch"></div>
+      <div class="text-muted" style="font-size:12px;flex:none">${rows.length} carrier${rows.length === 1 ? '' : 's'}</div>
+    </div>
+    ${m ? `<div class="cards" style="display:flex">${rows.map(({ c, st }) => `<div class="lc car-card" data-act="carOpen" data-id="${esc(c.id)}">
+        <div class="row"><span class="file">${esc(c.name)}</span>${c.status === 'Do not use' ? '<span class="st" style="background:#f00000;color:#fff">DO NOT USE</span>' : `<span class="st ${pctClass(st.onTimePct)}">${st.onTimePct == null ? '— on time' : st.onTimePct + '% on time'}</span>`}</div>
+        <div class="row"><span>${esc(c.mc || 'MC —')} · DOT ${esc(c.dot || '—')} · ${esc(c.city)}, ${esc(c.st)}</span></div>
+        <div class="row"><span>Dispatch ${esc(c.dispatchName || '—')}${c.dispatchPhone ? ' · ' + esc(c.dispatchPhone) : ''}</span></div>
+        <div class="row"><span>${fmt(num(c.powerUnits))} trucks · ${fmt(num(c.trailerUnits))} trailers</span><span class="rate">${st.loads.length} loads</span></div>
+      </div>`).join('')}${rows.length ? '' : '<div class="text-muted empty">No carriers here yet.</div>'}</div>`
+    : `<div class="grid-wrap"><table class="grid car-grid"><thead><tr>
+        <th class="l">Carrier</th><th class="c">MC #</th><th class="c">DOT #</th><th class="l">City</th><th class="c">ST</th><th class="l">Dispatch</th><th class="l">Owner</th><th class="r">Trucks</th><th class="r">Trailers</th><th class="r">Loads</th><th class="r">${esc(mine)}</th><th class="c">On time</th><th class="l">Offices</th><th class="c">Status</th>
+      </tr></thead><tbody>${rows.map(({ c, st }) => `<tr data-act="carOpen" data-id="${esc(c.id)}" style="cursor:pointer">
+        <td class="l file">${esc(c.name)}</td><td class="c">${esc(c.mc || '—')}</td><td class="c">${esc(c.dot || '—')}</td><td class="l">${esc(c.city || '—')}</td><td class="c">${esc(c.st || '')}</td>
+        <td class="l" style="font-weight:600">${esc(c.dispatchName || '—')}${c.dispatchPhone ? `<div class="text-muted" style="font-weight:400;font-size:11px">${esc(c.dispatchPhone)}</div>` : ''}</td>
+        <td class="l" style="font-weight:600">${esc(c.ownerName || '—')}</td><td class="r">${fmt(num(c.powerUnits))}</td><td class="r">${fmt(num(c.trailerUnits))}</td>
+        <td class="r">${st.loads.length}</td><td class="r">${st.myOffice}</td>
+        <td class="c pct ${pctClass(st.onTimePct)}">${st.onTimePct == null ? '—' : st.onTimePct + '%'}</td>
+        <td class="l" style="font-weight:500">${(c.offices || []).map(o => `<span class="tag tag-outline" style="font-size:10px;padding:0 6px;margin-right:3px">${esc(o)}</span>`).join('')}</td>
+        <td class="c status${c.status === 'Do not use' ? ' hot-txt' : ''}">${esc(c.status || 'Active')}</td>
+      </tr>`).join('')}</tbody></table>${rows.length ? '' : '<div class="text-muted empty">No carriers here yet. Add one, or save a carrier on a file and it lands here for your office.</div>'}</div>`}
+  </main>`;
+}
+function renderCarrierDetail() {
+  const isNew = !S.carrierId;
+  const c = isNew ? null : S.carriers.find(x => x.id === S.carrierId);
+  if (!isNew && !c) { S.view = 'carriers'; return renderCarriers(); }
+  if (!S.carDraft || S.carDraft.id !== (c ? c.id : null)) S.carDraft = c ? clone(c) : blankCarrierRec();
+  const d = S.carDraft, st = c ? carrierStats(c.name) : null;
+  const tabs = [['profile', 'Profile', c ? (c.mc || 'No MC #') : 'New carrier', I.truck18], ['history', 'Load history', st ? `${st.loads.length} loads · ${st.onTimePct == null ? '—' : st.onTimePct + '% on time'}` : 'Save first', I.doc], ['notes', 'Sales notes', c ? `${(c.notes || []).length} note${(c.notes || []).length === 1 ? '' : 's'}` : 'Save first', I.pin18]];
+  const col = S.railCollapsed && !isMobile();
+  const rail = `<div class="rail no-print${col ? ' collapsed' : ''}">${tabs.map(([k, label, sub, ic]) => `<button class="${S.carrierTab === k ? 'on' : ''}" data-act="carrierTab" data-tab="${k}" ${isNew && k !== 'profile' ? 'disabled' : ''} title="${label} — ${esc(sub)}"><span class="ic">${ic}</span><span class="txt">${label}<span class="sub">${esc(sub)}</span></span></button>`).join('')}
+    <button class="rail-toggle" data-act="railToggle">${col ? I.chevsR : I.chevsL}<span class="txt">Collapse</span></button></div>`;
+  const f = (k, span, label, extra = '') => `<div class="field${span <= 2 ? ' half' : ''}" style="grid-column:span ${span}"><label>${label}</label><input class="input" ${extra} value="${esc(d[k] ?? '')}" data-bind="carDraft.${k}"></div>`;
+  let body = '';
+  if (S.carrierTab === 'profile' || isNew) body = `<div class="card blueprint">${CORNERS}
+      <div class="card-kicker">Carrier profile</div>
+      <div class="grid6">
+        ${f('name', 4, 'Carrier name', 'placeholder="Legal / DBA name"')}
+        <div class="field half" style="grid-column:span 2"><label>Status</label><select class="input" data-bind="carDraft.status"><option${d.status === 'Active' ? ' selected' : ''}>Active</option><option${d.status === 'Pending setup' ? ' selected' : ''}>Pending setup</option><option${d.status === 'Do not use' ? ' selected' : ''}>Do not use</option></select></div>
+        ${f('mc', 2, 'MC #', 'placeholder="MC-000000"')}${f('dot', 2, 'DOT #', 'placeholder="0000000"')}${f('equipment', 2, 'Equipment', 'placeholder="Reefer, dry van, flatbed…"')}
+        ${f('address', 3, 'Street address')}<div class="field half ac" style="grid-column:span 1"><label>City</label><input class="input" autocomplete="off" value="${esc(d.city ?? '')}" data-bind="carDraft.city" data-ac="carcity"></div>${f('st', 1, 'State')}${f('zip', 1, 'ZIP')}
+        ${f('phone', 2, 'Main phone', 'type="tel"')}${f('email', 4, 'Dispatch email', 'type="email"')}
+        ${f('dispatchName', 3, 'Dispatch name')}${f('dispatchPhone', 3, 'Dispatch phone', 'type="tel"')}
+        ${f('ownerName', 3, 'Owner name')}${f('ownerPhone', 3, 'Owner phone', 'type="tel"')}
+        ${f('powerUnits', 1, 'Power units', 'type="number" min="0" inputmode="numeric"')}${f('trailerUnits', 1, 'Trailer units', 'type="number" min="0" inputmode="numeric"')}
+        ${f('salesRep', 2, 'JTS truck sales rep')}
+        <div class="field" style="grid-column:span 2"><label>Offices that use this carrier</label><div class="offices">${OFFICES.map(o => `<label class="chk"><input type="checkbox" data-act="carOffice" data-v="${esc(o)}"${(d.offices || []).includes(o) ? ' checked' : ''}> ${esc(o)}</label>`).join('')}</div></div>
+      </div>
+      <div class="ctl-row" style="margin-top:var(--space-2)">
+        <button class="btn btn-primary blueprint" data-act="carSave">${CORNERS}${isNew ? 'Add to directory' : 'Save carrier'}</button>
+        <button class="btn btn-secondary" data-act="carBack">${isNew ? 'Cancel' : 'Back to directory'}</button>
+        <div class="spacer"></div>
+        ${isNew ? '' : `<button class="btn btn-ghost" style="color:#c40000" data-act="carDelete">Remove from directory</button>`}
+      </div>
+    </div>`;
+  else if (S.carrierTab === 'history') body = `<div class="card blueprint" style="margin-bottom:var(--space-4)">${CORNERS}
+      <div class="card-kicker">Load history · ${esc(c.name)}</div>
+      <div class="tiles">
+        <div><div class="kicker">Loads hauled</div><div class="n">${st.loads.length}</div></div>
+        <div><div class="kicker">Delivered</div><div class="n">${st.delivered}</div></div>
+        <div><div class="kicker">On-time delivery</div><div class="n pct ${pctClass(st.onTimePct)}">${st.onTimePct == null ? '—' : st.onTimePct + '%'}</div><div class="text-muted" style="font-size:11px">${st.judged} of ${st.delivered} delivered with arrival data</div></div>
+        <div><div class="kicker">By office</div><div style="font-size:13px;line-height:1.5">${Object.keys(st.byOffice).length ? Object.entries(st.byOffice).sort((a, b) => b[1] - a[1]).map(([o, n]) => `<div><strong>${n}</strong> ${esc(o)}</div>`).join('') : '<span class="text-muted">—</span>'}</div></div>
+      </div>
+    </div>
+    <div class="grid-wrap"><table class="grid"><thead><tr><th class="c">File #</th><th class="c">Ship date</th><th class="l">Office</th><th class="l">Originator</th><th class="l">Route</th><th class="c">Status</th><th class="c">Delivery</th><th class="r">Rate</th></tr></thead><tbody>
+      ${st.loads.map(l => { const ot = isOnTime(l), del = ['Delivered', 'Invoiced'].includes(l.status); const p0 = l.pickups[0] || {}; return `<tr><td class="c file" data-act="view" data-id="${esc(l.id)}" title="Open file">${esc(l.fileNo)}</td><td class="c">${p0.date ? p0.date.slice(5).replace('-', '/') + '/' + p0.date.slice(2, 4) : '—'}</td><td class="l">${esc(l.office || '—')}</td><td class="l">${esc((l.customer || '—').toUpperCase())}</td><td class="l" style="font-weight:600">${esc(route(l))}</td><td class="c status">${esc(l.status)}</td><td class="c pct ${del ? (ot === true ? 'good' : ot === false ? 'bad' : '') : ''}">${del ? (ot === true ? 'On time' : ot === false ? 'Late' : 'No arrival data') : '—'}</td><td class="r">${money(rateTotal(l))}</td></tr>`; }).join('')}
+    </tbody></table>${st.loads.length ? '' : '<div class="text-muted empty">No loads on file for this carrier yet. Assign them on a file under Add carrier and they show up here.</div>'}</div>`;
+  else body = `<div class="card blueprint" style="margin-bottom:var(--space-4)">${CORNERS}
+      <div class="card-kicker">Truck sales notes · ${esc(c.name)}</div>
+      <div class="text-muted" style="font-size:12.5px;margin-top:-4px">Internal. Lanes they want, rates discussed, who to call, red flags. Stamped with your name and time.</div>
+      <div class="call-form"><input class="input" id="carnote-text" placeholder="Type a note and press Enter…" autocomplete="off" data-enter="carnote-btn" style="flex:1 1 100%"><button class="btn btn-primary btn-sm" id="carnote-btn" data-act="carNote">Add note</button></div>
+    </div>
+    <div class="card blueprint">${CORNERS}
+      <div class="log">${(c.notes || []).length ? c.notes.slice().reverse().map(n => `<div><time>${fmtWhen(n.at)} · <strong>${esc(n.by || '')}</strong></time><div>${esc(n.text)}</div></div>`).join('') : '<div class="text-muted" style="font-size:13px">No notes yet.</div>'}</div>
+    </div>`;
+  return `<main id="tender-wrap"><div class="file-layout${col ? ' collapsed' : ''}">${rail}<div class="file-body">
+    <div class="ctl-row no-print" style="margin-bottom:var(--space-4)">
+      <button class="btn btn-secondary" data-act="carBack">${I.back}Carriers</button>
+      <span style="font-family:var(--font-heading);font-weight:600;font-size:22px;letter-spacing:0.02em">${isNew ? 'New carrier' : esc(c.name)}</span>
+      ${c && c.status === 'Do not use' ? '<span class="tag" style="background:#f00000;color:#fff">DO NOT USE</span>' : ''}
+      ${c ? `<span class="tag tag-neutral">${esc(c.mc || 'MC —')} · DOT ${esc(c.dot || '—')}</span>` : ''}
+    </div>${body}</div></div></main>`;
 }
 
 // ── Places gazetteer (US cities & ZIPs, embedded below) ────────────────────
@@ -1345,6 +1506,9 @@ function acPick(i) {
   if (input.dataset.ac === 'track') {
     const label = placeLabel(p, zip); input.value = label; S.trackDraft.location = label; S.trackDraft.geo = { lat: p.lat, lon: p.lon };
     refreshDistances();
+  } else if (input.dataset.ac === 'carcity') {
+    S.carDraft.city = p.name; S.carDraft.st = p.st; if (!S.carDraft.zip) S.carDraft.zip = zip || p.zips.split(/[,-]/)[0];
+    input.value = p.name; const g = input.closest('.grid6'); g.querySelector('[data-bind="carDraft.st"]').value = S.carDraft.st; g.querySelector('[data-bind="carDraft.zip"]').value = S.carDraft.zip;
   } else if (input.dataset.ac === 'city') {
     const kind = input.dataset.kind, idx = +input.dataset.i, st = S.draft[kind][idx];
     st.city = p.name; st.st = p.st; if (!st.zip) st.zip = zip || p.zips.split(/[,-]/)[0];
@@ -1410,6 +1574,7 @@ function renderCarrierTab(l) {
     <div class="card-kicker">Carrier assignment · File ${esc(l.fileNo)}</div>
     <div class="text-muted" style="font-size:12.5px;margin-top:-4px">Saving a carrier on an Open, Quoted or Tendered file moves it to Booked. Driver and equipment print on the tender.</div>
     <div class="grid6">
+      <div class="field" style="grid-column:span 6"><label>From the carrier directory</label><select class="input" data-act="carPick"><option value="">Pick a carrier — or type a new one below (it joins the directory when you save)</option>${S.carriers.slice().sort((a, b) => a.name.localeCompare(b.name)).map(c => `<option value="${esc(c.id)}"${carKey(c.name) === carKey(d.name) ? ' selected' : ''}${c.status === 'Do not use' ? ' disabled' : ''}>${esc(c.name)}${c.status === 'Do not use' ? ' — DO NOT USE' : ''} · ${esc(c.mc || 'MC —')} · ${esc(c.city || '')}${c.st ? ', ' + esc(c.st) : ''}</option>`).join('')}</select></div>
       ${f('name', 4, 'Carrier name', 'placeholder="Carrier / MC name"')}
       ${f('email', 2, 'Carrier dispatch email', 'type="email" placeholder="dispatch@carrier.com"')}
       ${f('driver', 3, 'Driver name')}
@@ -1570,7 +1735,7 @@ function renderUsers() {
         ${S.users.map(u => `<div class="fac">
           <div style="flex:1">
             <div style="font-weight:600;font-size:14px">${esc(u.name)} <span class="text-muted" style="font-weight:400;font-size:12px">· ${esc(u.initials || '')}</span></div>
-            <div style="font-size:12px">${esc(u.username)} <span class="tag ${u.role === 'admin' ? 'tag-accent' : 'tag-neutral'} role" style="margin-left:6px">${u.role === 'admin' ? 'Admin' : 'Dispatcher'}</span></div>
+            <div style="font-size:12px">${esc(u.username)} <span class="tag ${u.role === 'admin' ? 'tag-accent' : 'tag-neutral'} role" style="margin-left:6px">${u.role === 'admin' ? 'Admin' : 'Dispatcher'}</span> <span class="tag tag-outline role" style="margin-left:4px">${esc(u.office || '')}</span></div>
           </div>
           <button class="btn btn-ghost" style="font-size:12px" data-act="resetPw" data-id="${esc(u.id)}">Reset password</button>
           ${u.id === S.user.id ? '' : `<button class="btn btn-icon btn-ghost" title="Remove user" data-act="rmUser" data-id="${esc(u.id)}">${I.trash}</button>`}
@@ -1579,7 +1744,8 @@ function renderUsers() {
       <div class="grid6 dir-form">
         ${f('name', 3, 'Full name')}
         ${f('initials', 1, 'Initials', 'maxlength="3"')}
-        <div class="field" style="grid-column:span 2"><label>Role</label><select class="input" data-act="userRole"><option value="dispatcher"${d.role === 'dispatcher' ? ' selected' : ''}>Dispatcher</option><option value="admin"${d.role === 'admin' ? ' selected' : ''}>Admin</option></select></div>
+        <div class="field" style="grid-column:span 1"><label>Role</label><select class="input" data-act="userRole"><option value="dispatcher"${d.role === 'dispatcher' ? ' selected' : ''}>Dispatcher</option><option value="admin"${d.role === 'admin' ? ' selected' : ''}>Admin</option></select></div>
+        <div class="field" style="grid-column:span 1"><label>Office</label><select class="input" data-act="userOffice">${OFFICES.map(o => `<option${d.office === o ? ' selected' : ''}>${o}</option>`).join('')}</select></div>
         ${f('username', 3, 'Username', 'autocomplete="off"')}
         ${f('password', 3, 'Password', 'type="password" autocomplete="new-password"')}
         <button class="btn btn-primary blueprint" style="grid-column:span 6" data-act="addUser">${CORNERS}${I.plus}Add user</button>
@@ -1611,6 +1777,8 @@ function render() {
   else if (S.view === 'tender') { v.innerHTML = renderFile(S.loads.find(l => l.id === S.tenderId)); if (S.fileTab === 'tracking') refreshDistances(); }
   else if (S.view === 'directory') v.innerHTML = renderDirectory();
   else if (S.view === 'users') v.innerHTML = renderUsers();
+  else if (S.view === 'carriers') v.innerHTML = renderCarriers();
+  else if (S.view === 'carrier') v.innerHTML = renderCarrierDetail();
   measureShell();
 }
 function measureShell() {
@@ -1676,6 +1844,7 @@ const ACT = {
       if (l.carrierName && HOT.includes(l.status)) l.status = 'Booked';
       l.tracking = trackOf(l); l.tracking.log.push({ at: Date.now(), by: S.user.name, kind: 'carrier', text: `Carrier ${l.carrierName || '(blank)'} assigned${d.driver ? ` · Driver ${d.driver}` : ''}${d.tractor ? ` · Tractor ${d.tractor}` : ''}${d.trailer ? ` / Trailer ${d.trailer}` : ''}` });
     });
+    upsertCarrierFromLoad(d.name, d.email); persist();
     S.carrierDraft = null; render();
   },
   resetCarrier: () => { S.carrierDraft = null; render(); },
@@ -1738,17 +1907,37 @@ const ACT = {
     window.location.href = href;
     render();
   },
+  // carrier directory
+  goCarriers: () => { set({ view: 'carriers', openMenu: null }); window.scrollTo(0, 0); },
+  carTab: el => { S.carTab = el.dataset.v; render(); },
+  carOpen: el => { S.carrierId = el.dataset.id; S.carDraft = null; S.carrierTab = 'profile'; set({ view: 'carrier' }); window.scrollTo(0, 0); },
+  carNew: () => { S.carrierId = null; S.carDraft = null; S.carrierTab = 'profile'; set({ view: 'carrier' }); window.scrollTo(0, 0); },
+  carBack: () => { S.carDraft = null; set({ view: 'carriers' }); },
+  carrierTab: el => { S.carrierTab = el.dataset.tab; render(); },
+  carOffice: el => { const o = el.dataset.v, arr = S.carDraft.offices || []; S.carDraft.offices = el.checked ? [...new Set([...arr, o])] : arr.filter(x => x !== o); },
+  carSave: () => {
+    const d = S.carDraft; if (!d.name.trim()) { notify('Carrier name required', 'Give the carrier a name before saving.'); return; }
+    const dupe = S.carriers.find(c => carKey(c.name) === carKey(d.name) && c.id !== d.id);
+    if (dupe) { notify('Already in the directory', `${dupe.name} is already listed. Open that record instead of adding a duplicate.`); return; }
+    ['powerUnits', 'trailerUnits'].forEach(k => { d[k] = String(d[k] || '').trim(); });
+    if (!d.id) { d.id = 'c-' + uid(); d.createdAt = Date.now(); d.notes = d.notes || []; S.carriers.push(d); } else S.carriers = S.carriers.map(c => c.id === d.id ? { ...c, ...d, notes: c.notes || [] } : c);
+    S.carrierId = d.id; S.carDraft = null; persist(); render(); notify('Saved', `${d.name} is in the directory${(d.offices || []).length ? ' for ' + d.offices.join(', ') : ''}.`);
+  },
+  carDelete: () => { const c = S.carriers.find(x => x.id === S.carrierId); if (!c) return; confirmUI('Remove ' + c.name + ' from the directory?', 'Load history stays on the files; only the directory record and its notes are removed.', 'Remove').then(ok => { if (!ok) return; S.carriers = S.carriers.filter(x => x.id !== c.id); S.carrierId = null; S.carDraft = null; persist(); set({ view: 'carriers' }); }); },
+  carNote: () => { const inp = document.getElementById('carnote-text'); const text = (inp.value || '').trim(); if (!text) { inp.focus(); return; } const c = S.carriers.find(x => x.id === S.carrierId); if (!c) return; c.notes = c.notes || []; c.notes.push({ at: Date.now(), by: S.user.name, text }); persist(); render(); },
+  carPick: el => { const c = S.carriers.find(x => x.id === el.value); if (!c) return; const d = S.carrierDraft; d.name = c.name; d.email = c.email || d.email; const g = document.querySelector('[data-bind="carrierDraft.name"]'); if (g) g.value = d.name; const e = document.querySelector('[data-bind="carrierDraft.email"]'); if (e) e.value = d.email; },
   // auth + users
   goUsers: () => { set({ view: 'users', openMenu: null }); window.scrollTo(0, 0); },
   signOut: () => { clearSession(); S.user = null; S.draft = null; S.view = 'board'; S.openMenu = null; render(); },
   userRole: el => { S.userDraft.role = el.value; },
+  userOffice: el => { S.userDraft.office = el.value; },
   addUser: () => {
     const d = S.userDraft, uname = d.username.trim().toLowerCase();
     if (!d.name.trim() || !uname || !d.password) { notify('Missing info', 'Name, username and password are required.'); return; }
     if (S.users.some(x => x.username.toLowerCase() === uname)) { notify('Username taken', 'That username is already in use.'); return; }
     const salt = newSalt();
-    S.users = [...S.users, { id: 'u-' + uid(), name: d.name.trim(), initials: (d.initials || d.name.split(/\s+/).map(w => w[0]).join('')).toUpperCase().slice(0, 3), username: uname, role: d.role, salt, hash: hashPw(salt, d.password) }];
-    S.userDraft = { name: '', initials: '', username: '', password: '', role: 'dispatcher' };
+    S.users = [...S.users, { id: 'u-' + uid(), name: d.name.trim(), initials: (d.initials || d.name.split(/\s+/).map(w => w[0]).join('')).toUpperCase().slice(0, 3), username: uname, role: d.role, office: d.office || OFFICES[0], salt, hash: hashPw(salt, d.password) }];
+    S.userDraft = { name: '', initials: '', username: '', password: '', role: 'dispatcher', office: OFFICES[0] };
     saveUsers(S.users); render();
   },
   rmUser: el => { const u = S.users.find(x => x.id === el.dataset.id); if (!u || u.id === S.user.id) return; confirmUI('Remove user ' + u.username + '?', u.name + ' will no longer be able to sign in.', 'Remove').then(ok => { if (ok) { S.users = S.users.filter(x => x.id !== u.id); saveUsers(S.users); render(); } }); },
@@ -1763,7 +1952,7 @@ const ACT = {
   addFac: el => { const k = el.dataset.kind, cur = S.dirDraft[k]; if (!cur.name.trim()) return; S[k] = [...S[k], { id: uid(), ...cur }]; S.dirDraft[k] = blankFac(); persist(); render(); },
   rmFac: el => { const k = el.dataset.kind; S[k] = S[k].filter(x => x.id !== el.dataset.id); persist(); render(); }
 };
-const CHANGE_ACTS = new Set(['dateSet', 'draftStatus', 'facility', 'dropIdx', 'userRole', 'sortSel', 'evType']);
+const CHANGE_ACTS = new Set(['dateSet', 'draftStatus', 'facility', 'dropIdx', 'userRole', 'userOffice', 'carPick', 'carOffice', 'sortSel', 'evType']);
 
 const app = $('#app');
 app.addEventListener('click', e => {
@@ -1782,6 +1971,7 @@ app.addEventListener('input', e => {
   setPath(S, path, el.value);
   if (el.dataset.ac) { if (el.dataset.ac === 'track') S.trackDraft.geo = null; acShow(el); }
   if (path === 'search') renderBoardBody();
+  else if (path === 'carSearch') { const v = $('#view'); const y = window.scrollY; v.innerHTML = renderCarriers(); window.scrollTo(0, y); const inp = document.querySelector('[data-bind="carSearch"]'); if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } }
   else if (path === 'trackDraft.nextStop') refreshDistances();
   else if (path.startsWith('draft.')) builderDerived();
 });
