@@ -206,6 +206,32 @@ main { width: 100%; margin: 0 auto; }
 .sig { display: flex; gap: var(--space-6); margin-top: var(--space-2); }
 .sig .rule { border-bottom: 1px solid var(--color-text); height: 26px; }
 
+/* ── File view rail ─────────────────────────────────────────────────────── */
+#tender-wrap { max-width: 1160px; }
+.file-layout { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+.rail { display: flex; flex-direction: column; gap: 4px; position: sticky; top: calc(var(--shell-h) + 12px); }
+.rail button { text-align: left; font-family: var(--font-heading); font-weight: 600; font-size: 14px; letter-spacing: 0.03em; text-transform: uppercase; padding: 9px 12px; background: #fbfaf8; border: 1px solid #a8a49d; color: var(--color-text); cursor: pointer; line-height: 1.2; }
+.rail button:hover { background: #dfe7ef; }
+.rail button.on { background: var(--color-accent); color: #fff; border-color: var(--color-accent); }
+.rail .sub { display: block; font-family: var(--font-body); font-weight: 400; font-size: 11px; text-transform: none; letter-spacing: 0; opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cond { display: flex; }
+.cond button { flex: 1; padding: 8px 10px; font-size: 13px; font-family: var(--font-body); cursor: pointer; border: 1px solid #a8a49d; background: #fbfaf8; color: #1b1d1e; }
+.cond button + button { border-left: none; }
+.cond button.on { color: #fff; font-weight: 700; }
+.cond button.on.ok { background: #2e7d32; border-color: #2e7d32; }
+.cond button.on.late { background: #c47a00; border-color: #c47a00; }
+.cond button.on.down { background: #c40000; border-color: #c40000; }
+.log { display: flex; flex-direction: column; }
+.log > div { padding: 8px 0; border-top: 1px solid var(--color-divider); font-size: 13px; }
+.log time { display: block; font-size: 11px; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+.grid td.status .late, .lc .st .late { color: #c47a00; font-weight: 700; }
+.grid td.status .down, .lc .st .down { color: #c40000; font-weight: 700; }
+.lc.hot .st .late, .lc.hot .st .down { color: #fff; }
+body.m .file-layout { grid-template-columns: 1fr; }
+body.m .rail { position: static; flex-direction: row; }
+body.m .rail button { flex: 1; text-align: center; padding: 8px 4px; font-size: 12px; }
+body.m .rail .sub { display: none; }
+
 /* ── Directory ──────────────────────────────────────────────────────────── */
 #directory { max-width: 1160px; padding: var(--space-6) var(--space-6) var(--space-8); }
 .dir-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); align-items: start; }
@@ -250,7 +276,7 @@ body.m .cards { display: flex; flex-direction: column; gap: 8px; }
 .lc .rate { margin-left: auto; font-weight: 700; flex: none; }
 .lc .acts { display: flex; gap: 4px; margin-top: 4px; }
 .lc .acts .btn { min-height: 0; padding: 3px 10px; font-size: 12px; }
-body.m .grid6 { grid-template-columns: repeat(2, 1fr); }
+body.m .grid6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 body.m .grid6 > * { grid-column: span 2 !important; }
 body.m .grid6 > .half { grid-column: span 1 !important; }
 body.m .dir-grid, body.m .t-band { grid-template-columns: 1fr; }
@@ -307,11 +333,11 @@ const COMPANY = {
   phone: '(559) 555-0100',
   email: 'dispatch@johansontransportation.com'
 };
-const STORE_KEY = 'jts_loadboard_v2';
+const STORE_KEY = 'jts_loadboard_v3';
 const LAYOUT_KEY = 'jts_loadboard_layout';
 const MOBILE_BP = 760;
-const STATUSES = ['Quoted', 'Tendered', 'Booked', 'Dispatched', 'In Transit', 'Delivered', 'Invoiced', 'Cancelled'];
-const HOT = ['Quoted', 'Tendered'];
+const STATUSES = ['Open', 'Quoted', 'Tendered', 'Booked', 'Dispatched', 'In Transit', 'Delivered', 'Invoiced', 'Cancelled'];
+const HOT = ['Open', 'Quoted', 'Tendered'];
 const COVERED = ['Booked', 'Dispatched', 'In Transit', 'Delivered', 'Invoiced'];
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -421,6 +447,12 @@ const CORNERS = '<i class="corner tl"></i><i class="corner tr"></i><i class="cor
 // ── Data model helpers ─────────────────────────────────────────────────────
 const blankFac = () => ({ name: '', address: '', city: '', st: '', zip: '', contact: '', phone: '' });
 const blankLine = () => ({ id: uid(), commodity: '', pallets: '', cases: '', weight: '', dropIdx: 0 });
+const blankCarrier = () => ({ name: '', email: '', driver: '', driverPhone: '', coDriver: '', coDriverPhone: '', tractor: '', trailer: '', year: '', plate: '' });
+const blankTracking = () => ({ location: '', miles: '', nextStop: 'd0', eta: '', condition: 'On time', notes: '', updatedAt: 0, log: [] });
+const carrierOf = l => ({ ...blankCarrier(), ...(l.carrier || {}), name: l.carrierName || (l.carrier && l.carrier.name) || '', email: l.carrierEmail || (l.carrier && l.carrier.email) || '' });
+const trackOf = l => ({ ...blankTracking(), ...(l.tracking || {}), log: (l.tracking && l.tracking.log) || [] });
+const stopList = l => [...l.pickups.map((p, i) => ({ key: 'p' + i, label: `Pickup ${i + 1} — ${p.name || p.city || 'TBD'}`, stop: p, kind: 'pickup' })), ...l.drops.map((d, i) => ({ key: 'd' + i, label: `Delivery ${i + 1} — ${d.name || d.city || 'TBD'}`, stop: d, kind: 'drop' }))];
+const fmtWhen = ts => new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const blankStop = () => ({ id: uid(), facilityId: '', name: '', address: '', city: '', st: '', zip: '', contact: '', phone: '', ref: '', po: '', date: '', time: '', notes: '' });
 function nextFileNo() {
   const max = S.loads.reduce((m, l) => Math.max(m, parseInt((l.fileNo || '').replace(/\D/g, '')) || 0), 2440000);
@@ -428,7 +460,8 @@ function nextFileNo() {
 }
 function blankDraft() {
   const ini = (S.user && S.user.initials) || '';
-  return { id: null, fileNo: nextFileNo(), customer: '', status: 'Tendered', temp: '', fileIn: ini, trIn: ini,
+  return { id: null, fileNo: nextFileNo(), customer: '', customerEmail: '', status: 'Open', temp: '', fileIn: ini, trIn: ini,
+    carrier: blankCarrier(), tracking: blankTracking(),
     pickups: [{ ...blankStop(), lines: [blankLine()] }], drops: [blankStop()],
     linehaul: '', fuel: '', accessorial: '', carrierName: '', carrierEmail: '', createdAt: Date.now() };
 }
@@ -444,7 +477,7 @@ function route(l) {
   const p = l.pickups[0] || {}, d = l.drops[l.drops.length - 1] || {};
   return `${p.city || '?'}, ${p.st || ''} → ${d.city || '?'}, ${d.st || ''}`;
 }
-const tagFor = s => ({ Quoted: 'tag-neutral', Tendered: 'tag-outline', Booked: 'tag-accent', Dispatched: 'tag-accent', 'In Transit': 'tag-accent' }[s] || 'tag-neutral');
+const tagFor = s => ({ Open: 'tag-outline', Quoted: 'tag-neutral', Tendered: 'tag-outline', Booked: 'tag-accent', Dispatched: 'tag-accent', 'In Transit': 'tag-accent' }[s] || 'tag-neutral');
 
 // ── Demo data (deterministic) ──────────────────────────────────────────────
 function demoData() {
@@ -461,18 +494,23 @@ function demoData() {
   const stop = (f, ref, date, time, notes) => ({ id: uid(), facilityId: f.id, name: f.name, address: f.address, city: f.city, st: f.st, zip: f.zip, contact: f.contact, phone: f.phone, ref, po: '', date, time, notes: notes || '' });
   const line = (c, p, cs, w, di) => ({ id: uid(), commodity: c, pallets: String(p), cases: String(cs), weight: String(w), dropIdx: di || 0 });
   const CARRIER = { carrierName: 'Ganske Truck', carrierEmail: 'dispatch@gansketruck.com' };
+  const CARRIER_RIG = { name: 'Ganske Truck', email: 'dispatch@gansketruck.com' };
   const loads = [
     { id: 'L1', fileNo: '2440871', customer: 'Mosqueda Inc.', fileIn: 'DG', trIn: 'DG', status: 'Tendered', temp: '-10°F continuous', createdAt: Date.now() - 36e5,
       linehaul: '1850', fuel: '210', accessorial: '0', carrierName: '', carrierEmail: '',
       pickups: [{ ...stop(shippers[1], 'test 1234', '2026-09-02', '08:00', 'Check in at guard shack. FCFS 06:00–14:00.'), lines: [line('Frozen entrées — keep at -10°F', 18, 1440, 32400, 0), line('Ice cream novelties', 8, 640, 14200, 1)] }],
       drops: [stop(receivers[0], 'test 1234', '2026-09-03', '07:30', ''), stop(receivers[2], 'test 1234', '2026-09-04', '09:00', 'Lumper on site — receipt required.')] },
-    { id: 'L2', fileNo: '2440864', customer: 'Mosqueda Inc.', fileIn: 'DG', trIn: 'DG', status: 'Booked', temp: '', createdAt: Date.now() - 864e5,
+    { id: 'L2', fileNo: '2440864', customer: 'Mosqueda Inc.', customerEmail: 'logistics@mosqueda.example', fileIn: 'DG', trIn: 'DG', status: 'Booked', temp: '', createdAt: Date.now() - 864e5,
       linehaul: '1425', fuel: '165', accessorial: '75', ...CARRIER,
+      carrier: { ...CARRIER_RIG, driver: 'Marcus Reed', driverPhone: '(559) 555-0188', tractor: '4471', trailer: 'R-2210', year: '2022', plate: 'CA 9KLT441' },
       pickups: [{ ...stop(shippers[2], 'test 1234', '2026-09-01', '10:00', ''), lines: [line('Organic rolled oats — 50 lb bags', 14, 560, 28000, 0)] },
                 { ...stop(shippers[0], 'test 1234', '2026-09-01', '15:30', 'Appt required.'), lines: [line('Retail display cartons', 8, 320, 6400, 0)] }],
       drops: [stop(receivers[1], 'test 1234', '2026-09-02', '06:00', '')] },
-    { id: 'L3', fileNo: '2440855', customer: 'Mosqueda Inc.', fileIn: 'DG', trIn: 'DG', status: 'In Transit', temp: '', createdAt: Date.now() - 1728e5,
+    { id: 'L3', fileNo: '2440855', customer: 'Mosqueda Inc.', customerEmail: 'logistics@mosqueda.example', fileIn: 'DG', trIn: 'DG', status: 'In Transit', temp: '', createdAt: Date.now() - 1728e5,
       linehaul: '980', fuel: '120', accessorial: '0', ...CARRIER,
+      carrier: { ...CARRIER_RIG, driver: 'Tanya Bell', driverPhone: '(559) 555-0142', coDriver: 'Ray Bell', coDriverPhone: '(559) 555-0143', tractor: '4488', trailer: 'D-0917', year: '2021', plate: 'CA 7PXR208' },
+      tracking: { location: 'I-65 near Seymour, IN', miles: '58', nextStop: 'd0', eta: '', condition: 'Running late', notes: 'Weather hold north of Louisville', updatedAt: Date.now() - 32e5,
+        log: [{ at: Date.now() - 7e6, by: 'Drew Ganske', kind: 'carrier', text: 'Carrier Ganske Truck assigned · Driver Tanya Bell · Tractor 4488 / Trailer D-0917' }, { at: Date.now() - 32e5, by: 'Drew Ganske', kind: 'check', text: 'Check call: I-65 near Seymour, IN · 58 mi from Delivery 1 — Northgate Retail DC · Running late — Weather hold north of Louisville' }, { at: Date.now() - 31e5, by: 'Drew Ganske', kind: 'email', text: 'Customer update: Checked out of shipper (loaded) — Pickup 1 — Lakeside Paper Mill' }] },
       pickups: [{ ...stop(shippers[3], 'test 1234', '2026-08-30', '09:00', ''), lines: [line('Kraft paper rolls', 20, 20, 42000, 0)] }],
       drops: [stop(receivers[3], 'test 1234', '2026-08-31', '08:00', '')] },
     { id: 'L4', fileNo: '2440848', customer: 'Mosqueda Inc.', fileIn: 'DG', trIn: 'DG', status: 'Delivered', temp: '', createdAt: Date.now() - 3456e5,
@@ -518,7 +556,7 @@ const S = (() => {
   return {
     layout: (() => { try { return localStorage.getItem(LAYOUT_KEY) || 'auto'; } catch (e) { return 'auto'; } })(),
     user: readSession(), users: loadUsers(), loginErr: '', userDraft: { name: '', initials: '', username: '', password: '', role: 'dispatcher' },
-    view: 'board', search: '', statusFilter: 'All', draft: null, tenderId: null,
+    view: 'board', search: '', statusFilter: 'All', draft: null, tenderId: null, fileTab: 'tender', carrierDraft: null, trackDraft: null,
     sortKey: 'shipDate', sortDir: 1, openMenu: null, hoverMenu: null,
     boardDate: todayISO(), dateScope: 'day', refreshedAt: Date.now(),
     dirDraft: { shippers: blankFac(), receivers: blankFac() },
@@ -690,6 +728,7 @@ function renderBoard() {
     <div id="board-body"></div>
   </main>`;
 }
+const condMark = l => { const c = (l.tracking || {}).condition; return c === 'Running late' ? ' <span class="late">LATE</span>' : c === 'Breakdown' ? ' <span class="down">BRKDN</span>' : ''; };
 function renderBoardBody() {
   const rows = boardRows();
   const shown = rows.length, all = S.loads.length;
@@ -714,7 +753,7 @@ function renderBoardBody() {
       <td class="r green">${esc(r.delCity)}</td>
       <td class="c green">${esc(r.delSt)}</td>
       <td class="l carrier${r.carrier ? '' : ' unc'}">${r.carrier ? esc(r.carrier) : 'UNCOVERED'}</td>
-      <td class="c status${hot ? ' hot-txt' : ''}">${esc(l.status)}</td>
+      <td class="c status${hot ? ' hot-txt' : ''}">${esc(l.status)}${condMark(l)}</td>
       <td class="r">${money(r.rate)}</td>
       <td class="r act"><div>
         <button class="btn btn-ghost tender" data-act="view" data-id="${esc(l.id)}">Tender</button>
@@ -728,7 +767,7 @@ function renderBoardBody() {
     const dt = r.shipDate ? r.shipDate.slice(5).replace('-', '/') + '/' + r.shipDate.slice(2, 4) : '—';
     const driven = /DRIVEN/.test(r.originator);
     return `<div class="lc${hot ? ' hot' : ''}" data-act="view" data-id="${esc(l.id)}">
-      <div class="row"><span class="file">${esc(r.fileNo)}</span><span class="text-muted" style="font-weight:600">${dt}</span><span class="st">${esc(l.status)}</span></div>
+      <div class="row"><span class="file">${esc(r.fileNo)}</span><span class="text-muted" style="font-weight:600">${dt}</span><span class="st">${esc(l.status)}${condMark(l)}</span></div>
       <div class="row"><span class="orig${driven ? ' driven' : ''}">${esc(r.originator)}</span></div>
       <div class="row"><span>${esc(r.puCity)}, ${esc(r.puSt)} → ${esc(r.delCity)}, ${esc(r.delSt)}</span></div>
       <div class="row"><span class="${r.carrier ? '' : 'unc'}">${r.carrier ? esc(r.carrier) : 'UNCOVERED'}</span><span class="rate">${money(r.rate)}</span></div>
@@ -834,6 +873,7 @@ function renderBuilder() {
         ${f('trIn', 1, 'Tr… IN', 'placeholder="Initials"')}
         <div class="field" style="grid-column:span 2"><label>Status</label><select class="input" data-act="draftStatus">${STATUSES.map(s => `<option${d.status === s ? ' selected' : ''}>${s}</option>`).join('')}</select></div>
         ${f('temp', 2, 'Temperature requirement', 'placeholder="e.g. 34°F continuous"')}
+        ${f('customerEmail', 2, 'Customer email (for load updates)', 'type="email" placeholder="ops@customer.com"')}
       </div>
     </section>
     <section class="sec">
@@ -939,15 +979,9 @@ function renderTender(l) {
       ${notes(dr)}
     </div>`;
   }).join('');
-  return `<main id="tender-wrap">
-    <div class="ctl-row no-print" style="margin-bottom:var(--space-4)">
-      <button class="btn btn-secondary" data-act="goBoard">${I.back}Back to board</button>
-      <button class="btn btn-secondary" data-act="edit" data-id="${esc(l.id)}">${I.pencil}Edit load</button>
-      <div class="spacer"></div>
-      <a class="btn btn-secondary" href="${tenderEmail(l)}">${I.mail}Email to carrier</a>
-      <button class="btn btn-primary blueprint" data-act="print">${CORNERS}${I.print}Print / PDF</button>
-    </div>
-    <div id="tender-sheet" class="blueprint elev-md">${CORNERS}
+  const cr = carrierOf(l);
+  const rig = [cr.driver ? `Driver ${cr.driver}${cr.driverPhone ? ' · ' + cr.driverPhone : ''}` : '', cr.coDriver ? `Co-driver ${cr.coDriver}${cr.coDriverPhone ? ' · ' + cr.coDriverPhone : ''}` : '', [cr.tractor ? `Tractor ${cr.tractor}` : '', cr.trailer ? `Trailer ${cr.trailer}` : '', cr.year ? cr.year : '', cr.plate ? `Plate ${cr.plate}` : ''].filter(Boolean).join(' · ')].filter(Boolean);
+  return `<div id="tender-sheet" class="blueprint elev-md">${CORNERS}
       <div class="t-head">
         <div><div class="t-co">${esc(COMPANY.name)}</div><div class="text-muted" style="font-size:12px">${esc(COMPANY.phone)} · ${esc(COMPANY.email)}</div></div>
         <div class="spacer"></div>
@@ -962,6 +996,7 @@ function renderTender(l) {
           <div class="kicker" style="margin-bottom:4px">Carrier</div>
           <div style="font-size:15px;font-weight:600">${esc(l.carrierName || '________________')}</div>
           <div class="text-muted" style="font-size:12px">${esc(l.carrierEmail || '—')}</div>
+          ${rig.map(r => `<div style="font-size:12px">${esc(r)}</div>`).join('')}
           <div class="text-muted" style="font-size:12px;margin-top:6px">Customer: ${esc(l.customer || '—')}</div>
           ${l.temp ? `<div style="font-size:12px;margin-top:6px"><strong>Temperature:</strong> ${esc(l.temp)}</div>` : ''}
         </div>
@@ -988,9 +1023,117 @@ function renderTender(l) {
         <div style="flex:1"><div class="rule"></div><div class="text-muted" style="font-size:11px">Carrier signature</div></div>
         <div style="width:180px"><div class="rule"></div><div class="text-muted" style="font-size:11px">Date</div></div>
       </div>
+    </div>`;
+}
+
+// ── File view: tender · carrier · tracking ─────────────────────────────────
+const EVENTS = [
+  ['checkin_shipper', 'Checked in at shipper', 'pickup'],
+  ['checkout_shipper', 'Checked out of shipper (loaded)', 'pickup'],
+  ['checkin_receiver', 'Checked in at receiver', 'drop'],
+  ['unloaded', 'Unloaded in full', 'drop'],
+  ['rejection', 'Rejection at receiver', 'drop']
+];
+function ensureDrafts(l) {
+  if (!S.carrierDraft || S.carrierDraft._id !== l.id) S.carrierDraft = { _id: l.id, ...carrierOf(l) };
+  if (!S.trackDraft || S.trackDraft._id !== l.id) {
+    const t = trackOf(l);
+    S.trackDraft = { _id: l.id, location: t.location, miles: t.miles, nextStop: t.nextStop, eta: t.eta, condition: t.condition, notes: t.notes, evType: 'checkin_shipper', evStop: 'p0', evNote: '' };
+  }
+}
+function renderFile(l) {
+  ensureDrafts(l);
+  const tabs = [['tender', 'Load tender', 'Print / email to carrier'], ['carrier', 'Add carrier', l.carrierName ? esc(l.carrierName) : 'No carrier yet'], ['tracking', 'Tracking & tracing', trackOf(l).condition || 'No check calls']];
+  const rail = `<div class="rail no-print">${tabs.map(([k, label, sub]) => `<button class="${S.fileTab === k ? 'on' : ''}" data-act="fileTab" data-tab="${k}">${label}<span class="sub">${sub}</span></button>`).join('')}</div>`;
+  const body = S.fileTab === 'carrier' ? renderCarrierTab(l) : S.fileTab === 'tracking' ? renderTrackingTab(l) : renderTender(l);
+  return `<main id="tender-wrap">
+    <div class="ctl-row no-print" style="margin-bottom:var(--space-4)">
+      <button class="btn btn-secondary" data-act="goBoard">${I.back}Back to board</button>
+      <button class="btn btn-secondary" data-act="edit" data-id="${esc(l.id)}">${I.pencil}Edit load</button>
+      <span class="tag ${tagFor(l.status)}" style="font-size:12px">FILE ${esc(l.fileNo)} · ${esc(l.status)}</span>
+      <div class="spacer"></div>
+      ${S.fileTab === 'tender' ? `<a class="btn btn-secondary" href="${tenderEmail(l)}">${I.mail}Email to carrier</a>
+      <button class="btn btn-primary blueprint" data-act="print">${CORNERS}${I.print}Print / PDF</button>` : ''}
     </div>
+    <div class="file-layout">${rail}<div class="file-body">${body}</div></div>
   </main>`;
 }
+function renderCarrierTab(l) {
+  const d = S.carrierDraft;
+  const f = (k, span, label, extra = '') => `<div class="field${span <= 2 ? ' half' : ''}" style="grid-column:span ${span}"><label>${label}</label><input class="input" ${extra} value="${esc(d[k] ?? '')}" data-bind="carrierDraft.${k}"></div>`;
+  return `<div class="card blueprint">${CORNERS}
+    <div class="card-kicker">Carrier assignment · File ${esc(l.fileNo)}</div>
+    <div class="text-muted" style="font-size:12.5px;margin-top:-4px">Saving a carrier on an Open, Quoted or Tendered file moves it to Booked. Driver and equipment print on the tender.</div>
+    <div class="grid6">
+      ${f('name', 4, 'Carrier name', 'placeholder="Carrier / MC name"')}
+      ${f('email', 2, 'Carrier dispatch email', 'type="email" placeholder="dispatch@carrier.com"')}
+      ${f('driver', 3, 'Driver name')}
+      ${f('driverPhone', 3, 'Driver phone', 'type="tel" placeholder="(555) 555-0100"')}
+      ${f('coDriver', 3, 'Co-driver name', 'placeholder="Optional"')}
+      ${f('coDriverPhone', 3, 'Co-driver phone', 'type="tel"')}
+      ${f('tractor', 2, 'Tractor #')}
+      ${f('trailer', 2, 'Trailer #')}
+      ${f('year', 1, 'Equipment year', 'inputmode="numeric" placeholder="2022"')}
+      ${f('plate', 1, 'License plate')}
+    </div>
+    <div class="ctl-row" style="margin-top:var(--space-2)">
+      <button class="btn btn-primary blueprint" data-act="saveCarrier">${CORNERS}Save carrier</button>
+      <button class="btn btn-secondary" data-act="resetCarrier">Reset</button>
+      <div class="spacer"></div>
+      ${l.carrierName ? `<button class="btn btn-ghost" style="color:#c40000" data-act="clearCarrier">Remove carrier (back to Open)</button>` : ''}
+    </div>
+  </div>`;
+}
+function renderTrackingTab(l) {
+  const d = S.trackDraft, t = trackOf(l), stops = stopList(l);
+  const condBtn = (v, cls) => `<button class="${d.condition === v ? 'on ' + cls : ''}" data-act="cond" data-v="${v}">${v}</button>`;
+  const evStops = stops.filter(x => x.kind === (EVENTS.find(e => e[0] === d.evType) || EVENTS[0])[2]);
+  const log = t.log.slice().reverse();
+  return `<div class="card blueprint" style="margin-bottom:var(--space-4)">${CORNERS}
+    <div class="card-kicker">Check call · File ${esc(l.fileNo)}</div>
+    ${t.updatedAt ? `<div class="text-muted" style="font-size:12px;margin-top:-4px">Last check call ${fmtWhen(t.updatedAt)} · ${esc(t.location || '—')}${t.miles ? ` · ${fmt(num(t.miles))} mi from ${esc((stops.find(x => x.key === t.nextStop) || {}).label || 'next stop')}` : ''} · <strong>${esc(t.condition)}</strong></div>` : ''}
+    <div class="grid6">
+      <div class="field" style="grid-column:span 3"><label>Truck's current location</label><input class="input" placeholder="City, ST or landmark / mile marker" value="${esc(d.location)}" data-bind="trackDraft.location"></div>
+      <div class="field half" style="grid-column:span 1"><label>Miles away</label><input class="input" type="number" min="0" inputmode="numeric" value="${esc(d.miles)}" data-bind="trackDraft.miles"></div>
+      <div class="field half" style="grid-column:span 2"><label>From (next stop)</label><select class="input" data-bind="trackDraft.nextStop">${stops.map(x => `<option value="${x.key}"${d.nextStop === x.key ? ' selected' : ''}>${esc(x.label)}</option>`).join('')}</select></div>
+      <div class="field half" style="grid-column:span 2"><label>ETA to that stop</label><input class="input" type="datetime-local" value="${esc(d.eta)}" data-bind="trackDraft.eta"></div>
+      <div class="field" style="grid-column:span 4"><label>Condition</label><div class="cond">${condBtn('On time', 'ok')}${condBtn('Running late', 'late')}${condBtn('Breakdown', 'down')}</div></div>
+      <div class="field" style="grid-column:span 6"><label>Notes</label><input class="input" placeholder="Driver called from…, reason for delay, repair ETA…" value="${esc(d.notes)}" data-bind="trackDraft.notes"></div>
+    </div>
+    <div class="ctl-row" style="margin-top:var(--space-2)"><button class="btn btn-primary blueprint" data-act="saveCheck">${CORNERS}Save check call</button></div>
+  </div>
+  <div class="card blueprint" style="margin-bottom:var(--space-4);border-color:var(--color-accent)">${CORNERS}
+    <div class="card-kicker">Email customer load update</div>
+    <div class="text-muted" style="font-size:12.5px;margin-top:-4px">To: ${l.customerEmail ? esc(l.customerEmail) : '<span style="color:#c40000">no customer email on file — add one under Edit load, or type it in your mail app</span>'} · Opens in your mail app with the update written; the event is logged below.</div>
+    <div class="grid6">
+      <div class="field half" style="grid-column:span 3"><label>Event</label><select class="input" data-act="evType">${EVENTS.map(e => `<option value="${e[0]}"${d.evType === e[0] ? ' selected' : ''}>${e[1]}</option>`).join('')}</select></div>
+      <div class="field half" style="grid-column:span 3"><label>At stop</label><select class="input" data-bind="trackDraft.evStop">${evStops.map(x => `<option value="${x.key}"${d.evStop === x.key ? ' selected' : ''}>${esc(x.label)}</option>`).join('')}</select></div>
+      <div class="field" style="grid-column:span 6"><label>Note to customer (optional)</label><input class="input" placeholder="e.g. 2 pallets refused for temp — photos attached to POD" value="${esc(d.evNote)}" data-bind="trackDraft.evNote"></div>
+    </div>
+    <div class="ctl-row" style="margin-top:var(--space-2)"><button class="btn btn-primary blueprint" data-act="emailUpdate">${CORNERS}${I.mail}Email customer load update</button></div>
+  </div>
+  <div class="card blueprint">${CORNERS}
+    <div class="card-kicker">History</div>
+    <div class="log">${log.length ? log.map(e => `<div><time>${fmtWhen(e.at)} · ${esc(e.by || '')}</time><div>${e.kind === 'email' ? '✉ ' : ''}${esc(e.text)}</div></div>`).join('') : '<div class="text-muted" style="font-size:13px">No check calls or updates yet.</div>'}</div>
+  </div>`;
+}
+function customerUpdateMail(l, ev, stopEntry, note) {
+  const t = trackOf(l), st = stopEntry ? stopEntry.stop : null, now = new Date();
+  const s = [];
+  s.push('Hello,', '', `Load update for file ${l.fileNo} (${route(l)}):`, '');
+  s.push(`${ev[1].toUpperCase()}${st ? ` — ${[st.name, [st.city, st.st].filter(Boolean).join(', ')].filter(Boolean).join(', ')}` : ''}`);
+  s.push(`Time: ${now.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`);
+  if (st && st.ref) s.push(`${stopEntry.kind === 'pickup' ? 'PU' : 'DEL'} #: ${st.ref}`);
+  if (t.location) s.push(`Current location: ${t.location}${t.miles ? ` (${fmt(num(t.miles))} mi from next stop)` : ''}`);
+  if (t.eta) s.push(`ETA next stop: ${new Date(t.eta).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`);
+  s.push(`Status: ${t.condition || 'On time'}`);
+  if (note) s.push('', note);
+  const cr = carrierOf(l);
+  if (cr.name) s.push('', `Carrier: ${cr.name}${cr.driver ? ` · Driver ${cr.driver}` : ''}${cr.tractor ? ` · Tractor ${cr.tractor}` : ''}${cr.trailer ? ` / Trailer ${cr.trailer}` : ''}`);
+  s.push('', 'Thank you,', S.user ? S.user.name : '', COMPANY.name, `${COMPANY.phone} · ${COMPANY.email}`);
+  return `mailto:${l.customerEmail || ''}?subject=${encodeURIComponent(`Load update — File ${l.fileNo} — ${ev[1]} — ${route(l)}`)}&body=${encodeURIComponent(s.join('\n'))}`;
+}
+function updateLoad(id, fn) { S.loads = S.loads.map(l => { if (l.id !== id) return l; const c = clone(l); fn(c); return c; }); persist(); }
 
 // ── Directory ──────────────────────────────────────────────────────────────
 function renderDirectory() {
@@ -1100,7 +1243,7 @@ function render() {
   const v = $('#view');
   if (S.view === 'board') { v.innerHTML = renderBoard(); renderBoardBody(); }
   else if (S.view === 'builder') v.innerHTML = renderBuilder();
-  else if (S.view === 'tender') v.innerHTML = renderTender(S.loads.find(l => l.id === S.tenderId));
+  else if (S.view === 'tender') v.innerHTML = renderFile(S.loads.find(l => l.id === S.tenderId));
   else if (S.view === 'directory') v.innerHTML = renderDirectory();
   else if (S.view === 'users') v.innerHTML = renderUsers();
   measureShell();
@@ -1125,7 +1268,7 @@ const ACT = {
   refresh: () => reloadFromStore(),
   statusFilter: el => { S.statusFilter = el.value; renderBoardBody(); },
   sort: el => { const k = el.dataset.key; S.sortDir = S.sortKey === k ? -S.sortDir : 1; S.sortKey = k; renderBoardBody(); },
-  view: el => { set({ tenderId: el.dataset.id, view: 'tender' }); window.scrollTo(0, 0); },
+  view: el => { S.fileTab = 'tender'; set({ tenderId: el.dataset.id, view: 'tender' }); window.scrollTo(0, 0); },
   edit: el => { const l = S.loads.find(x => x.id === el.dataset.id); if (l) { set({ draft: clone(l), view: 'builder' }); window.scrollTo(0, 0); } },
   delete: el => { const l = S.loads.find(x => x.id === el.dataset.id); if (l && confirm('Delete file ' + l.fileNo + '?')) set({ loads: S.loads.filter(x => x.id !== l.id) }); },
   print: () => window.print(),
@@ -1153,6 +1296,55 @@ const ACT = {
   toggleLayout: () => setLayout(isMobile() ? 'desktop' : 'mobile'),
   sortSel: el => { S.sortKey = el.value; renderBoardBody(); },
   sortDir: el => { S.sortDir = -S.sortDir; el.textContent = S.sortDir > 0 ? '▲ Asc' : '▼ Desc'; renderBoardBody(); },
+  // file tabs: carrier + tracking
+  fileTab: el => { S.fileTab = el.dataset.tab; render(); window.scrollTo(0, 0); },
+  saveCarrier: () => {
+    const d = S.carrierDraft, id = d._id;
+    updateLoad(id, l => {
+      l.carrier = { ...blankCarrier(), ...d }; delete l.carrier._id;
+      l.carrierName = d.name.trim(); l.carrierEmail = d.email.trim();
+      if (l.carrierName && HOT.includes(l.status)) l.status = 'Booked';
+      l.tracking = trackOf(l); l.tracking.log.push({ at: Date.now(), by: S.user.name, kind: 'carrier', text: `Carrier ${l.carrierName || '(blank)'} assigned${d.driver ? ` · Driver ${d.driver}` : ''}${d.tractor ? ` · Tractor ${d.tractor}` : ''}${d.trailer ? ` / Trailer ${d.trailer}` : ''}` });
+    });
+    S.carrierDraft = null; render();
+  },
+  resetCarrier: () => { S.carrierDraft = null; render(); },
+  clearCarrier: () => {
+    const id = S.carrierDraft._id; if (!confirm('Remove the carrier from this file and set it back to Open?')) return;
+    updateLoad(id, l => { l.carrier = blankCarrier(); l.carrierName = ''; l.carrierEmail = ''; if (!['Delivered', 'Invoiced', 'Cancelled'].includes(l.status)) l.status = 'Open'; l.tracking = trackOf(l); l.tracking.log.push({ at: Date.now(), by: S.user.name, kind: 'carrier', text: 'Carrier removed — file back to Open' }); });
+    S.carrierDraft = null; render();
+  },
+  cond: el => { S.trackDraft.condition = el.dataset.v; document.querySelectorAll('.cond button').forEach(b => { b.className = b.dataset.v === el.dataset.v ? 'on ' + ({ 'On time': 'ok', 'Running late': 'late', 'Breakdown': 'down' }[el.dataset.v]) : ''; }); },
+  saveCheck: () => {
+    const d = S.trackDraft, id = d._id, l0 = S.loads.find(x => x.id === id), stops = stopList(l0);
+    const stop = stops.find(x => x.key === d.nextStop);
+    updateLoad(id, l => {
+      const t = trackOf(l);
+      Object.assign(t, { location: d.location, miles: d.miles, nextStop: d.nextStop, eta: d.eta, condition: d.condition, notes: d.notes, updatedAt: Date.now() });
+      t.log.push({ at: Date.now(), by: S.user.name, kind: 'check', text: `Check call: ${d.location || 'location not given'}${d.miles ? ` · ${fmt(num(d.miles))} mi from ${stop ? stop.label : 'next stop'}` : ''}${d.eta ? ` · ETA ${new Date(d.eta).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''} · ${d.condition}${d.notes ? ` — ${d.notes}` : ''}` });
+      l.tracking = t;
+      if (['Booked', 'Dispatched'].includes(l.status) && d.location) l.status = 'In Transit';
+    });
+    render();
+  },
+  evType: el => { S.trackDraft.evType = el.value; const kind = (EVENTS.find(e => e[0] === el.value) || EVENTS[0])[2]; const l = S.loads.find(x => x.id === S.trackDraft._id); const first = stopList(l).find(x => x.kind === kind); S.trackDraft.evStop = first ? first.key : ''; render(); },
+  emailUpdate: () => {
+    const d = S.trackDraft, id = d._id, l = S.loads.find(x => x.id === id);
+    const ev = EVENTS.find(e => e[0] === d.evType) || EVENTS[0], stop = stopList(l).find(x => x.key === d.evStop);
+    const href = customerUpdateMail(l, ev, stop, d.evNote);
+    updateLoad(id, c => {
+      const t = trackOf(c);
+      t.log.push({ at: Date.now(), by: S.user.name, kind: 'email', text: `Customer update: ${ev[1]}${stop ? ` — ${stop.label}` : ''}${d.evNote ? ` — ${d.evNote}` : ''}` });
+      c.tracking = t;
+      if (ev[0] === 'checkout_shipper' && !['Delivered', 'Invoiced', 'Cancelled'].includes(c.status)) c.status = 'In Transit';
+      if (ev[0] === 'checkin_shipper' && ['Booked'].includes(c.status)) c.status = 'Dispatched';
+      if (ev[0] === 'unloaded' && c.drops.length === 1) c.status = 'Delivered';
+      if (ev[0] === 'unloaded' && c.drops.length > 1 && stop && stop.key === 'd' + (c.drops.length - 1)) c.status = 'Delivered';
+    });
+    S.trackDraft.evNote = '';
+    window.location.href = href;
+    render();
+  },
   // auth + users
   goUsers: () => { set({ view: 'users', openMenu: null }); window.scrollTo(0, 0); },
   signOut: () => { clearSession(); S.user = null; S.draft = null; S.view = 'board'; S.openMenu = null; render(); },
@@ -1176,7 +1368,7 @@ const ACT = {
   addFac: el => { const k = el.dataset.kind, cur = S.dirDraft[k]; if (!cur.name.trim()) return; S[k] = [...S[k], { id: uid(), ...cur }]; S.dirDraft[k] = blankFac(); persist(); render(); },
   rmFac: el => { const k = el.dataset.kind; S[k] = S[k].filter(x => x.id !== el.dataset.id); persist(); render(); }
 };
-const CHANGE_ACTS = new Set(['dateSet', 'statusFilter', 'draftStatus', 'facility', 'dropIdx', 'userRole', 'sortSel']);
+const CHANGE_ACTS = new Set(['dateSet', 'statusFilter', 'draftStatus', 'facility', 'dropIdx', 'userRole', 'sortSel', 'evType']);
 
 const app = $('#app');
 app.addEventListener('click', e => {
