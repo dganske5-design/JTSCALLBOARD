@@ -10,7 +10,7 @@
 <title>JTS Operations — Load Board</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=Roboto+Condensed:wght@500;700&family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 /* ── Industry design-system tokens ─────────────────────────────────────── */
 :root {
@@ -29,6 +29,10 @@
   --radius-md: 4px;
   --shadow-sm: 0 1px 2px color-mix(in srgb, #2b2b2d 14%, transparent);
   --shadow-md: 0 3px 10px color-mix(in srgb, #2b2b2d 16%, transparent);
+  /* chrome (menubar, steppers, rails) — skins override these */
+  --chrome: #fbfaf8; --chrome-2: #eceae6; --chrome-line: #a8a49d; --chrome-soft: #d8d4cd; --menu-top: #dcd8d1;
+  --strip: #f1efec; --strip-line: #c8c4bd; --strip-ink: #1b1d1e; --hover: #dfe7ef; --ring: #a8bed4; --ink: #1b1d1e;
+  --on-accent: #ffffff;
   --strip-h: 48px;   /* measured at runtime */
   --shell-h: 100px;  /* measured at runtime */
 }
@@ -61,7 +65,7 @@ button, input, select { font: inherit; }
   font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 14px; line-height: 1.2; color: var(--color-text);
   background: transparent; border: 1px solid var(--color-divider); padding: var(--space-2) calc(var(--space-3) * 1.2); border-radius: 0; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn-primary { background: var(--color-accent); color: var(--color-bg); border-color: var(--color-accent); }
+.btn-primary { background: var(--color-accent); color: var(--on-accent); border-color: var(--color-accent); }
 .btn-primary:hover { background: var(--color-accent-600); }
 .btn-primary:active { background: var(--color-accent-700); }
 .btn-secondary { border-color: var(--color-divider); }
@@ -110,20 +114,24 @@ button, input, select { font: inherit; }
 .hidden { display: none !important; }
 
 /* ── App shell ──────────────────────────────────────────────────────────── */
-#strip { position: sticky; top: 0; z-index: 60; background: #f1efec; border-bottom: 1px solid #c8c4bd; }
-#strip .title { display: flex; align-items: center; gap: 6px; padding: 3px 8px; font-size: 12.5px; color: #1b1d1e; }
-#menubar { display: flex; align-items: stretch; border-top: 1px solid #dcd8d1; background: linear-gradient(#fbfaf8, #eceae6); overflow-x: auto; scrollbar-width: none; }
+#strip { position: sticky; top: 0; z-index: 60; background: var(--strip); border-bottom: 1px solid var(--strip-line); }
+#strip .title { display: flex; align-items: center; gap: 6px; padding: 3px 8px; font-size: 12.5px; color: var(--strip-ink); }
+#menubar { display: flex; align-items: stretch; border-top: 1px solid var(--menu-top); background: linear-gradient(var(--chrome), var(--chrome-2)); overflow-x: auto; scrollbar-width: none; }
 #menubar::-webkit-scrollbar { display: none; }
 .menu > span { white-space: nowrap; }
-.menu { position: relative; display: flex; align-items: center; gap: 5px; padding: 4px 11px; font-size: 12.5px; color: #1b1d1e; cursor: default; user-select: none; }
-.menu.hot { background: #dfe7ef; }
-.menu.open { box-shadow: inset 0 0 0 1px #a8bed4; }
-.menu-dd { position: absolute; top: 100%; left: 0; min-width: 212px; background: #fbfaf8; border: 1px solid #a8a49d; box-shadow: 2px 3px 7px rgba(0,0,0,0.18); padding: 3px 0; z-index: 70; }
-.menu-it { padding: 4px 14px; font-size: 12.5px; white-space: nowrap; cursor: pointer; color: #1b1d1e; }
-.menu-it:hover { background: #dfe7ef; }
+.menu { position: relative; display: flex; align-items: center; gap: 5px; padding: 4px 11px; font-size: 12.5px; color: var(--ink); cursor: default; user-select: none; }
+.menu.hot { background: var(--hover); }
+.menu.open { box-shadow: inset 0 0 0 1px var(--ring); }
+.menu-dd { position: absolute; top: 100%; left: 0; min-width: 212px; background: var(--chrome); border: 1px solid var(--chrome-line); box-shadow: 2px 3px 7px rgba(0,0,0,0.18); padding: 3px 0; z-index: 70; }
+.menu-it { padding: 4px 14px; font-size: 12.5px; white-space: nowrap; cursor: pointer; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+.menu-it:hover { background: var(--hover); }
+.menu-hd { padding: 5px 14px 2px; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent-700); border-top: 1px solid var(--chrome-line); margin-top: 3px; }
+.menu-it .sw { width: 22px; height: 12px; border: 1px solid var(--chrome-line); flex: none; }
+.menu-it .chk { width: 12px; flex: none; text-align: center; }
 #nav { position: sticky; top: var(--strip-h); z-index: 50; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: 10px var(--space-6); border-bottom: 1px solid var(--color-divider); background: var(--color-bg); }
 #nav .brand { display: flex; align-items: center; gap: 10px; margin-right: var(--space-4); }
 #nav .brand-name { font-family: var(--font-heading); font-weight: 600; font-size: 19px; letter-spacing: 0.03em; text-transform: uppercase; }
+.login-wrap, #login { background: var(--color-bg); }
 #nav .navbtn { color: var(--color-text); opacity: 0.75; }
 #nav .navbtn.on { color: var(--color-accent-700); opacity: 1; box-shadow: inset 0 -2px 0 var(--color-accent); }
 #nav .btn-icon.on { background: color-mix(in srgb, var(--color-accent) 14%, transparent); border-color: var(--color-accent); color: var(--color-accent-700); }
@@ -134,13 +142,13 @@ main { width: 100%; margin: 0 auto; }
 /* ── Board ──────────────────────────────────────────────────────────────── */
 #board { max-width: 1400px; padding: var(--space-4) var(--space-6) var(--space-8); }
 .ctl-row { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
-.stepper { display: flex; align-items: center; border: 1px solid #a8a49d; background: #fbfaf8; }
+.stepper { display: flex; align-items: center; border: 1px solid var(--chrome-line); background: var(--chrome); }
 .stepper .btn { min-height: 0; padding: 4px 8px; }
-.stepper input { min-height: 0; height: 28px; border: none; border-left: 1px solid #d8d4cd; border-right: 1px solid #d8d4cd; width: 150px; font-size: 12.5px; }
+.stepper input { min-height: 0; height: 28px; border: none; border-left: 1px solid var(--chrome-soft); border-right: 1px solid var(--chrome-soft); width: 150px; font-size: 12.5px; }
 .seg { display: flex; }
-.seg button { padding: 5px 12px; font-size: 12.5px; font-family: var(--font-body); cursor: pointer; border: 1px solid #a8a49d; background: #fbfaf8; color: #1b1d1e; font-weight: 400; }
+.seg button { padding: 5px 12px; font-size: 12.5px; font-family: var(--font-body); cursor: pointer; border: 1px solid var(--chrome-line); background: var(--chrome); color: var(--ink); font-weight: 400; }
 .seg button + button { border-left: none; }
-.seg button.on { background: var(--color-accent); color: #fff; font-weight: 700; }
+.seg button.on { background: var(--color-accent); color: var(--on-accent); font-weight: 700; }
 .search-wrap { position: relative; flex: 1; }
 .search-wrap svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); opacity: 0.5; }
 .search-wrap input { padding-left: 34px; }
@@ -210,12 +218,12 @@ main { width: 100%; margin: 0 auto; }
 #tender-wrap { max-width: 1160px; }
 .file-layout { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: var(--space-4); align-items: start; }
 .rail { display: flex; flex-direction: column; gap: 4px; position: sticky; top: calc(var(--shell-h) + 12px); }
-.rail button { text-align: left; font-family: var(--font-heading); font-weight: 600; font-size: 14px; letter-spacing: 0.03em; text-transform: uppercase; padding: 9px 12px; background: #fbfaf8; border: 1px solid #a8a49d; color: var(--color-text); cursor: pointer; line-height: 1.2; }
-.rail button:hover { background: #dfe7ef; }
-.rail button.on { background: var(--color-accent); color: #fff; border-color: var(--color-accent); }
+.rail button { text-align: left; font-family: var(--font-heading); font-weight: 600; font-size: 14px; letter-spacing: 0.03em; text-transform: uppercase; padding: 9px 12px; background: var(--chrome); border: 1px solid var(--chrome-line); color: var(--color-text); cursor: pointer; line-height: 1.2; }
+.rail button:hover { background: var(--hover); }
+.rail button.on { background: var(--color-accent); color: var(--on-accent); border-color: var(--color-accent); }
 .rail .sub { display: block; font-family: var(--font-body); font-weight: 400; font-size: 11px; text-transform: none; letter-spacing: 0; opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cond { display: flex; }
-.cond button { flex: 1; padding: 8px 10px; font-size: 13px; font-family: var(--font-body); cursor: pointer; border: 1px solid #a8a49d; background: #fbfaf8; color: #1b1d1e; }
+.cond button { flex: 1; padding: 8px 10px; font-size: 13px; font-family: var(--font-body); cursor: pointer; border: 1px solid var(--chrome-line); background: var(--chrome); color: var(--ink); }
 .cond button + button { border-left: none; }
 .cond button.on { color: #fff; font-weight: 700; }
 .cond button.on.ok { background: #2e7d32; border-color: #2e7d32; }
@@ -255,15 +263,15 @@ body.m .call-form input { flex: 1 1 100%; }
 .stop-times .btn-primary { min-height: 30px; }
 /* autocomplete + distances + stop times */
 .ac { position: relative; }
-.ac-list { position: absolute; left: 0; right: 0; top: 100%; z-index: 80; background: #fbfaf8; border: 1px solid #a8a49d; box-shadow: 2px 3px 7px rgba(0,0,0,0.18); max-height: 260px; overflow-y: auto; }
+.ac-list { position: absolute; left: 0; right: 0; top: 100%; z-index: 80; background: var(--chrome); border: 1px solid var(--chrome-line); box-shadow: 2px 3px 7px rgba(0,0,0,0.18); max-height: 260px; overflow-y: auto; }
 .ac-it { padding: 6px 10px; font-size: 13px; cursor: pointer; }
-.ac-it:hover, .ac-it.on { background: #dfe7ef; }
+.ac-it:hover, .ac-it.on { background: var(--hover); }
 .dist { width: 100%; border-collapse: collapse; font-size: 13px; }
 .dist td { padding: 5px 6px; border-top: 1px solid var(--color-divider); cursor: pointer; }
 .dist tr.on td { background: var(--color-accent-100); }
-.dist tr:hover td { background: #dfe7ef; }
+.dist tr:hover td { background: var(--hover); }
 .dist td.r { text-align: right; white-space: nowrap; }
-.stop-times { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; font-size: 12px; padding: 6px 8px; background: #fbfaf8; border: 1px dashed #a8a49d; }
+.stop-times { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; font-size: 12px; padding: 6px 8px; background: var(--chrome); border: 1px dashed var(--chrome-line); }
 .stop-times .st-lbl { color: var(--color-accent-700); text-transform: uppercase; letter-spacing: 0.06em; font-size: 10px; }
 .stop-times .input { width: auto; min-height: 30px; padding: 3px 6px; font-size: 12.5px; }
 .stop-times .dwell { margin-left: auto; font-weight: 700; }
@@ -271,6 +279,11 @@ body.m .stop-times .input { flex: 1 1 60%; }
 body.m .stop-times .dwell { margin-left: 0; flex: 1 1 100%; }
 @media print { .stop-times { display: none !important; } }
 
+/* skins picker */
+.skins { display: flex; flex-wrap: wrap; gap: 6px; }
+.skin { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; font-size: 13px; font-family: var(--font-body); background: var(--chrome); border: 1px solid var(--chrome-line); color: var(--ink); cursor: pointer; }
+.skin .sw { width: 22px; height: 14px; border: 1px solid var(--chrome-line); }
+.skin.on { outline: 2px solid var(--color-accent); outline-offset: 1px; font-weight: 700; }
 /* dialogs */
 .dialog-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, #2b2b2d 50%, transparent); }
 .dialog { width: min(440px, 100%); display: flex; flex-direction: column; gap: 10px; padding: 18px; background: var(--color-bg); border: 1px solid var(--color-divider); box-shadow: 0 12px 32px rgba(43,43,45,0.22); }
@@ -295,10 +308,10 @@ body.m #nav .brand-name { font-size: 15px; white-space: nowrap; overflow: hidden
 body.m #nav .brand .tag, body.m #nav .navbtn, body.m #nav .newload, body.m #nav .user-chip .uname, body.m #nav .signout { display: none; }
 body.m #nav .user-chip .tag { font-size: 10px; }
 #tabbar { display: none; }
-body.m #tabbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 55; background: #fbfaf8; border-top: 1px solid #c8c4bd; padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); gap: 6px; }
+body.m #tabbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 55; background: var(--chrome); border-top: 1px solid var(--strip-line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); gap: 6px; }
 #tabbar .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: var(--font-heading); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text); opacity: 0.7; background: none; border: 0; padding: 4px 0; cursor: pointer; }
 #tabbar .tab.on { color: var(--color-accent-700); opacity: 1; }
-#tabbar .tab.primary { background: var(--color-accent); color: #fff; opacity: 1; }
+#tabbar .tab.primary { background: var(--color-accent); color: var(--on-accent); opacity: 1; }
 #tabbar .btn { flex: 1; min-height: 40px; }
 body.m main { padding-inline: 16px; }
 body.m #board, body.m #builder, body.m #tender-wrap, body.m #directory, body.m #users { padding-top: 12px; }
@@ -383,6 +396,50 @@ const COMPANY = {
 };
 const STORE_KEY = 'jts_loadboard_v4';
 const LAYOUT_KEY = 'jts_loadboard_layout';
+const SKIN_KEY = 'jts_loadboard_skin';
+const DARK = (bg, surface, text, accent, a600, a700, a800, a100, chrome, chrome2, line, soft, strip, stripLine, hover, ring, onAccent = '#0d1117') => ({
+  '--color-bg': bg, '--color-surface': surface, '--color-text': text, '--color-divider': 'color-mix(in srgb, ' + text + ' 18%, transparent)',
+  '--color-accent': accent, '--color-accent-600': a600, '--color-accent-700': a700, '--color-accent-800': a800, '--color-accent-100': a100,
+  '--chrome': chrome, '--chrome-2': chrome2, '--chrome-line': line, '--chrome-soft': soft, '--menu-top': soft,
+  '--strip': strip, '--strip-line': stripLine, '--strip-ink': text, '--hover': hover, '--ring': ring, '--ink': text, '--on-accent': onAccent
+});
+const LIGHT = (bg, surface, text, accent, a600, a700, a800, a100, chrome, chrome2, line, soft, strip, stripLine, hover, ring, extra = {}) => ({
+  '--color-bg': bg, '--color-surface': surface, '--color-text': text, '--color-divider': 'color-mix(in srgb, ' + text + ' 16%, transparent)',
+  '--color-accent': accent, '--color-accent-600': a600, '--color-accent-700': a700, '--color-accent-800': a800, '--color-accent-100': a100,
+  '--chrome': chrome, '--chrome-2': chrome2, '--chrome-line': line, '--chrome-soft': soft, '--menu-top': soft,
+  '--strip': strip, '--strip-line': stripLine, '--strip-ink': text, '--hover': hover, '--ring': ring, '--ink': text, '--on-accent': '#ffffff', ...extra
+});
+const SKINS = [
+  { id: 'industry', name: 'Industry', blurb: 'Blueprint steel blue', swatch: ['#f2f2f3', '#5980a6'], vars: {} },
+  { id: 'navy', name: 'JTS Navy & Gold', blurb: 'Customer-facing brand', swatch: ['#0b2545', '#c9a227'],
+    vars: LIGHT('#f4f6fa', '#e8ecf3', '#0b1a33', '#0b2545', '#143766', '#0b2545', '#061630', '#fbf3d6', '#ffffff', '#e8ecf3', '#8f9bb0', '#c6cedd', '#0b2545', '#c9a227', '#f3e7b8', '#c9a227', { '--strip-ink': '#f3e7b8', '--color-accent-2': '#c9a227' }) },
+  { id: 'midnight', name: 'Midnight', blurb: 'Dark dispatch desk', swatch: ['#14171c', '#6fa3d8'],
+    vars: DARK('#14171c', '#1f242b', '#e6e9ee', '#6fa3d8', '#5b8fc4', '#9cc4ec', '#cfe3f7', '#1d2b3a', '#1b1f25', '#14171c', '#3a414b', '#2c323a', '#0f1215', '#2c323a', '#263241', '#3e5d80') },
+  { id: 'terminal', name: 'Terminal', blurb: 'Green phosphor, mono type', swatch: ['#070a07', '#33ff66'],
+    vars: { ...DARK('#070a07', '#0f150f', '#b7ffb7', '#33ff66', '#29d957', '#7dff9e', '#c8ffd6', '#0f2a16', '#0b110b', '#070a07', '#1f4a2a', '#16351d', '#050705', '#1f4a2a', '#123d1f', '#33ff66', '#041007'), '--font-heading': '"IBM Plex Mono", ui-monospace, monospace', '--font-body': '"IBM Plex Mono", ui-monospace, monospace' } },
+  { id: 'paper', name: 'Paper', blurb: 'Warm cream, editorial type', swatch: ['#f6f1e7', '#8a5a2c'],
+    vars: { ...LIGHT('#f6f1e7', '#ece5d6', '#2b2620', '#8a5a2c', '#74491f', '#5e3a17', '#3f2610', '#f1e3cf', '#f9f5ec', '#ebe4d5', '#b8ad98', '#d9d0bf', '#efe8da', '#c9bfa9', '#e6dcc6', '#b89a76'), '--font-heading': '"Playfair Display", Georgia, serif', '--font-body': '"Source Sans 3", "Barlow", system-ui, sans-serif' } },
+  { id: 'slate', name: 'Slate', blurb: 'Cool gray, clean sans', swatch: ['#e9edf1', '#4a6fa5'],
+    vars: { ...LIGHT('#e9edf1', '#dde3ea', '#1c232c', '#4a6fa5', '#3d5f92', '#2f4b76', '#1f3352', '#e3ecf7', '#f3f6f9', '#e1e7ee', '#9aa7b5', '#c6cfd9', '#e1e7ee', '#b8c3cf', '#d4dfeb', '#8fa9c7'), '--font-heading': '"Roboto Condensed", system-ui, sans-serif', '--font-body': '"IBM Plex Sans", system-ui, sans-serif' } },
+  { id: 'hivis', name: 'Safety Orange', blurb: 'High-vis, black bar', swatch: ['#1a1a1a', '#f26522'],
+    vars: { ...LIGHT('#fafafa', '#efefef', '#1a1a1a', '#f26522', '#d9551a', '#b8460f', '#7a2e08', '#ffe9dd', '#ffffff', '#eeeeee', '#9e9e9e', '#d0d0d0', '#1a1a1a', '#f26522', '#ffe0cc', '#f26522', { '--strip-ink': '#ffffff', '--on-accent': '#1a1a1a' }), '--font-heading': '"Oswald", "Barlow Condensed", system-ui, sans-serif' } },
+  { id: 'forest', name: 'Forest', blurb: 'Deep green on sage', swatch: ['#eef3ee', '#2f6b3a'],
+    vars: LIGHT('#eef3ee', '#dfe8df', '#16261a', '#2f6b3a', '#285c31', '#1f4a27', '#14311a', '#e0efe2', '#f5f9f5', '#e3ebe3', '#9bb09f', '#c5d5c8', '#dfe8df', '#b5c9b8', '#d3e4d6', '#7fa886') },
+  { id: 'legacy', name: 'Legacy TMS', blurb: 'Classic gray Windows look', swatch: ['#d4d0c8', '#0a246a'],
+    vars: { ...LIGHT('#d4d0c8', '#ffffff', '#000000', '#0a246a', '#0a246a', '#0a246a', '#051538', '#dfe6f5', '#d4d0c8', '#c0bcb4', '#808080', '#a0a0a0', '#d4d0c8', '#808080', '#b9c6e0', '#0a246a'), '--color-divider': '#808080', '--font-heading': 'Tahoma, Verdana, system-ui, sans-serif', '--font-body': 'Tahoma, Verdana, system-ui, sans-serif' } },
+  { id: 'sunset', name: 'Sunset', blurb: 'Dusk purple, amber accent', swatch: ['#1c1424', '#ff8c42'],
+    vars: { ...DARK('#1c1424', '#2a1f35', '#f3e9e2', '#ff8c42', '#e6792f', '#ffb27a', '#ffd9bf', '#3b2740', '#241a2e', '#1c1424', '#4d3a5c', '#3b2d47', '#150e1b', '#4d3a5c', '#3b2747', '#ff8c42', '#1c1424'), '--font-heading': '"Oswald", "Barlow Condensed", system-ui, sans-serif' } }
+];
+function applySkin(id) {
+  const sk = SKINS.find(x => x.id === id) || SKINS[0];
+  const r = document.documentElement; r.dataset.skin = sk.id;
+  SKINS.forEach(x => Object.keys(x.vars).forEach(k => r.style.removeProperty(k)));
+  Object.entries(sk.vars).forEach(([k, v]) => r.style.setProperty(k, v));
+  const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.content = sk.vars['--strip'] || '#f1efec';
+  try { localStorage.setItem(SKIN_KEY, sk.id); } catch (e) {}
+  return sk.id;
+}
+function setSkin(id) { S.skin = applySkin(id); }
 const MOBILE_BP = 760;
 const STATUSES = ['Open', 'Quoted', 'Tendered', 'Booked', 'Dispatched', 'In Transit', 'Delivered', 'Invoiced', 'Cancelled'];
 const HOT = ['Open', 'Quoted', 'Tendered'];
@@ -620,6 +677,7 @@ const S = (() => {
   const p = readStore(), d = demoData();
   return {
     layout: (() => { try { return localStorage.getItem(LAYOUT_KEY) || 'auto'; } catch (e) { return 'auto'; } })(),
+    skin: (() => { try { return localStorage.getItem(SKIN_KEY) || 'industry'; } catch (e) { return 'industry'; } })(),
     user: readSession(), users: loadUsers(), loginErr: '', userDraft: { name: '', initials: '', username: '', password: '', role: 'dispatcher' },
     view: 'board', search: '', statusFilter: 'All', draft: null, tenderId: null, fileTab: 'tender', carrierDraft: null, trackDraft: null,
     sortKey: 'shipDate', sortDir: 1, openMenu: null, hoverMenu: null,
@@ -657,15 +715,19 @@ const MENUS = [
   { label: 'Sales', items: [{ label: 'Quote a new file', act: () => set({ draft: blankDraft(), view: 'builder', openMenu: null }) }] },
   { label: 'Accounting', items: [{ label: 'Ready to invoice', act: go({ view: 'board', statusFilter: 'Delivered' }) }, { label: 'Invoiced', act: go({ view: 'board', statusFilter: 'Invoiced' }) }] },
   { label: 'Offices', icon: I.mOffice, items: [{ label: 'All offices', act: go({}) }] },
-  { label: 'Help', items: [{ label: 'About this board', act: go({}) }] }
+  { label: 'Help', items: [{ label: 'About this board', act: () => { S.openMenu = null; renderMenubar(); notify('JTS Operations — Load board', 'Load board, load builder, load tender, carrier assignment, tracking & tracing and a shippers/receivers directory. Data lives in this browser. Pick a look under Help › Skins.'); } }] }
 ];
+function menuItems(m) {
+  if (m.label !== 'Help') return m.items;
+  return [...m.items, { header: 'Skins' }, ...SKINS.map(sk => ({ label: sk.name + (sk.id === 'industry' ? ' (default)' : ''), blurb: sk.blurb, swatch: sk.swatch, on: S.skin === sk.id, act: () => { setSkin(sk.id); S.openMenu = null; renderMenubar(); } }))];
+}
 
 function renderMenubar() {
   $('#menubar').innerHTML = MENUS.map((m, mi) => {
     const open = S.openMenu === m.label, hot = open || S.hoverMenu === m.label;
     return `<div class="menu${hot ? ' hot' : ''}${open ? ' open' : ''}" data-menu="${esc(m.label)}">
       ${m.icon ? `<span style="display:inline-flex">${m.icon}</span>` : ''}<span>${esc(m.label)}</span>
-      ${open ? `<div class="menu-dd">${m.items.map((it, ii) => `<div class="menu-it" data-act="menu" data-mi="${mi}" data-ii="${ii}">${esc(it.label)}</div>`).join('')}</div>` : ''}
+      ${open ? `<div class="menu-dd">${menuItems(m).map((it, ii) => it.header ? `<div class="menu-hd">${esc(it.header)}</div>` : `<div class="menu-it" data-act="menu" data-mi="${mi}" data-ii="${ii}" title="${esc(it.blurb || '')}">${it.swatch ? `<span class="chk">${it.on ? '✓' : ''}</span><span class="sw" style="background:linear-gradient(90deg,${it.swatch[0]} 50%,${it.swatch[1]} 50%)"></span>` : ''}${esc(it.label)}</div>`).join('')}</div>` : ''}
     </div>`;
   }).join('');
 }
@@ -1407,6 +1469,8 @@ function renderUsers() {
     <div class="card blueprint" style="margin-bottom:var(--space-4)">${CORNERS}
       <div class="card-kicker">Layout</div>
       <div class="ctl-row"><div class="seg">${[['auto', 'Auto'], ['desktop', 'Desktop'], ['mobile', 'Mobile']].map(([k, l]) => `<button class="${S.layout === k ? 'on' : ''}" data-act="layoutPref" data-v="${k}">${l}</button>`).join('')}</div><span class="text-muted" style="font-size:12px">Auto picks mobile under ${MOBILE_BP}px. The phone / monitor button in the header switches any time.</span></div>
+      <div class="card-kicker" style="margin-top:6px">Skin</div>
+      <div class="skins">${SKINS.map(sk => `<button class="skin${S.skin === sk.id ? ' on' : ''}" data-act="skinPick" data-v="${sk.id}" title="${esc(sk.blurb)}"><span class="sw" style="background:linear-gradient(135deg,${sk.swatch[0]} 50%,${sk.swatch[1]} 50%)"></span>${esc(sk.name)}</button>`).join('')}</div>
     </div>
     <div class="card blueprint">${CORNERS}
       <div class="card-kicker">Accounts</div>
@@ -1469,7 +1533,7 @@ const ACT = {
   goBoard: () => { set({ view: 'board', openMenu: null }); window.scrollTo(0, 0); },
   goDirectory: () => { set({ view: 'directory', openMenu: null }); window.scrollTo(0, 0); },
   newLoad: () => { set({ draft: blankDraft(), view: 'builder', openMenu: null }); window.scrollTo(0, 0); },
-  menu: el => { const it = MENUS[+el.dataset.mi].items[+el.dataset.ii]; it.act(); },
+  menu: el => { const it = menuItems(MENUS[+el.dataset.mi])[+el.dataset.ii]; if (it && it.act) it.act(); },
   datePrev: () => set({ boardDate: shift(S.boardDate, S.dateScope === 'week' ? -7 : -1), dateScope: S.dateScope === 'all' ? 'day' : S.dateScope }),
   dateNext: () => set({ boardDate: shift(S.boardDate, S.dateScope === 'week' ? 7 : 1), dateScope: S.dateScope === 'all' ? 'day' : S.dateScope }),
   dateToday: () => set({ boardDate: todayISO(), dateScope: 'day' }),
@@ -1503,6 +1567,7 @@ const ACT = {
   addLine: el => { S.draft.pickups[+el.dataset.i].lines.push(blankLine()); render(); },
   rmLine: el => { S.draft.pickups[+el.dataset.i].lines.splice(+el.dataset.li, 1); render(); },
   layoutPref: el => setLayout(el.dataset.v),
+  skinPick: el => { setSkin(el.dataset.v); render(); },
   toggleLayout: () => setLayout(isMobile() ? 'desktop' : 'mobile'),
   sortSel: el => { S.sortKey = el.value; renderBoardBody(); },
   sortDir: el => { S.sortDir = -S.sortDir; el.textContent = S.sortDir > 0 ? '▲ Asc' : '▼ Desc'; renderBoardBody(); },
@@ -1672,6 +1737,7 @@ setInterval(() => {
   if (S.view === 'board') renderBoardBody();
   else if (S.view === 'tender' && !document.activeElement.matches('input, select, textarea')) render();
 }, 60000);
+applySkin(S.skin);
 persist();
 render();
 alertKey = alertSignature();
