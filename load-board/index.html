@@ -93,6 +93,18 @@ button, input, select { font: inherit; }
 .kicker { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent-700); }
 .spacer { flex: 1; }
 
+/* ── Login ──────────────────────────────────────────────────────────────── */
+#login { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+#login .card { width: min(380px, 100%); padding: 28px 28px 24px; background: var(--color-surface); gap: var(--space-3); }
+#login .mark { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+#login h1 { margin: 0; font-size: 26px; letter-spacing: 0.03em; text-transform: uppercase; }
+#login .err { font-size: 12.5px; color: #c40000; min-height: 18px; }
+.user-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--color-accent-700); white-space: nowrap; }
+.user-chip .tag { font-size: 10px; padding: 1px 7px; }
+#users { max-width: 900px; padding: var(--space-6) var(--space-6) var(--space-8); }
+#users .fac .role { font-size: 11px; }
+.hidden { display: none !important; }
+
 /* ── App shell ──────────────────────────────────────────────────────────── */
 #strip { position: sticky; top: 0; z-index: 60; background: #f1efec; border-bottom: 1px solid #c8c4bd; }
 #strip .title { display: flex; align-items: center; gap: 6px; padding: 3px 8px; font-size: 12.5px; color: #1b1d1e; }
@@ -110,6 +122,7 @@ button, input, select { font: inherit; }
 #nav .brand-name { font-family: var(--font-heading); font-weight: 600; font-size: 19px; letter-spacing: 0.03em; text-transform: uppercase; }
 #nav .navbtn { color: var(--color-text); opacity: 0.75; }
 #nav .navbtn.on { color: var(--color-accent-700); opacity: 1; box-shadow: inset 0 -2px 0 var(--color-accent); }
+#nav .btn-icon.on { background: color-mix(in srgb, var(--color-accent) 14%, transparent); border-color: var(--color-accent); color: var(--color-accent-700); }
 main { width: 100%; margin: 0 auto; }
 .page-head { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
 .page-head h1 { margin: 0; letter-spacing: 0.03em; text-transform: uppercase; }
@@ -226,6 +239,7 @@ main { width: 100%; margin: 0 auto; }
 </head>
 <body>
 <div id="app">
+  <div id="login" class="hidden"></div>
   <div id="strip" class="no-print">
     <div class="title" id="strip-title"></div>
     <div id="menubar" data-menubar="1"></div>
@@ -272,6 +286,53 @@ function fmtDate(s) {
 const clone = o => JSON.parse(JSON.stringify(o));
 function setPath(obj, path, val) { const ks = path.split('.'); let o = obj; for (let i = 0; i < ks.length - 1; i++) o = o[ks[i]]; o[ks[ks.length - 1]] = val; }
 
+// ── Auth ───────────────────────────────────────────────────────────────────
+// Passwords are stored as salted SHA-256 hashes, never in plain text.
+// NOTE: this is a client-side gate for a static site, not server security.
+const USERS_KEY = 'jts_loadboard_users_v1', SESSION_KEY = 'jts_loadboard_session';
+function sha256(str) {
+  const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  const b = new TextEncoder().encode(str), l = b.length, bits = l * 8;
+  const padLen = ((l + 9 + 63) >> 6) << 6, m = new Uint8Array(padLen); m.set(b); m[l] = 0x80;
+  const dv = new DataView(m.buffer); dv.setUint32(padLen - 4, bits >>> 0); dv.setUint32(padLen - 8, Math.floor(bits / 0x100000000));
+  let H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const W = new Uint32Array(64), rotr = (x, n) => (x >>> n) | (x << (32 - n));
+  for (let i = 0; i < padLen; i += 64) {
+    for (let t = 0; t < 16; t++) W[t] = dv.getUint32(i + t * 4);
+    for (let t = 16; t < 64; t++) { const s0 = rotr(W[t-15], 7) ^ rotr(W[t-15], 18) ^ (W[t-15] >>> 3), s1 = rotr(W[t-2], 17) ^ rotr(W[t-2], 19) ^ (W[t-2] >>> 10); W[t] = (W[t-16] + s0 + W[t-7] + s1) >>> 0; }
+    let [a, bb, c, d, e, f, g, h] = H;
+    for (let t = 0; t < 64; t++) {
+      const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25), ch = (e & f) ^ (~e & g), t1 = (h + S1 + ch + K[t] + W[t]) >>> 0;
+      const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22), maj = (a & bb) ^ (a & c) ^ (bb & c), t2 = (S0 + maj) >>> 0;
+      h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = bb; bb = a; a = (t1 + t2) >>> 0;
+    }
+    H = [a, bb, c, d, e, f, g, h].map((x, i) => (H[i] + x) >>> 0);
+  }
+  return H.map(x => x.toString(16).padStart(8, '0')).join('');
+}
+const hashPw = (salt, pw) => sha256(salt + ':' + pw);
+const newSalt = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join('');
+const SEED_ADMIN = { id: 'u-dganske', name: 'Drew Ganske', initials: 'DG', username: 'dganske', role: 'admin', salt: '98db597830b13e72d84e6d4b', hash: '1557bc9b621ac3ac8e3a02a9e7d0a743f4cffbb414e30013c2cbab2c8cc58737' };
+function loadUsers() {
+  let u = null; try { u = JSON.parse(localStorage.getItem(USERS_KEY)); } catch (e) {}
+  if (!Array.isArray(u) || !u.length) u = [SEED_ADMIN];
+  if (!u.some(x => x.role === 'admin')) u.unshift(SEED_ADMIN);
+  return u;
+}
+function saveUsers(u) { try { localStorage.setItem(USERS_KEY, JSON.stringify(u)); } catch (e) {} }
+function readSession() {
+  let n = null; try { n = sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY); } catch (e) {}
+  return n ? loadUsers().find(x => x.username === n) || null : null;
+}
+function writeSession(username, remember) {
+  try { sessionStorage.setItem(SESSION_KEY, username); if (remember) localStorage.setItem(SESSION_KEY, username); else localStorage.removeItem(SESSION_KEY); } catch (e) {}
+}
+function clearSession() { try { sessionStorage.removeItem(SESSION_KEY); localStorage.removeItem(SESSION_KEY); } catch (e) {} }
+function signIn(username, pw) {
+  const u = loadUsers().find(x => x.username.toLowerCase() === String(username).trim().toLowerCase());
+  return u && hashPw(u.salt, pw) === u.hash ? u : null;
+}
+
 // ── Icons (Lucide, stroke 1.5) ─────────────────────────────────────────────
 const svg = (d, size = 14, stroke = 'currentColor', sw = 1.5, extra = '') =>
   `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" ${extra}>${d}</svg>`;
@@ -295,6 +356,8 @@ const I = {
   mUsers: svg('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0 .01M22 21v-2a4 4 0 0 0-3-3.87"></path>', 13, '#3f6f9f', 1.6),
   mTruck: svg('<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2m12 0h2a1 1 0 0 0 1-1v-4l-4-5h-2"></path>', 13, '#7a5a2c', 1.6),
   mPin: svg('<path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12Z"></path>', 13, '#2f5c8f', 1.6),
+  userSm: svg('<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>', 13),
+  gear: svg('<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle>', 16),
   mOffice: svg('<path d="M3 21V7l6-4v18M9 21h12V11l-6-2M13 13h.01M13 17h.01"></path>', 13, '#8a6f2a', 1.6)
 };
 const CORNERS = '<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>';
@@ -308,7 +371,8 @@ function nextFileNo() {
   return String(max + 1);
 }
 function blankDraft() {
-  return { id: null, fileNo: nextFileNo(), customer: '', status: 'Tendered', temp: '', fileIn: '', trIn: '',
+  const ini = (S.user && S.user.initials) || '';
+  return { id: null, fileNo: nextFileNo(), customer: '', status: 'Tendered', temp: '', fileIn: ini, trIn: ini,
     pickups: [{ ...blankStop(), lines: [blankLine()] }], drops: [blankStop()],
     linehaul: '', fuel: '', accessorial: '', carrierName: '', carrierEmail: '', createdAt: Date.now() };
 }
@@ -396,6 +460,7 @@ function readStore() { try { return JSON.parse(localStorage.getItem(STORE_KEY));
 const S = (() => {
   const p = readStore(), d = demoData();
   return {
+    user: readSession(), users: loadUsers(), loginErr: '', userDraft: { name: '', initials: '', username: '', password: '', role: 'dispatcher' },
     view: 'board', search: '', statusFilter: 'All', draft: null, tenderId: null,
     sortKey: 'shipDate', sortDir: 1, openMenu: null, hoverMenu: null,
     boardDate: todayISO(), dateScope: 'day', refreshedAt: Date.now(),
@@ -452,6 +517,9 @@ function renderShell() {
     <button class="btn btn-ghost navbtn${S.view === 'board' ? ' on' : ''}" data-act="goBoard">Load board</button>
     <button class="btn btn-ghost navbtn${S.view === 'directory' ? ' on' : ''}" data-act="goDirectory">Shippers &amp; receivers</button>
     <div class="spacer"></div>
+    <span class="user-chip">${I.userSm}${esc(S.user.name)}<span class="tag tag-outline">${S.user.role === 'admin' ? 'Admin' : 'Dispatch'}</span></span>
+    <button class="btn btn-ghost" style="font-size:12.5px" data-act="signOut">Sign out</button>
+    ${S.user.role === 'admin' ? `<button class="btn btn-icon btn-secondary${S.view === 'users' ? ' on' : ''}" title="Settings — users" data-act="goUsers">${I.gear}</button>` : ''}
     <button class="btn btn-primary blueprint" data-act="newLoad">${CORNERS}${I.plus}New load</button>`;
 }
 
@@ -862,8 +930,65 @@ function renderDirectory() {
   </main>`;
 }
 
+// ── Login ──────────────────────────────────────────────────────────────────
+function renderLogin() {
+  return `<form class="card blueprint" data-form="login" autocomplete="on">${CORNERS}
+    <div class="mark">${I.truckNav}<div>
+      <h1>JTS Operations</h1>
+      <div class="text-muted" style="font-size:12.5px">${esc(COMPANY.name)} · Load board</div></div></div>
+    <div class="field"><label for="login-user">Username</label><input class="input" id="login-user" name="username" autocomplete="username" autofocus value=""></div>
+    <div class="field"><label for="login-pw">Password</label><input class="input" id="login-pw" name="password" type="password" autocomplete="current-password"></div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12.5px"><input type="checkbox" id="login-remember" name="remember"> Keep me signed in on this computer</label>
+    <div class="err" id="login-err">${esc(S.loginErr)}</div>
+    <button class="btn btn-primary blueprint" type="submit" style="width:100%">${CORNERS}Sign in</button>
+  </form>`;
+}
+
+// ── Users (admin) ──────────────────────────────────────────────────────────
+function renderUsers() {
+  const d = S.userDraft;
+  const f = (k, span, label, extra = '') => `<div class="field" style="grid-column:span ${span}"><label>${label}</label><input class="input" ${extra} value="${esc(d[k] ?? '')}" data-bind="userDraft.${k}"></div>`;
+  return `<main id="users">
+    <div class="page-head" style="margin-bottom:var(--space-4)">
+      <h1 style="font-size:30px">Settings · Users</h1>
+      <span class="text-muted" style="font-size:13px">Who can sign in to this board. Initials auto-fill File IN / Tr… IN on new loads.</span>
+      <div class="spacer"></div>
+      <button class="btn btn-secondary btn-sm" data-act="goBoard">${I.back}Back to board</button>
+    </div>
+    <div class="card blueprint">${CORNERS}
+      <div class="card-kicker">Accounts</div>
+      <div style="display:flex;flex-direction:column">
+        ${S.users.map(u => `<div class="fac">
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:14px">${esc(u.name)} <span class="text-muted" style="font-weight:400;font-size:12px">· ${esc(u.initials || '')}</span></div>
+            <div style="font-size:12px">${esc(u.username)} <span class="tag ${u.role === 'admin' ? 'tag-accent' : 'tag-neutral'} role" style="margin-left:6px">${u.role === 'admin' ? 'Admin' : 'Dispatcher'}</span></div>
+          </div>
+          <button class="btn btn-ghost" style="font-size:12px" data-act="resetPw" data-id="${esc(u.id)}">Reset password</button>
+          ${u.id === S.user.id ? '' : `<button class="btn btn-icon btn-ghost" title="Remove user" data-act="rmUser" data-id="${esc(u.id)}">${I.trash}</button>`}
+        </div>`).join('')}
+      </div>
+      <div class="grid6 dir-form">
+        ${f('name', 3, 'Full name')}
+        ${f('initials', 1, 'Initials', 'maxlength="3"')}
+        <div class="field" style="grid-column:span 2"><label>Role</label><select class="input" data-act="userRole"><option value="dispatcher"${d.role === 'dispatcher' ? ' selected' : ''}>Dispatcher</option><option value="admin"${d.role === 'admin' ? ' selected' : ''}>Admin</option></select></div>
+        ${f('username', 3, 'Username', 'autocomplete="off"')}
+        ${f('password', 3, 'Password', 'type="password" autocomplete="new-password"')}
+        <button class="btn btn-primary blueprint" style="grid-column:span 6" data-act="addUser">${CORNERS}${I.plus}Add user</button>
+      </div>
+    </div>
+  </main>`;
+}
+
 // ── Render ─────────────────────────────────────────────────────────────────
 function render() {
+  const login = $('#login'), strip = $('#strip'), nav = $('#nav'), view = $('#view');
+  if (!S.user) {
+    login.classList.remove('hidden'); strip.classList.add('hidden'); nav.classList.add('hidden'); view.innerHTML = '';
+    login.innerHTML = renderLogin(); const u = $('#login-user'); if (u) u.focus();
+    return;
+  }
+  login.classList.add('hidden'); strip.classList.remove('hidden'); nav.classList.remove('hidden');
+  if (S.view === 'users' && S.user.role !== 'admin') S.view = 'board';
   if (S.view === 'builder' && !S.draft) S.view = 'board';
   if (S.view === 'tender' && !S.loads.some(l => l.id === S.tenderId)) S.view = 'board';
   renderShell();
@@ -872,6 +997,7 @@ function render() {
   else if (S.view === 'builder') v.innerHTML = renderBuilder();
   else if (S.view === 'tender') v.innerHTML = renderTender(S.loads.find(l => l.id === S.tenderId));
   else if (S.view === 'directory') v.innerHTML = renderDirectory();
+  else if (S.view === 'users') v.innerHTML = renderUsers();
   measureShell();
 }
 function measureShell() {
@@ -918,11 +1044,30 @@ const ACT = {
   },
   addLine: el => { S.draft.pickups[+el.dataset.i].lines.push(blankLine()); render(); },
   rmLine: el => { S.draft.pickups[+el.dataset.i].lines.splice(+el.dataset.li, 1); render(); },
+  // auth + users
+  goUsers: () => { set({ view: 'users', openMenu: null }); window.scrollTo(0, 0); },
+  signOut: () => { clearSession(); S.user = null; S.draft = null; S.view = 'board'; S.openMenu = null; render(); },
+  userRole: el => { S.userDraft.role = el.value; },
+  addUser: () => {
+    const d = S.userDraft, uname = d.username.trim().toLowerCase();
+    if (!d.name.trim() || !uname || !d.password) { alert('Name, username and password are required.'); return; }
+    if (S.users.some(x => x.username.toLowerCase() === uname)) { alert('That username is already taken.'); return; }
+    const salt = newSalt();
+    S.users = [...S.users, { id: 'u-' + uid(), name: d.name.trim(), initials: (d.initials || d.name.split(/\s+/).map(w => w[0]).join('')).toUpperCase().slice(0, 3), username: uname, role: d.role, salt, hash: hashPw(salt, d.password) }];
+    S.userDraft = { name: '', initials: '', username: '', password: '', role: 'dispatcher' };
+    saveUsers(S.users); render();
+  },
+  rmUser: el => { const u = S.users.find(x => x.id === el.dataset.id); if (!u || u.id === S.user.id) return; if (confirm('Remove user ' + u.username + '?')) { S.users = S.users.filter(x => x.id !== u.id); saveUsers(S.users); render(); } },
+  resetPw: el => {
+    const u = S.users.find(x => x.id === el.dataset.id); if (!u) return;
+    const pw = prompt('New password for ' + u.username + ':'); if (!pw) return;
+    u.salt = newSalt(); u.hash = hashPw(u.salt, pw); saveUsers(S.users); alert('Password updated for ' + u.username + '.');
+  },
   // directory
   addFac: el => { const k = el.dataset.kind, cur = S.dirDraft[k]; if (!cur.name.trim()) return; S[k] = [...S[k], { id: uid(), ...cur }]; S.dirDraft[k] = blankFac(); persist(); render(); },
   rmFac: el => { const k = el.dataset.kind; S[k] = S[k].filter(x => x.id !== el.dataset.id); persist(); render(); }
 };
-const CHANGE_ACTS = new Set(['dateSet', 'statusFilter', 'draftStatus', 'facility', 'dropIdx']);
+const CHANGE_ACTS = new Set(['dateSet', 'statusFilter', 'draftStatus', 'facility', 'dropIdx', 'userRole']);
 
 const app = $('#app');
 app.addEventListener('click', e => {
@@ -941,6 +1086,15 @@ app.addEventListener('input', e => {
   setPath(S, path, el.value);
   if (path === 'search') renderBoardBody();
   else if (path.startsWith('draft.')) builderDerived();
+});
+
+app.addEventListener('submit', e => {
+  const form = e.target.closest('[data-form="login"]'); if (!form) return;
+  e.preventDefault();
+  const u = signIn(form.username.value, form.password.value);
+  if (!u) { S.loginErr = 'Wrong username or password.'; $('#login-err').textContent = S.loginErr; form.password.value = ''; form.password.focus(); return; }
+  writeSession(u.username, form.remember.checked);
+  S.user = u; S.users = loadUsers(); S.loginErr = ''; render();
 });
 
 // menubar: click toggles, hover switches once one is open, outside click / Escape closes
