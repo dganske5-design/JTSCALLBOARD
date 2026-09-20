@@ -227,11 +227,23 @@ main { width: 100%; margin: 0 auto; }
 .grid td.status .late, .lc .st .late { color: #c47a00; font-weight: 700; }
 .grid td.status .down, .lc .st .down { color: #c40000; font-weight: 700; }
 .lc.hot .st .late, .lc.hot .st .down { color: #fff; }
-body.m .file-layout { grid-template-columns: 1fr; }
+body.m .file-layout { grid-template-columns: minmax(0, 1fr); }
+.file-body { min-width: 0; }
 body.m .rail { position: static; flex-direction: row; }
 body.m .rail button { flex: 1; text-align: center; padding: 8px 4px; font-size: 12px; }
 body.m .rail .sub { display: none; }
 
+/* detention alert */
+body.dwell-alert { background: #ffe600; }
+body.dwell-alert #nav { background: #ffe600; }
+body.dwell-alert .card, body.dwell-alert #tender-sheet { background: #fff8b8; }
+.dwell-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #ff6a00; color: #1b1d1e; border: 2px solid #1b1d1e; padding: 10px 14px; margin-bottom: var(--space-4); font-family: var(--font-heading); font-weight: 700; font-size: 16px; letter-spacing: 0.03em; text-transform: uppercase; }
+.dwell-banner .dwell-tag { background: #1b1d1e; color: #ff6a00; padding: 2px 10px; font-size: 13px; }
+.grid td.status.delayed, .lc .st.delayed { background: #ff6a00 !important; color: #1b1d1e !important; font-weight: 800 !important; text-transform: uppercase; letter-spacing: 0.02em; }
+.stats .delayed-n { color: #ff6a00; background: #1b1d1e; padding: 0 6px; }
+.stop-times.alert { background: #ff6a00; border: 2px solid #1b1d1e; }
+.stop-times.alert .st-lbl { color: #1b1d1e; }
+@media print { body.dwell-alert { background: #fff; } }
 /* autocomplete + distances + stop times */
 .ac { position: relative; }
 .ac-list { position: absolute; left: 0; right: 0; top: 100%; z-index: 80; background: #fbfaf8; border: 1px solid #a8a49d; box-shadow: 2px 3px 7px rgba(0,0,0,0.18); max-height: 260px; overflow-y: auto; }
@@ -351,7 +363,7 @@ const COMPANY = {
   phone: '(559) 555-0100',
   email: 'dispatch@johansontransportation.com'
 };
-const STORE_KEY = 'jts_loadboard_v3';
+const STORE_KEY = 'jts_loadboard_v4';
 const LAYOUT_KEY = 'jts_loadboard_layout';
 const MOBILE_BP = 760;
 const STATUSES = ['Open', 'Quoted', 'Tendered', 'Booked', 'Dispatched', 'In Transit', 'Delivered', 'Invoiced', 'Cancelled'];
@@ -498,6 +510,7 @@ function route(l) {
 const tagFor = s => ({ Open: 'tag-outline', Quoted: 'tag-neutral', Tendered: 'tag-outline', Booked: 'tag-accent', Dispatched: 'tag-accent', 'In Transit': 'tag-accent' }[s] || 'tag-neutral');
 
 // ── Demo data (deterministic) ──────────────────────────────────────────────
+const localDT = ts => { const d = new Date(ts); d.setSeconds(0, 0); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
 function demoData() {
   const shippers = [
     { id: 's1', name: 'Great Lakes Packaging', address: '1450 Velp Ave', city: 'Green Bay', st: 'WI', zip: '54303', contact: 'Dana Kowalski', phone: '(920) 555-0142' },
@@ -521,7 +534,7 @@ function demoData() {
     { id: 'L2', fileNo: '2440864', customer: 'Mosqueda Inc.', customerEmail: 'logistics@mosqueda.example', fileIn: 'DG', trIn: 'DG', status: 'Booked', temp: '', createdAt: Date.now() - 864e5,
       linehaul: '1425', fuel: '165', accessorial: '75', ...CARRIER,
       carrier: { ...CARRIER_RIG, driver: 'Marcus Reed', driverPhone: '(559) 555-0188', tractor: '4471', trailer: 'R-2210', year: '2022', plate: 'CA 9KLT441' },
-      pickups: [{ ...stop(shippers[2], 'test 1234', '2026-09-01', '10:00', ''), lines: [line('Organic rolled oats — 50 lb bags', 14, 560, 28000, 0)] },
+      pickups: [{ ...stop(shippers[2], 'test 1234', '2026-09-01', '10:00', ''), inAt: localDT(Date.now() - 197 * 60000), lines: [line('Organic rolled oats — 50 lb bags', 14, 560, 28000, 0)] },
                 { ...stop(shippers[0], 'test 1234', '2026-09-01', '15:30', 'Appt required.'), lines: [line('Retail display cartons', 8, 320, 6400, 0)] }],
       drops: [stop(receivers[1], 'test 1234', '2026-09-02', '06:00', '')] },
     { id: 'L3', fileNo: '2440855', customer: 'Mosqueda Inc.', customerEmail: 'logistics@mosqueda.example', fileIn: 'DG', trIn: 'DG', status: 'In Transit', temp: '', createdAt: Date.now() - 1728e5,
@@ -746,6 +759,17 @@ function renderBoard() {
     <div id="board-body"></div>
   </main>`;
 }
+const DWELL_ALERT_MIN = 180; // 3 hours on site = detention alert
+function dwellMins(st) { if (!st || !st.inAt) return 0; const end = st.outAt ? new Date(st.outAt) : new Date(); const m = Math.round((end - new Date(st.inAt)) / 60000); return isNaN(m) || m < 0 ? 0 : m; }
+const fmtMins = m => `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
+function delayAt(l) {
+  if (['Delivered', 'Invoiced', 'Cancelled'].includes(l.status)) return null;
+  let worst = null;
+  const scan = (arr, kind, word) => arr.forEach((st, i) => { const m = dwellMins(st); if (m >= DWELL_ALERT_MIN && (!worst || m > worst.mins)) worst = { kind, i, stop: st, mins: m, label: `${word} ${i + 1}`, onSite: !st.outAt }; });
+  scan(l.pickups, 'Shipper', 'Pickup'); scan(l.drops, 'Receiver', 'Delivery');
+  return worst;
+}
+const delayText = d => d ? `Delayed at ${d.kind}` : '';
 const condMark = l => { const c = (l.tracking || {}).condition; return c === 'Running late' ? ' <span class="late">LATE</span>' : c === 'Breakdown' ? ' <span class="down">BRKDN</span>' : ''; };
 function renderBoardBody() {
   const rows = boardRows();
@@ -771,7 +795,7 @@ function renderBoardBody() {
       <td class="r green">${esc(r.delCity)}</td>
       <td class="c green">${esc(r.delSt)}</td>
       <td class="l carrier${r.carrier ? '' : ' unc'}">${r.carrier ? esc(r.carrier) : 'UNCOVERED'}</td>
-      <td class="c status${hot ? ' hot-txt' : ''}">${esc(l.status)}${condMark(l)}</td>
+      ${(() => { const dl = delayAt(l); return dl ? `<td class="c status delayed" title="${esc(dl.label)} — ${esc(dl.stop.name || '')} · on site ${fmtMins(dl.mins)}">${delayText(dl)}</td>` : `<td class="c status${hot ? ' hot-txt' : ''}">${esc(l.status)}${condMark(l)}</td>`; })()}
       <td class="r">${money(r.rate)}</td>
       <td class="r act"><div>
         <button class="btn btn-ghost tender" data-act="view" data-id="${esc(l.id)}">Tender</button>
@@ -785,7 +809,7 @@ function renderBoardBody() {
     const dt = r.shipDate ? r.shipDate.slice(5).replace('-', '/') + '/' + r.shipDate.slice(2, 4) : '—';
     const driven = /DRIVEN/.test(r.originator);
     return `<div class="lc${hot ? ' hot' : ''}" data-act="view" data-id="${esc(l.id)}">
-      <div class="row"><span class="file">${esc(r.fileNo)}</span><span class="text-muted" style="font-weight:600">${dt}</span><span class="st">${esc(l.status)}${condMark(l)}</span></div>
+      <div class="row"><span class="file">${esc(r.fileNo)}</span><span class="text-muted" style="font-weight:600">${dt}</span>${(() => { const dl = delayAt(l); return dl ? `<span class="st delayed">${delayText(dl)} · ${fmtMins(dl.mins)}</span>` : `<span class="st">${esc(l.status)}${condMark(l)}</span>`; })()}</div>
       <div class="row"><span class="orig${driven ? ' driven' : ''}">${esc(r.originator)}</span></div>
       <div class="row"><span>${esc(r.puCity)}, ${esc(r.puSt)} → ${esc(r.delCity)}, ${esc(r.delSt)}</span></div>
       <div class="row"><span class="${r.carrier ? '' : 'unc'}">${r.carrier ? esc(r.carrier) : 'UNCOVERED'}</span><span class="rate">${money(r.rate)}</span></div>
@@ -796,6 +820,7 @@ function renderBoardBody() {
     <div class="stats">
       <div><span class="text-muted">Showing</span> <strong>${shown}</strong> <span class="text-muted">of ${all} files</span></div>
       <div><span class="text-muted">Uncovered</span> <strong style="color:#c40000">${unc}</strong></div>
+      ${(() => { const n = S.loads.filter(l => delayAt(l)).length; return n ? `<div><span class="text-muted">Delayed</span> <strong class="delayed-n">${n}</strong></div>` : ''; })()}
       <div><span class="text-muted">In transit</span> <strong>${transit}</strong></div>
       <div><span class="text-muted">Delivered</span> <strong>${delivered}</strong></div>
       <div><span class="text-muted">Booked revenue</span> <strong>${revenue}</strong></div>
@@ -966,9 +991,9 @@ const nowLocal = () => { const d = new Date(); d.setSeconds(0, 0); return new Da
 const fmtLocal = v => v ? new Date(v).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
 function dwell(a, b) { if (!a || !b) return ''; const m = Math.round((new Date(b) - new Date(a)) / 60000); if (isNaN(m) || m < 0) return ''; return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`; }
 function stopTimes(kind, i, s) {
-  const dw = dwell(s.inAt, s.outAt);
+  const dw = dwell(s.inAt, s.outAt), live = dwellMins(s), alert = live >= DWELL_ALERT_MIN;
   const ctl = (f, label) => `<span class="st-lbl">${label}</span><input class="input" type="datetime-local" value="${esc(s[f] || '')}" data-act="stopTime" data-kind="${kind}" data-i="${i}" data-f="${f}"><button class="btn btn-secondary btn-sm" data-act="stopNow" data-kind="${kind}" data-i="${i}" data-f="${f}">Now</button>`;
-  return `<div class="stop-times no-print">${ctl('inAt', 'Checked in')}${ctl('outAt', 'Checked out')}${dw ? `<span class="dwell">Dwell ${dw}</span>` : ''}</div>
+  return `<div class="stop-times no-print${alert ? ' alert' : ''}">${ctl('inAt', 'Checked in')}${ctl('outAt', 'Checked out')}${dw ? `<span class="dwell">Dwell ${dw}</span>` : (s.inAt && !s.outAt ? `<span class="dwell">On site ${fmtMins(live)}</span>` : '')}</div>
     ${(s.inAt || s.outAt) ? `<div class="stop-times-print" style="font-size:12px">${s.inAt ? `<strong>Checked in</strong> ${fmtLocal(s.inAt)}` : ''}${s.inAt && s.outAt ? ' · ' : ''}${s.outAt ? `<strong>Checked out</strong> ${fmtLocal(s.outAt)}` : ''}${dw ? ` · Dwell ${dw}` : ''}</div>` : ''}`;
 }
 function renderTender(l) {
@@ -1166,7 +1191,9 @@ function renderFile(l) {
   const tabs = [['tender', 'Load tender', 'Print / email to carrier'], ['carrier', 'Add carrier', l.carrierName ? esc(l.carrierName) : 'No carrier yet'], ['tracking', 'Tracking & tracing', trackOf(l).condition || 'No check calls']];
   const rail = `<div class="rail no-print">${tabs.map(([k, label, sub]) => `<button class="${S.fileTab === k ? 'on' : ''}" data-act="fileTab" data-tab="${k}">${label}<span class="sub">${sub}</span></button>`).join('')}</div>`;
   const body = S.fileTab === 'carrier' ? renderCarrierTab(l) : S.fileTab === 'tracking' ? renderTrackingTab(l) : renderTender(l);
-  return `<main id="tender-wrap">
+  const dl = delayAt(l);
+  const banner = dl ? `<div class="dwell-banner no-print">⚠ Detention alert · ${esc(dl.label)} — ${esc(dl.stop.name || dl.stop.city || 'stop')}: ${dl.onSite ? 'on site' : 'was on site'} ${fmtMins(dl.mins)}${dl.stop.inAt ? ` · checked in ${fmtLocal(dl.stop.inAt)}` : ''}${dl.stop.outAt ? ` · out ${fmtLocal(dl.stop.outAt)}` : ''}<span class="spacer"></span><span class="dwell-tag">${delayText(dl)}</span></div>` : '';
+  return `<main id="tender-wrap">${banner}
     <div class="ctl-row no-print" style="margin-bottom:var(--space-4)">
       <button class="btn btn-secondary" data-act="goBoard">${I.back}Back to board</button>
       <button class="btn btn-secondary" data-act="edit" data-id="${esc(l.id)}">${I.pencil}Edit load</button>
@@ -1365,11 +1392,14 @@ function render() {
   const login = $('#login'), strip = $('#strip'), nav = $('#nav'), view = $('#view');
   document.body.classList.toggle('m', isMobile());
   if (!S.user) {
+    document.body.classList.remove('dwell-alert');
     login.classList.remove('hidden'); strip.classList.add('hidden'); nav.classList.add('hidden'); view.innerHTML = '';
     login.innerHTML = renderLogin(); const u = $('#login-user'); if (u) u.focus();
     return;
   }
   document.body.classList.toggle('m', isMobile());
+  const cur = S.view === 'tender' ? S.loads.find(l => l.id === S.tenderId) : null;
+  document.body.classList.toggle('dwell-alert', !!(cur && delayAt(cur)));
   login.classList.add('hidden'); strip.classList.remove('hidden'); nav.classList.remove('hidden');
   if (S.view === 'users' && S.user.role !== 'admin') S.view = 'board';
   if (S.view === 'builder' && !S.draft) S.view = 'board';
@@ -1566,8 +1596,17 @@ let wasMobile = isMobile();
 window.addEventListener('resize', () => { measureShell(); if (isMobile() !== wasMobile) { wasMobile = isMobile(); render(); } });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(measureShell);
 
+let alertKey = '';
+function alertSignature() { return S.loads.map(l => { const d = delayAt(l); return d ? l.id + ':' + d.kind + ':' + Math.floor(d.mins / 5) : ''; }).filter(Boolean).join('|'); }
+setInterval(() => {
+  if (!S.user) return;
+  const k = alertSignature(); if (k === alertKey) return; alertKey = k;
+  if (S.view === 'board') renderBoardBody();
+  else if (S.view === 'tender' && !document.activeElement.matches('input, select, textarea')) render();
+}, 60000);
 persist();
 render();
+alertKey = alertSignature();
 </script>
 <!-- US cities & ZIP centroids: Name|ST|lat|lon|zip-ranges — feeds the location autocomplete and mileage -->
 <script type="text/plain" id="places-data">
