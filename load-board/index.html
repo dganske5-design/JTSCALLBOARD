@@ -246,7 +246,7 @@ const COMPANY = {
   phone: '(559) 555-0100',
   email: 'dispatch@johansontransportation.com'
 };
-const STORE_KEY = 'jts_loadboard_v1';
+const STORE_KEY = 'jts_loadboard_v2';
 const STATUSES = ['Quoted', 'Tendered', 'Booked', 'Dispatched', 'In Transit', 'Delivered', 'Invoiced', 'Cancelled'];
 const HOT = ['Quoted', 'Tendered'];
 const COVERED = ['Booked', 'Dispatched', 'In Transit', 'Delivered', 'Invoiced'];
@@ -344,21 +344,21 @@ function demoData() {
   const loads = [
     { id: 'L1', fileNo: '2440871', customer: 'Mosqueda Inc.', fileIn: 'DG', trIn: 'DG', status: 'Tendered', temp: '-10°F continuous', createdAt: Date.now() - 36e5,
       linehaul: '1850', fuel: '210', accessorial: '0', carrierName: '', carrierEmail: '',
-      pickups: [{ ...stop(shippers[1], 'PU-77341', '2026-09-02', '08:00', 'Check in at guard shack. FCFS 06:00–14:00.'), lines: [line('Frozen entrées — keep at -10°F', 18, 1440, 32400, 0), line('Ice cream novelties', 8, 640, 14200, 1)] }],
-      drops: [stop(receivers[0], 'DEL-55102', '2026-09-03', '07:30', ''), stop(receivers[2], 'DEL-55103', '2026-09-04', '09:00', 'Lumper on site — receipt required.')] },
+      pickups: [{ ...stop(shippers[1], 'test 1234', '2026-09-02', '08:00', 'Check in at guard shack. FCFS 06:00–14:00.'), lines: [line('Frozen entrées — keep at -10°F', 18, 1440, 32400, 0), line('Ice cream novelties', 8, 640, 14200, 1)] }],
+      drops: [stop(receivers[0], 'test 1234', '2026-09-03', '07:30', ''), stop(receivers[2], 'test 1234', '2026-09-04', '09:00', 'Lumper on site — receipt required.')] },
     { id: 'L2', fileNo: '2440864', customer: 'Mosqueda Inc.', fileIn: 'DG', trIn: 'DG', status: 'Booked', temp: '', createdAt: Date.now() - 864e5,
       linehaul: '1425', fuel: '165', accessorial: '75', ...CARRIER,
-      pickups: [{ ...stop(shippers[2], 'PU-20981', '2026-09-01', '10:00', ''), lines: [line('Organic rolled oats — 50 lb bags', 14, 560, 28000, 0)] },
-                { ...stop(shippers[0], 'PU-20990', '2026-09-01', '15:30', 'Appt required.'), lines: [line('Retail display cartons', 8, 320, 6400, 0)] }],
-      drops: [stop(receivers[1], 'DEL-88410', '2026-09-02', '06:00', '')] },
+      pickups: [{ ...stop(shippers[2], 'test 1234', '2026-09-01', '10:00', ''), lines: [line('Organic rolled oats — 50 lb bags', 14, 560, 28000, 0)] },
+                { ...stop(shippers[0], 'test 1234', '2026-09-01', '15:30', 'Appt required.'), lines: [line('Retail display cartons', 8, 320, 6400, 0)] }],
+      drops: [stop(receivers[1], 'test 1234', '2026-09-02', '06:00', '')] },
     { id: 'L3', fileNo: '2440855', customer: 'Mosqueda Inc.', fileIn: 'DG', trIn: 'DG', status: 'In Transit', temp: '', createdAt: Date.now() - 1728e5,
       linehaul: '980', fuel: '120', accessorial: '0', ...CARRIER,
-      pickups: [{ ...stop(shippers[3], 'PU-66104', '2026-08-30', '09:00', ''), lines: [line('Kraft paper rolls', 20, 20, 42000, 0)] }],
-      drops: [stop(receivers[3], 'DEL-30277', '2026-08-31', '08:00', '')] },
+      pickups: [{ ...stop(shippers[3], 'test 1234', '2026-08-30', '09:00', ''), lines: [line('Kraft paper rolls', 20, 20, 42000, 0)] }],
+      drops: [stop(receivers[3], 'test 1234', '2026-08-31', '08:00', '')] },
     { id: 'L4', fileNo: '2440848', customer: 'Mosqueda Inc.', fileIn: 'DG', trIn: 'DG', status: 'Delivered', temp: '', createdAt: Date.now() - 3456e5,
       linehaul: '1210', fuel: '140', accessorial: '0', ...CARRIER,
-      pickups: [{ ...stop(shippers[1], 'PU-77102', '2026-08-27', '07:00', ''), lines: [line('Frozen vegetables — mixed', 22, 1760, 39600, 0)] }],
-      drops: [stop(receivers[0], 'DEL-54980', '2026-08-28', '06:30', '')] }];
+      pickups: [{ ...stop(shippers[1], 'test 1234', '2026-08-27', '07:00', ''), lines: [line('Frozen vegetables — mixed', 22, 1760, 39600, 0)] }],
+      drops: [stop(receivers[0], 'test 1234', '2026-08-28', '06:30', '')] }];
   return { shippers, receivers, loads: [...loads, ...demoExtra()] };
 }
 function demoExtra() {
@@ -380,9 +380,9 @@ function demoExtra() {
     const rate = 1800 + rnd(70) * 100;
     const orig = i % 3 === 0 ? 'MOSQUEDA INC. - REGIONAL DRIVEN' : 'MOSQUEDA INC.';
     const fileNo = String(fn);
-    const pu = { id: uid(), facilityId: '', name: cap(orig) + ' — ' + cap(CITY[a][0]) + ' Shipping', address: '1200 Industrial Pkwy', city: cap(CITY[a][0]), st: CITY[a][1], zip: '', contact: 'Shipping Office', phone: '', ref: 'PU-' + fileNo.slice(-5), po: '', date, time: '08:00', notes: '',
+    const pu = { id: uid(), facilityId: '', name: cap(orig) + ' — ' + cap(CITY[a][0]) + ' Shipping', address: '1200 Industrial Pkwy', city: cap(CITY[a][0]), st: CITY[a][1], zip: '', contact: 'Shipping Office', phone: '', ref: 'test 1234', po: '', date, time: '08:00', notes: '',
       lines: [{ id: uid(), commodity: c[0], pallets: String(c[1]), cases: String(c[2]), weight: String(c[3]), dropIdx: 0 }] };
-    const dl = { id: uid(), facilityId: '', name: cap(CITY[b][0]) + ' Distribution Center', address: '4400 Commerce Dr', city: cap(CITY[b][0]), st: CITY[b][1], zip: '', contact: 'Receiving', phone: '', ref: 'DEL-' + fileNo.slice(-5), po: '', date, time: '06:00', notes: '' };
+    const dl = { id: uid(), facilityId: '', name: cap(CITY[b][0]) + ' Distribution Center', address: '4400 Commerce Dr', city: cap(CITY[b][0]), st: CITY[b][1], zip: '', contact: 'Receiving', phone: '', ref: 'test 1234', po: '', date, time: '06:00', notes: '' };
     out.push({ id: 'X' + fileNo, fileNo, fileIn: 'DG', trIn: 'DG', customer: orig, status, temp: /34°F/.test(c[0]) ? '34°F continuous' : '',
       linehaul: String(Math.round(rate * 0.86)), fuel: String(rate - Math.round(rate * 0.86)), accessorial: '0',
       carrierName: COVERED.includes(status) ? 'Ganske Truck' : '', carrierEmail: COVERED.includes(status) ? 'dispatch@gansketruck.com' : '',
