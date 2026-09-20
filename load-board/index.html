@@ -214,13 +214,22 @@ main { width: 100%; margin: 0 auto; }
 .sig .rule { border-bottom: 1px solid var(--color-text); height: 26px; }
 
 /* ── File view rail ─────────────────────────────────────────────────────── */
-#tender-wrap { max-width: 1160px; }
-.file-layout { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: var(--space-4); align-items: start; }
-.rail { display: flex; flex-direction: column; gap: 4px; position: sticky; top: calc(var(--shell-h) + 12px); }
-.rail button { text-align: left; font-family: var(--font-heading); font-weight: 600; font-size: 14px; letter-spacing: 0.03em; text-transform: uppercase; padding: 9px 12px; background: var(--chrome); border: 1px solid var(--chrome-line); color: var(--color-text); cursor: pointer; line-height: 1.2; }
+#tender-wrap { max-width: none; padding: 0; }
+.file-layout { display: grid; grid-template-columns: 188px minmax(0, 1fr); align-items: start; min-height: calc(100vh - var(--shell-h)); }
+.file-layout.collapsed { grid-template-columns: 52px minmax(0, 1fr); }
+.file-body { padding: var(--space-4) var(--space-6) var(--space-8); }
+.rail { display: flex; flex-direction: column; gap: 4px; position: sticky; top: var(--shell-h); padding: 10px 8px; background: var(--chrome-2); border-right: 1px solid var(--chrome-line); min-height: calc(100vh - var(--shell-h)); }
+.rail button { display: flex; align-items: center; gap: 9px; text-align: left; font-family: var(--font-heading); font-weight: 600; font-size: 14px; letter-spacing: 0.03em; text-transform: uppercase; padding: 9px 10px; background: var(--chrome); border: 1px solid var(--chrome-line); color: var(--color-text); cursor: pointer; line-height: 1.2; }
+.rail button .ic { flex: none; display: inline-flex; opacity: 0.85; }
+.rail button .txt { min-width: 0; }
+.rail .rail-toggle { margin-top: auto; font-size: 12px; text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-weight: 600; color: var(--color-accent-700); background: transparent; border-style: dashed; }
+.rail.collapsed { padding: 10px 6px; }
+.rail.collapsed button { justify-content: center; padding: 10px 0; }
+.rail.collapsed .txt { display: none; }
+#tender-sheet { max-width: none; }
 .rail button:hover { background: var(--hover); }
 .rail button.on { background: var(--color-accent); color: var(--on-accent); border-color: var(--color-accent); }
-.rail .sub { display: block; font-family: var(--font-body); font-weight: 400; font-size: 11px; text-transform: none; letter-spacing: 0; opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rail .sub { display: block; font-family: var(--font-body); font-weight: 400; font-size: 11px; text-transform: none; letter-spacing: 0; opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
 .cond { display: flex; }
 .cond button { flex: 1; padding: 8px 10px; font-size: 13px; font-family: var(--font-body); cursor: pointer; border: 1px solid var(--chrome-line); background: var(--chrome); color: var(--ink); }
 .cond button + button { border-left: none; }
@@ -234,11 +243,14 @@ main { width: 100%; margin: 0 auto; }
 .grid td.status .late, .lc .st .late { color: #c47a00; font-weight: 700; }
 .grid td.status .down, .lc .st .down { color: #c40000; font-weight: 700; }
 .lc.hot .st .late, .lc.hot .st .down { color: #fff; }
-body.m .file-layout { grid-template-columns: minmax(0, 1fr); }
+body.m .file-layout, body.m .file-layout.collapsed { grid-template-columns: minmax(0, 1fr); min-height: 0; }
 .file-body { min-width: 0; }
-body.m .rail { position: static; flex-direction: row; }
-body.m .rail button { flex: 1; text-align: center; padding: 8px 4px; font-size: 12px; }
-body.m .rail .sub { display: none; }
+body.m .rail { position: static; flex-direction: row; min-height: 0; padding: 8px 12px 0; border-right: 0; background: transparent; }
+body.m .rail button { flex: 1; justify-content: center; text-align: center; padding: 8px 4px; font-size: 12px; gap: 5px; }
+body.m .rail button .ic { display: none; }
+body.m .rail .sub, body.m .rail .rail-toggle { display: none; }
+body.m .file-body { padding: 8px 16px var(--space-8); }
+@media print { .file-layout, .file-layout.collapsed { display: block; } .file-body { padding: 0; } }
 
 /* detention alert */
 html.dwell-alert, html.dwell-alert body, body.dwell-alert { background: #ffe600 !important; }
@@ -415,6 +427,7 @@ const COMPANY = {
 const STORE_KEY = 'jts_loadboard_v6';
 const LAYOUT_KEY = 'jts_loadboard_layout';
 const SKIN_KEY = 'jts_loadboard_skin';
+const RAIL_KEY = 'jts_loadboard_rail';
 const DARK = (bg, surface, text, accent, a600, a700, a800, a100, chrome, chrome2, line, soft, strip, stripLine, hover, ring, onAccent = '#0d1117') => ({
   '--color-bg': bg, '--color-surface': surface, '--color-text': text, '--color-divider': 'color-mix(in srgb, ' + text + ' 18%, transparent)',
   '--color-accent': accent, '--color-accent-600': a600, '--color-accent-700': a700, '--color-accent-800': a800, '--color-accent-100': a100,
@@ -579,6 +592,11 @@ const I = {
   gear18: svg('<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle>', 18),
   plus18: svg('<path d="M12 5v14M5 12h14"></path>', 18),
   logout: svg('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"></path>', 16),
+  doc: svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path>', 18),
+  truck18: svg(TRUCK, 18),
+  pin18: svg('<path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12Z"></path><circle cx="12" cy="9" r="2.5"></circle>', 18),
+  chevsL: svg('<path d="m11 17-5-5 5-5M18 17l-5-5 5-5"></path>'),
+  chevsR: svg('<path d="m6 17 5-5-5-5M13 17l5-5-5-5"></path>'),
   mOffice: svg('<path d="M3 21V7l6-4v18M9 21h12V11l-6-2M13 13h.01M13 17h.01"></path>', 13, '#8a6f2a', 1.6)
 };
 const CORNERS = '<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>';
@@ -719,6 +737,7 @@ const S = (() => {
   return {
     layout: (() => { try { return localStorage.getItem(LAYOUT_KEY) || 'auto'; } catch (e) { return 'auto'; } })(),
     skin: (() => { try { return localStorage.getItem(SKIN_KEY) || 'industry'; } catch (e) { return 'industry'; } })(),
+    railCollapsed: (() => { try { return localStorage.getItem(RAIL_KEY) === '1'; } catch (e) { return false; } })(),
     user: readSession(), users: loadUsers(), loginErr: '', userDraft: { name: '', initials: '', username: '', password: '', role: 'dispatcher' },
     view: 'board', search: '', statusFilter: [], onlyDelayed: false, draft: null, tenderId: null, fileTab: 'tender', carrierDraft: null, trackDraft: null,
     sortKey: 'shipDate', sortDir: 1, openMenu: null, hoverMenu: null,
@@ -1358,12 +1377,14 @@ function ensureDrafts(l) {
 }
 function renderFile(l) {
   ensureDrafts(l);
-  const tabs = [['tender', 'Load tender', 'Print / email to carrier'], ['carrier', 'Add carrier', l.carrierName ? esc(l.carrierName) : 'No carrier yet'], ['tracking', 'Tracking & tracing', trackOf(l).condition || 'No check calls']];
-  const rail = `<div class="rail no-print">${tabs.map(([k, label, sub]) => `<button class="${S.fileTab === k ? 'on' : ''}" data-act="fileTab" data-tab="${k}">${label}<span class="sub">${sub}</span></button>`).join('')}</div>`;
+  const tabs = [['tender', 'Load tender', 'Print / email to carrier', I.doc], ['carrier', 'Add carrier', l.carrierName ? esc(l.carrierName) : 'No carrier yet', I.truck18], ['tracking', 'Tracking & tracing', trackOf(l).condition || 'No check calls', I.pin18]];
+  const col = S.railCollapsed && !isMobile();
+  const rail = `<div class="rail no-print${col ? ' collapsed' : ''}">${tabs.map(([k, label, sub, ic]) => `<button class="${S.fileTab === k ? 'on' : ''}" data-act="fileTab" data-tab="${k}" title="${label} — ${sub}"><span class="ic">${ic}</span><span class="txt">${label}<span class="sub">${sub}</span></span></button>`).join('')}
+    <button class="rail-toggle" data-act="railToggle" title="${col ? 'Expand the side tabs' : 'Collapse the side tabs to give the file more room'}">${col ? I.chevsR : I.chevsL}<span class="txt">Collapse</span></button></div>`;
   const body = S.fileTab === 'carrier' ? renderCarrierTab(l) : S.fileTab === 'tracking' ? renderTrackingTab(l) : renderTender(l);
   const dl = delayAt(l);
   const banner = dl ? `<div class="dwell-banner no-print">⚠ Detention alert · ${esc(dl.label)} — ${esc(dl.stop.name || dl.stop.city || 'stop')}: ${dl.onSite ? 'on site' : 'was on site'} ${fmtMins(dl.mins)}${dl.stop.inAt ? ` · checked in ${fmtLocal(dl.stop.inAt)}` : ''}${dl.stop.outAt ? ` · out ${fmtLocal(dl.stop.outAt)}` : ''}<span class="spacer"></span><span class="dwell-tag">${delayText(dl)}</span></div>` : '';
-  return `<main id="tender-wrap">${banner}
+  return `<main id="tender-wrap"><div class="file-layout${col ? ' collapsed' : ''}">${rail}<div class="file-body">${banner}
     <div class="ctl-row no-print" style="margin-bottom:var(--space-4)">
       <button class="btn btn-secondary" data-act="goBoard">${I.back}Back to board</button>
       <button class="btn btn-secondary" data-act="edit" data-id="${esc(l.id)}">${I.pencil}Edit load</button>
@@ -1372,7 +1393,7 @@ function renderFile(l) {
       ${S.fileTab === 'tender' ? `<a class="btn btn-secondary" href="${tenderEmail(l)}">${I.mail}Email to carrier</a>
       <button class="btn btn-primary blueprint" data-act="print">${CORNERS}${I.print}Print / PDF</button>` : ''}
     </div>
-    <div class="file-layout">${rail}<div class="file-body">${body}</div></div>
+    ${body}</div></div>
   </main>`;
 }
 function renderCarrierTab(l) {
@@ -1639,6 +1660,7 @@ const ACT = {
   sortDir: el => { S.sortDir = -S.sortDir; el.textContent = S.sortDir > 0 ? '▲ Asc' : '▼ Desc'; renderBoardBody(); },
   // file tabs: carrier + tracking
   fileTab: el => { S.fileTab = el.dataset.tab; render(); window.scrollTo(0, 0); },
+  railToggle: () => { S.railCollapsed = !S.railCollapsed; try { localStorage.setItem(RAIL_KEY, S.railCollapsed ? '1' : '0'); } catch (e) {} render(); },
   saveCarrier: () => {
     const d = S.carrierDraft, id = d._id;
     updateLoad(id, l => {
