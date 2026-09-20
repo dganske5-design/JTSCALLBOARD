@@ -116,8 +116,7 @@ button, input, select { font: inherit; }
 /* ── App shell ──────────────────────────────────────────────────────────── */
 #strip { position: sticky; top: 0; z-index: 60; background: var(--strip); border-bottom: 1px solid var(--strip-line); }
 #strip .title { display: flex; align-items: center; gap: 6px; padding: 3px 8px; font-size: 12.5px; color: var(--strip-ink); }
-#menubar { display: flex; align-items: stretch; border-top: 1px solid var(--menu-top); background: linear-gradient(var(--chrome), var(--chrome-2)); overflow-x: auto; scrollbar-width: none; }
-#menubar::-webkit-scrollbar { display: none; }
+#menubar { display: flex; align-items: stretch; border-top: 1px solid var(--menu-top); background: linear-gradient(var(--chrome), var(--chrome-2)); flex-wrap: wrap; overflow: visible; }
 .menu > span { white-space: nowrap; }
 .menu { position: relative; display: flex; align-items: center; gap: 5px; padding: 4px 11px; font-size: 12.5px; color: var(--ink); cursor: default; user-select: none; }
 .menu.hot { background: var(--hover); }
@@ -745,7 +744,7 @@ function renderShell() {
     <span class="user-chip">${I.userSm}<span class="uname">${esc(S.user.name)}</span><span class="tag tag-outline">${m ? esc(S.user.initials || S.user.username) : (S.user.role === 'admin' ? 'Admin' : 'Dispatch')}</span></span>
     <button class="btn btn-ghost signout" style="font-size:12.5px" data-act="signOut">Sign out</button>
     <button class="btn btn-icon btn-secondary" title="${m ? 'Switch to desktop view' : 'Switch to mobile view'}" data-act="toggleLayout">${m ? I.monitor : I.phone}</button>
-    ${S.user.role === 'admin' ? `<button class="btn btn-icon btn-secondary${S.view === 'users' ? ' on' : ''}" title="Settings — users" data-act="goUsers">${I.gear}</button>` : ''}
+    <button class="btn btn-icon btn-secondary${S.view === 'users' ? ' on' : ''}" title="Settings — layout, skins${S.user.role === 'admin' ? ', users' : ''}" data-act="goUsers">${I.gear}</button>
     ${m ? `<button class="btn btn-icon btn-secondary" title="Sign out" data-act="signOut">${I.logout}</button>` : ''}
     <button class="btn btn-primary blueprint newload" data-act="newLoad">${CORNERS}${I.plus}New load</button>`;
   renderTabbar();
@@ -766,7 +765,7 @@ function renderTabbar() {
   tb.innerHTML = tab('goBoard', I.list, 'Board', S.view === 'board')
     + `<button class="tab primary" data-act="newLoad">${I.plus18}<span>New load</span></button>`
     + tab('goDirectory', I.building, 'Facilities', S.view === 'directory')
-    + (S.user.role === 'admin' ? tab('goUsers', I.gear18, 'Settings', S.view === 'users') : '');
+    + tab('goUsers', I.gear18, 'Settings', S.view === 'users');
 }
 
 // ── Board ──────────────────────────────────────────────────────────────────
@@ -1461,8 +1460,8 @@ function renderUsers() {
   const f = (k, span, label, extra = '') => `<div class="field" style="grid-column:span ${span}"><label>${label}</label><input class="input" ${extra} value="${esc(d[k] ?? '')}" data-bind="userDraft.${k}"></div>`;
   return `<main id="users">
     <div class="page-head" style="margin-bottom:var(--space-4)">
-      <h1 style="font-size:30px">Settings · Users</h1>
-      <span class="text-muted" style="font-size:13px">Who can sign in to this board. Initials auto-fill File IN / Tr… IN on new loads.</span>
+      <h1 style="font-size:30px">Settings</h1>
+      <span class="text-muted" style="font-size:13px">Layout, skin${S.user.role === 'admin' ? ' and who can sign in' : ''}. Skins are also under Help in the top menu.</span>
       <div class="spacer"></div>
       <button class="btn btn-secondary btn-sm" data-act="goBoard">${I.back}Back to board</button>
     </div>
@@ -1472,7 +1471,7 @@ function renderUsers() {
       <div class="card-kicker" style="margin-top:6px">Skin</div>
       <div class="skins">${SKINS.map(sk => `<button class="skin${S.skin === sk.id ? ' on' : ''}" data-act="skinPick" data-v="${sk.id}" title="${esc(sk.blurb)}"><span class="sw" style="background:linear-gradient(135deg,${sk.swatch[0]} 50%,${sk.swatch[1]} 50%)"></span>${esc(sk.name)}</button>`).join('')}</div>
     </div>
-    <div class="card blueprint">${CORNERS}
+    ${S.user.role === 'admin' ? `<div class="card blueprint">${CORNERS}
       <div class="card-kicker">Accounts</div>
       <div style="display:flex;flex-direction:column">
         ${S.users.map(u => `<div class="fac">
@@ -1492,7 +1491,7 @@ function renderUsers() {
         ${f('password', 3, 'Password', 'type="password" autocomplete="new-password"')}
         <button class="btn btn-primary blueprint" style="grid-column:span 6" data-act="addUser">${CORNERS}${I.plus}Add user</button>
       </div>
-    </div>
+    </div>` : ''}
   </main>`;
 }
 
@@ -1510,7 +1509,6 @@ function render() {
   const cur = S.view === 'tender' ? S.loads.find(l => l.id === S.tenderId) : null;
   const alertOn = !!(cur && delayAt(cur)); document.body.classList.toggle('dwell-alert', alertOn); document.documentElement.classList.toggle('dwell-alert', alertOn);
   login.classList.add('hidden'); strip.classList.remove('hidden'); nav.classList.remove('hidden');
-  if (S.view === 'users' && S.user.role !== 'admin') S.view = 'board';
   if (S.view === 'builder' && !S.draft) S.view = 'board';
   if (S.view === 'tender' && !S.loads.some(l => l.id === S.tenderId)) S.view = 'board';
   renderShell();
