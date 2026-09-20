@@ -986,8 +986,8 @@ function stopFields(kind, i, s) {
     ...list.map(x => `<option value="${esc(x.id)}"${x.id === s.facilityId ? ' selected' : ''}>${esc(x.name)} — ${esc(x.city)}, ${esc(x.st)}</option>`)].join('');
   const inp = (k, span, label, extra = '') => `<div class="field${span <= 2 ? ' half' : ''}${k === 'city' ? ' ac' : ''}" style="grid-column:span ${span}"><label>${label}</label><input class="input" ${extra} value="${esc(s[k] ?? '')}" data-bind="draft.${kind}.${i}.${k}"></div>`;
   return `<div class="grid6">
-    <div class="field" style="grid-column:span 4"><label>${isPu ? 'Shipper' : 'Receiver'} (from directory)</label><select class="input" data-act="facility" data-kind="${kind}" data-i="${i}">${opts}</select></div>
-    ${isPu ? `<div class="field" style="grid-column:span 2"><label>Pickup numbers &amp; trailer position</label>
+    <div class="field" style="grid-column:span ${isPu ? 3 : 4}"><label>${isPu ? 'Shipper' : 'Receiver'} (from directory)</label><select class="input" data-act="facility" data-kind="${kind}" data-i="${i}">${opts}</select></div>
+    ${isPu ? `<div class="field" style="grid-column:span 3"><label>Pickup numbers &amp; trailer position</label>
       <div class="refs">${(s.refs || []).map((r, k) => `<div class="ref-row">
         <input class="input" placeholder="PU #" value="${esc(r.no)}" data-bind="draft.pickups.${i}.refs.${k}.no">
         <select class="input" data-bind="draft.pickups.${i}.refs.${k}.pos" title="Where it rides in the trailer"><option value="">Position…</option>${POSITIONS.map(x => `<option value="${x}"${r.pos === x ? ' selected' : ''}>${x}</option>`).join('')}</select>
