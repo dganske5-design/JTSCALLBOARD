@@ -278,6 +278,20 @@ body.m .stop-times .input { flex: 1 1 60%; }
 body.m .stop-times .dwell { margin-left: 0; flex: 1 1 100%; }
 @media print { .stop-times { display: none !important; } }
 
+/* status chips */
+.chips { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 8px; }
+.chip-lbl { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent-700); margin-right: 4px; }
+.chip-sep { width: 1px; height: 18px; background: var(--chrome-line); margin: 0 4px; }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-family: var(--font-body); padding: 3px 9px; border: 1px solid var(--chrome-line); background: var(--chrome); color: var(--ink); cursor: pointer; line-height: 1.3; }
+.chip .n { font-weight: 700; opacity: 0.8; }
+.chip:hover { background: var(--hover); }
+.chip.on { background: var(--color-accent); color: var(--on-accent); border-color: var(--color-accent); }
+.chip.on .n { opacity: 1; }
+.chip.hot.on { background: #f00000; color: #fff; border-color: #f00000; }
+.chip.delayed.on { background: #ff6a00; color: #1b1d1e; border-color: #1b1d1e; }
+.chip.clear { border-style: dashed; }
+body.m .chips { gap: 4px; }
+body.m .chip { padding: 5px 9px; font-size: 12px; }
 /* skins picker */
 .skins { display: flex; flex-wrap: wrap; gap: 6px; }
 .skin { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; font-size: 13px; font-family: var(--font-body); background: var(--chrome); border: 1px solid var(--chrome-line); color: var(--ink); cursor: pointer; }
@@ -678,7 +692,7 @@ const S = (() => {
     layout: (() => { try { return localStorage.getItem(LAYOUT_KEY) || 'auto'; } catch (e) { return 'auto'; } })(),
     skin: (() => { try { return localStorage.getItem(SKIN_KEY) || 'industry'; } catch (e) { return 'industry'; } })(),
     user: readSession(), users: loadUsers(), loginErr: '', userDraft: { name: '', initials: '', username: '', password: '', role: 'dispatcher' },
-    view: 'board', search: '', statusFilter: 'All', draft: null, tenderId: null, fileTab: 'tender', carrierDraft: null, trackDraft: null,
+    view: 'board', search: '', statusFilter: [], onlyDelayed: false, draft: null, tenderId: null, fileTab: 'tender', carrierDraft: null, trackDraft: null,
     sortKey: 'shipDate', sortDir: 1, openMenu: null, hoverMenu: null,
     boardDate: todayISO(), dateScope: 'day', refreshedAt: Date.now(),
     dirDraft: { shippers: blankFac(), receivers: blankFac() },
@@ -705,14 +719,14 @@ const MENUS = [
     { label: 'New load…', act: () => set({ draft: blankDraft(), view: 'builder', openMenu: null }) },
     { label: 'Load board', act: go({ view: 'board' }) },
     { label: 'Print current view', act: () => { set({ openMenu: null }); setTimeout(() => window.print(), 60); } } ] },
-  { label: 'Tracing', items: [{ label: 'Loads in transit', act: go({ view: 'board', statusFilter: 'In Transit' }) }, { label: 'Delivered — needs POD', act: go({ view: 'board', statusFilter: 'Delivered' }) }] },
-  { label: 'EDI', items: [{ label: 'Tendered files', act: go({ view: 'board', statusFilter: 'Tendered' }) }, { label: 'Quotes awaiting response', act: go({ view: 'board', statusFilter: 'Quoted' }) }] },
-  { label: 'Reports', items: [{ label: 'Booked revenue — all files', act: go({ view: 'board', statusFilter: 'All' }) }, { label: 'Invoiced files', act: go({ view: 'board', statusFilter: 'Invoiced' }) }] },
+  { label: 'Tracing', items: [{ label: 'Loads in transit', act: go({ view: 'board', statusFilter: ['In Transit'] }) }, { label: 'Delivered — needs POD', act: go({ view: 'board', statusFilter: ['Delivered'] }) }] },
+  { label: 'EDI', items: [{ label: 'Tendered files', act: go({ view: 'board', statusFilter: ['Tendered'] }) }, { label: 'Quotes awaiting response', act: go({ view: 'board', statusFilter: ['Quoted'] }) }] },
+  { label: 'Reports', items: [{ label: 'Booked revenue — all files', act: go({ view: 'board', statusFilter: [] }) }, { label: 'Invoiced files', act: go({ view: 'board', statusFilter: ['Invoiced'] }) }] },
   { label: 'Clients', icon: I.mUsers, items: [{ label: 'Shippers & receivers', act: go({ view: 'directory' }) }] },
   { label: 'Carriers', icon: I.mTruck, items: [{ label: 'Files by carrier', act: go({ view: 'board', search: '' }) }] },
   { label: 'PC Miler', icon: I.mPin, items: [{ label: 'Route & mileage (external)', act: go({}) }] },
   { label: 'Sales', items: [{ label: 'Quote a new file', act: () => set({ draft: blankDraft(), view: 'builder', openMenu: null }) }] },
-  { label: 'Accounting', items: [{ label: 'Ready to invoice', act: go({ view: 'board', statusFilter: 'Delivered' }) }, { label: 'Invoiced', act: go({ view: 'board', statusFilter: 'Invoiced' }) }] },
+  { label: 'Accounting', items: [{ label: 'Ready to invoice', act: go({ view: 'board', statusFilter: ['Delivered'] }) }, { label: 'Invoiced', act: go({ view: 'board', statusFilter: ['Invoiced'] }) }] },
   { label: 'Offices', icon: I.mOffice, items: [{ label: 'All offices', act: go({}) }] },
   { label: 'Help', items: [{ label: 'About this board', act: () => { S.openMenu = null; renderMenubar(); notify('JTS Operations — Load board', 'Load board, load builder, load tender, carrier assignment, tracking & tracing and a shippers/receivers directory. Data lives in this browser. Pick a look under Help › Skins.'); } }] }
 ];
@@ -791,11 +805,21 @@ function inScope(iso) {
   const s = weekStart(S.boardDate);
   return iso >= s && iso <= shift(s, 6);
 }
+function baseRows() { // date scope + search, ignoring status chips — feeds the chip counts
+  const q = S.search.trim().toLowerCase();
+  return S.loads.filter(l => {
+    if (!inScope((l.pickups[0] || {}).date)) return false;
+    if (!q) return true;
+    const hay = [l.fileNo, l.customer, l.carrierName, ...l.pickups.map(p => `${p.name} ${p.city} ${p.ref}`), ...l.drops.map(d => `${d.name} ${d.city} ${d.ref}`)].join(' ').toLowerCase();
+    return hay.includes(q);
+  });
+}
 function boardRows() {
   const q = S.search.trim().toLowerCase();
   const match = l => {
     if (!inScope((l.pickups[0] || {}).date)) return false;
-    if (S.statusFilter !== 'All' && l.status !== S.statusFilter) return false;
+    if (S.statusFilter.length && !S.statusFilter.includes(l.status)) return false;
+    if (S.onlyDelayed && !delayAt(l)) return false;
     if (!q) return true;
     const hay = [l.fileNo, l.customer, l.carrierName,
       ...l.pickups.map(p => `${p.name} ${p.city} ${p.ref}`),
@@ -841,11 +865,8 @@ function renderBoard() {
     </div>
     <div class="ctl-row no-print" style="margin-bottom:var(--space-3);flex-wrap:nowrap">
       <div class="search-wrap">${I.search}<input class="input" placeholder="Search file #, originator, city, carrier or PU / DEL number…" value="${esc(S.search)}" data-bind="search"></div>
-      <select class="input" style="width:170px;flex:none" data-act="statusFilter">
-        <option value="All">All statuses</option>
-        ${STATUSES.map(s => `<option value="${s}"${S.statusFilter === s ? ' selected' : ''}>${s}</option>`).join('')}
-      </select>
     </div>
+    <div class="chips no-print" id="status-chips"></div>
     ${isMobile() ? `<div class="ctl-row no-print" style="margin-bottom:var(--space-3);flex-wrap:nowrap">
       <span class="text-muted" style="font-size:12px;flex:none">Sort</span>
       <select class="input" data-act="sortSel">${COLS.filter(c => c.key).map(c => `<option value="${c.key}"${S.sortKey === c.key ? ' selected' : ''}>${c.label === 'ST' ? (c.key === 'puSt' ? 'Pickup ST' : 'Dest ST') : c.label}</option>`).join('')}</select>
@@ -911,6 +932,17 @@ function renderBoardBody() {
       <div class="acts"><button class="btn btn-ghost" data-act="view" data-id="${esc(l.id)}">Tender</button><button class="btn btn-ghost" data-act="edit" data-id="${esc(l.id)}">Edit</button><button class="btn btn-ghost" style="color:#c40000" data-act="delete" data-id="${esc(l.id)}">Delete</button></div>
     </div>`;
   }).join('');
+  const base = baseRows(), cnt = st => base.filter(l => l.status === st).length;
+  const uncN = base.filter(l => HOT.includes(l.status)).length, delN = base.filter(l => delayAt(l)).length;
+  const isAll = !S.statusFilter.length && !S.onlyDelayed, isUnc = HOT.every(h => S.statusFilter.includes(h)) && S.statusFilter.length === HOT.length;
+  const chips = $('#status-chips');
+  if (chips) chips.innerHTML = `<span class="chip-lbl">Status</span>
+    <button class="chip${isAll ? ' on' : ''}" data-act="chipAll">All <span class="n">${base.length}</span></button>
+    <button class="chip hot${isUnc ? ' on' : ''}" data-act="chipUnc" title="Open + Quoted + Tendered">Uncovered <span class="n">${uncN}</span></button>
+    <button class="chip delayed${S.onlyDelayed ? ' on' : ''}" data-act="chipDelayed" title="3h+ at a stop">Delayed <span class="n">${delN}</span></button>
+    <span class="chip-sep"></span>
+    ${STATUSES.map(st => `<button class="chip${S.statusFilter.includes(st) ? ' on' : ''}${HOT.includes(st) ? ' hot' : ''}" data-act="chip" data-st="${st}">${st} <span class="n">${cnt(st)}</span></button>`).join('')}
+    ${isAll ? '' : '<button class="chip clear" data-act="chipAll">✕ Clear</button>'}`;
   $('#board-body').innerHTML = `
     <div class="stats">
       <div><span class="text-muted">Showing</span> <strong>${shown}</strong> <span class="text-muted">of ${all} files</span></div>
@@ -922,7 +954,7 @@ function renderBoardBody() {
     </div>
     <div class="grid-wrap">
       <table class="grid"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
-      ${shown === 0 ? '<div class="text-muted empty">No files ship on this date. Step the date, widen to Week or All dates, or create a new load.</div>' : ''}
+      ${shown === 0 ? '<div class="text-muted empty">No files match. Step the date, widen to Week or All dates, clear the status chips, or create a new load.</div>' : ''}
     </div>
     <div class="cards">${cards}${shown === 0 ? '<div class="text-muted empty">No files ship on this date. Step the date, widen to Week or All dates, or create a new load.</div>' : ''}</div>`;
   const ra = $('#refreshed-at');
@@ -1538,7 +1570,10 @@ const ACT = {
   dateSet: el => set({ boardDate: el.value || S.boardDate, dateScope: S.dateScope === 'all' ? 'day' : S.dateScope }),
   scope: el => set({ dateScope: el.dataset.scope }),
   refresh: () => reloadFromStore(),
-  statusFilter: el => { S.statusFilter = el.value; renderBoardBody(); },
+  chip: el => { const st = el.dataset.st; S.statusFilter = S.statusFilter.includes(st) ? S.statusFilter.filter(x => x !== st) : [...S.statusFilter, st]; renderBoardBody(); },
+  chipAll: () => { S.statusFilter = []; S.onlyDelayed = false; renderBoardBody(); },
+  chipUnc: () => { const on = HOT.every(h => S.statusFilter.includes(h)) && S.statusFilter.length === HOT.length; S.statusFilter = on ? [] : [...HOT]; renderBoardBody(); },
+  chipDelayed: () => { S.onlyDelayed = !S.onlyDelayed; renderBoardBody(); },
   sort: el => { const k = el.dataset.key; S.sortDir = S.sortKey === k ? -S.sortDir : 1; S.sortKey = k; renderBoardBody(); },
   view: el => { S.fileTab = 'tender'; set({ tenderId: el.dataset.id, view: 'tender' }); window.scrollTo(0, 0); },
   edit: el => { const l = S.loads.find(x => x.id === el.dataset.id); if (l) { set({ draft: clone(l), view: 'builder' }); window.scrollTo(0, 0); } },
@@ -1666,7 +1701,7 @@ const ACT = {
   addFac: el => { const k = el.dataset.kind, cur = S.dirDraft[k]; if (!cur.name.trim()) return; S[k] = [...S[k], { id: uid(), ...cur }]; S.dirDraft[k] = blankFac(); persist(); render(); },
   rmFac: el => { const k = el.dataset.kind; S[k] = S[k].filter(x => x.id !== el.dataset.id); persist(); render(); }
 };
-const CHANGE_ACTS = new Set(['dateSet', 'statusFilter', 'draftStatus', 'facility', 'dropIdx', 'userRole', 'sortSel', 'evType']);
+const CHANGE_ACTS = new Set(['dateSet', 'draftStatus', 'facility', 'dropIdx', 'userRole', 'sortSel', 'evType']);
 
 const app = $('#app');
 app.addEventListener('click', e => {
