@@ -124,7 +124,9 @@ button, input, select { font: inherit; }
 .menu-dd { position: absolute; top: 100%; left: 0; min-width: 212px; background: var(--chrome); border: 1px solid var(--chrome-line); box-shadow: 2px 3px 7px rgba(0,0,0,0.18); padding: 3px 0; z-index: 70; }
 .menu-it { padding: 4px 14px; font-size: 12.5px; white-space: nowrap; cursor: pointer; color: var(--ink); display: flex; align-items: center; gap: 8px; }
 .menu-it:hover { background: var(--hover); }
-.menu-hd { padding: 5px 14px 2px; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent-700); border-top: 1px solid var(--chrome-line); margin-top: 3px; }
+.menu-hd { padding: 5px 14px 2px; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent-700); }
+.menu-sep { height: 1px; background: var(--chrome-line); margin: 3px 0; }
+.menu-it.sub { padding-left: 26px; }
 .menu-it .sw { width: 22px; height: 12px; border: 1px solid var(--chrome-line); flex: none; }
 .menu-it .chk { width: 12px; flex: none; text-align: center; }
 #nav { position: sticky; top: var(--strip-h); z-index: 50; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: 10px var(--space-6); border-bottom: 1px solid var(--color-divider); background: var(--color-bg); }
@@ -295,6 +297,18 @@ body.m .stop-times .dwell { margin-left: 0; flex: 1 1 100%; }
 .pos-tag { font-size: 10px; letter-spacing: 0.06em; padding: 1px 5px; border: 1px solid var(--color-accent); color: var(--color-accent-700); margin-left: 4px; vertical-align: middle; }
 body.m .line-row .puno { flex: 1 1 45%; width: auto; }
 body.m .line-row .pos { flex: 1 1 45%; width: auto; }
+/* reports */
+#report { max-width: none; padding: var(--space-4) var(--space-6) var(--space-8); }
+.rep td { font-weight: 500; }
+.rep-group { margin-bottom: var(--space-4); }
+.rep-group-h { font-family: var(--font-heading); font-weight: 600; font-size: 15px; letter-spacing: 0.03em; text-transform: uppercase; padding: 6px 0 4px; color: var(--color-accent-700); }
+.rep-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
+.rep-print-title { display: none; font-family: var(--font-heading); font-size: 16px; margin-bottom: 8px; }
+.rep .late { color: #c47a00; font-weight: 700; } .rep .down { color: #c40000; font-weight: 700; }
+body.m .rep-two { grid-template-columns: 1fr; }
+body.m #report { padding-inline: 16px; }
+body.m #report .grid-wrap { display: block; }
+@media print { .rep-print-title { display: block; } #report .grid-wrap { display: block; } }
 /* carrier directory */
 .car-grid td { font-weight: 500; }
 .car-grid td.file { font-weight: 700; }
@@ -774,7 +788,7 @@ const S = (() => {
     boardDate: todayISO(), dateScope: 'day', refreshedAt: Date.now(),
     dirDraft: { shippers: blankFac(), receivers: blankFac() },
     loads: p && p.loads ? p.loads : d.loads,
-    carriers: p && p.carriers ? p.carriers : d.carriers, carTab: 'branch', carSearch: '', carrierId: null, carrierTab: 'profile', carDraft: null,
+    carriers: p && p.carriers ? p.carriers : d.carriers, carTab: 'branch', carSearch: '', carrierId: null, carrierTab: 'profile', carDraft: null, reportKey: null, calc: { origin: '', dest: '', oGeo: null, dGeo: null, rate: '', fuel: '' },
     shippers: p && p.shippers ? p.shippers : d.shippers,
     receivers: p && p.receivers ? p.receivers : d.receivers
   };
@@ -792,21 +806,87 @@ function reloadFromStore() {
 
 // ── Menus ──────────────────────────────────────────────────────────────────
 const go = (patch) => () => set({ openMenu: null, ...patch });
+const R = key => () => { S.reportKey = key; set({ view: 'report', openMenu: null }); window.scrollTo(0, 0); };
+const SEP = { sep: true };
 const MENUS = [
   { label: 'File', items: [
     { label: 'New load…', act: () => set({ draft: blankDraft(), view: 'builder', openMenu: null }) },
     { label: 'Load board', act: go({ view: 'board' }) },
     { label: 'Print current view', act: () => { set({ openMenu: null }); setTimeout(() => window.print(), 60); } } ] },
-  { label: 'Tracing', items: [{ label: 'Loads in transit', act: go({ view: 'board', statusFilter: ['In Transit'] }) }, { label: 'Delivered — needs POD', act: go({ view: 'board', statusFilter: ['Delivered'] }) }] },
-  { label: 'EDI', items: [{ label: 'Tendered files', act: go({ view: 'board', statusFilter: ['Tendered'] }) }, { label: 'Quotes awaiting response', act: go({ view: 'board', statusFilter: ['Quoted'] }) }] },
-  { label: 'Reports', items: [{ label: 'Booked revenue — all files', act: go({ view: 'board', statusFilter: [] }) }, { label: 'Invoiced files', act: go({ view: 'board', statusFilter: ['Invoiced'] }) }] },
-  { label: 'Clients', icon: I.mUsers, items: [{ label: 'Shippers & receivers', act: go({ view: 'directory' }) }] },
-  { label: 'Carriers', icon: I.mTruck, items: [{ label: 'Branch carriers', act: go({ view: 'carriers', carTab: 'branch' }) }, { label: 'Corporate carriers', act: go({ view: 'carriers', carTab: 'corporate' }) }, { label: 'Add a carrier…', act: () => { S.carrierId = null; S.carDraft = null; S.carrierTab = 'profile'; set({ view: 'carrier', openMenu: null }); } }] },
-  { label: 'PC Miler', icon: I.mPin, items: [{ label: 'Route & mileage (external)', act: go({}) }] },
-  { label: 'Sales', items: [{ label: 'Quote a new file', act: () => set({ draft: blankDraft(), view: 'builder', openMenu: null }) }] },
-  { label: 'Accounting', items: [{ label: 'Ready to invoice', act: go({ view: 'board', statusFilter: ['Delivered'] }) }, { label: 'Invoiced', act: go({ view: 'board', statusFilter: ['Invoiced'] }) }] },
-  { label: 'Offices', icon: I.mOffice, items: [{ label: 'All offices', act: go({}) }] },
-  { label: 'Help', items: [{ label: 'About this board', act: () => { S.openMenu = null; renderMenubar(); notify('JTS Operations — Load board', 'Load board, load builder, load tender, carrier assignment, tracking & tracing and a shippers/receivers directory. Data lives in this browser. Pick a look under Help › Skins.'); } }] }
+  { label: 'Tracing', items: [
+    { label: 'Trace Console', act: R('trace_console') }, SEP,
+    { label: 'Tracing Report - Originator', act: R('tracing_originator') },
+    { label: 'Tracing Report - Receiver', act: R('tracing_receiver') },
+    { label: 'Tracing Report - Carrier', act: R('tracing_carrier') },
+    { label: 'Tracing Report - Internal', act: R('tracing_internal') }, SEP,
+    { label: 'Pickup Console', act: R('pickup_console') },
+    { label: 'Appointment Browser', act: R('appt_browser') } ] },
+  { label: 'EDI', items: [
+    { label: 'EDI Load Acceptance', act: R('edi_acceptance') },
+    { label: 'EDI Spot Bid Browser', act: R('edi_spot') }, SEP,
+    { label: 'EDI Missing Status Browser', act: R('edi_missing') },
+    { label: 'EDI Load Browser', act: R('edi_loads') } ] },
+  { label: 'Reports', items: [
+    { label: 'Load Log', act: R('load_log') },
+    { label: 'Load Summary', act: R('load_summary') },
+    { label: 'Load Summary - Super Clients', act: R('load_summary_clients') },
+    { label: 'High Value Loads', act: R('high_value') },
+    { label: 'Office Revenue Share - Client', act: R('office_rev_client') },
+    { label: 'Office Revenue Share - Review', act: R('office_rev_review') }, SEP,
+    { label: 'Trace Request - Carrier', act: R('trace_req_carrier') }, SEP,
+    { label: 'Broker Volume/On-Time Summary', act: R('broker_volume') },
+    { label: 'Carrier On-Time Delivery', act: R('carrier_ontime') },
+    { label: 'Super Client On-Time Delivery', act: R('client_ontime') }, SEP,
+    { header: 'End of Day' },
+    { label: 'Pickups today', sub: true, act: R('eod_pickups') },
+    { label: 'Deliveries today', sub: true, act: R('eod_deliveries') },
+    { label: 'Uncovered — today & tomorrow', sub: true, act: R('eod_uncovered') },
+    { label: 'Fuel Surcharge Browser', act: R('fuel') },
+    { header: 'Monthly Reports' },
+    { label: 'This month', sub: true, act: R('monthly_this') },
+    { label: 'Last month', sub: true, act: R('monthly_last') },
+    { label: 'All months', sub: true, act: R('monthly_all') },
+    { label: 'Web User Summary', act: R('web_users') },
+    { label: 'Billing PO Review', act: R('billing_po') }, SEP,
+    { label: 'Lockdown Browser', act: R('lockdown') } ] },
+  { label: 'Clients', icon: I.mUsers, items: [{ label: 'Shippers & receivers', act: go({ view: 'directory' }) }, { label: 'Client Performance Browser/Report', act: R('client_perf') }] },
+  { label: 'Carriers', icon: I.mTruck, items: [
+    { label: 'Branch Carriers', act: go({ view: 'carriers', carTab: 'branch' }) },
+    { label: 'Corporate Carriers', act: go({ view: 'carriers', carTab: 'corporate' }) }, SEP,
+    { label: 'Send Carrier Packet', act: R('carrier_packet') }, SEP,
+    { label: 'Carrier Account Manager', act: R('carrier_account_mgr') },
+    { label: 'Carrier List Report', act: R('carrier_list') },
+    { label: 'Carrier Lane Rate History Browser', act: R('carrier_lane_rates') },
+    { label: 'Carrier Load Activity Browser', act: R('carrier_activity') }, SEP,
+    { label: 'Carrier Onboard Requests', act: R('onboard_requests') },
+    { label: 'Send Carrier Onboard Invitation', act: R('onboard_invite') } ] },
+  { label: 'PC Miler', icon: I.mPin, items: [{ label: 'Rate per mile calculator', act: R('rate_calc') }, { label: 'Lane Rate History', act: R('lane_rate_history') }] },
+  { label: 'Sales', items: [
+    { header: 'Advanced Tools' },
+    { label: 'Rate per mile calculator', sub: true, act: R('rate_calc') },
+    { label: 'Quote a new file', sub: true, act: () => set({ draft: blankDraft(), view: 'builder', openMenu: null }) },
+    { label: 'Carrier Zone Count Summary', act: R('carrier_zone') },
+    { label: 'Client Performance Browser/Report', act: R('client_perf') }, SEP,
+    { label: 'Agent Client Browser', act: R('agent_client') },
+    { label: 'Client Search - Global', act: () => { set({ view: 'board', dateScope: 'all', statusFilter: [], onlyDelayed: false, openMenu: null }); const i = document.querySelector('[data-bind="search"]'); if (i) i.focus(); } }, SEP,
+    { header: 'Lane Rate Tools' },
+    { label: 'Lane Rate History', sub: true, act: R('lane_rate_history') },
+    { label: 'Rate per mile calculator', sub: true, act: R('rate_calc') },
+    { label: 'Receiver/Originator Sales Browser', act: R('recv_orig_browser') } ] },
+  { label: 'Accounting', items: [
+    { header: 'Invoicing' },
+    { label: 'Ready to invoice', sub: true, act: go({ view: 'board', statusFilter: ['Delivered'], dateScope: 'all' }) },
+    { label: 'Invoiced files', sub: true, act: go({ view: 'board', statusFilter: ['Invoiced'], dateScope: 'all' }) },
+    { label: 'Billing PO Review', sub: true, act: R('billing_po') }, SEP,
+    { label: 'Late Pay', act: R('late_pay') },
+    { label: 'Credit History', act: R('credit_history') }, SEP,
+    { header: 'Reports' },
+    { label: 'Office Revenue Share - Review', sub: true, act: R('office_rev_review') },
+    { label: 'Load Summary', sub: true, act: R('load_summary') },
+    { label: 'Fuel Surcharge Browser', sub: true, act: R('fuel') },
+    { label: 'Monthly Reports - All months', sub: true, act: R('monthly_all') } ] },
+  { label: 'Offices', icon: I.mOffice, items: [{ label: 'Office Revenue Share - Review', act: R('office_rev_review') }, { label: 'Broker Volume/On-Time Summary', act: R('broker_volume') }, { label: 'Web User Summary', act: R('web_users') }] },
+  { label: 'Help', items: [{ label: 'About this board', act: () => { S.openMenu = null; renderMenubar(); notify('JTS Operations — Load board', 'Load board, load builder, load tender, carrier assignment, tracking & tracing, carrier directory, reports and a shippers/receivers directory. Data lives in this browser. Pick a look under Help › Skins.'); } }] }
 ];
 function menuItems(m) {
   if (m.label !== 'Help') return m.items;
@@ -818,7 +898,7 @@ function renderMenubar() {
     const open = S.openMenu === m.label, hot = open || S.hoverMenu === m.label;
     return `<div class="menu${hot ? ' hot' : ''}${open ? ' open' : ''}" data-menu="${esc(m.label)}">
       ${m.icon ? `<span style="display:inline-flex">${m.icon}</span>` : ''}<span>${esc(m.label)}</span>
-      ${open ? `<div class="menu-dd">${menuItems(m).map((it, ii) => it.header ? `<div class="menu-hd">${esc(it.header)}</div>` : `<div class="menu-it" data-act="menu" data-mi="${mi}" data-ii="${ii}" title="${esc(it.blurb || '')}">${it.swatch ? `<span class="chk">${it.on ? '✓' : ''}</span><span class="sw" style="background:linear-gradient(90deg,${it.swatch[0]} 50%,${it.swatch[1]} 50%)"></span>` : ''}${esc(it.label)}</div>`).join('')}</div>` : ''}
+      ${open ? `<div class="menu-dd">${menuItems(m).map((it, ii) => it.sep ? '<div class="menu-sep"></div>' : it.header ? `<div class="menu-hd">${esc(it.header)}</div>` : `<div class="menu-it${it.sub ? ' sub' : ''}" data-act="menu" data-mi="${mi}" data-ii="${ii}" title="${esc(it.blurb || '')}">${it.swatch ? `<span class="chk">${it.on ? '✓' : ''}</span><span class="sw" style="background:linear-gradient(90deg,${it.swatch[0]} 50%,${it.swatch[1]} 50%)"></span>` : ''}${esc(it.label)}</div>`).join('')}</div>` : ''}
     </div>`;
   }).join('');
 }
@@ -1309,6 +1389,133 @@ function renderTender(l) {
     </div>`;
 }
 
+// ── Reports & consoles (Tracing / EDI / Reports / Carriers / Sales menus) ──
+const ACTIVE = ['Booked', 'Dispatched', 'In Transit'];
+const OPENISH = ['Open', 'Quoted', 'Tendered', 'Booked', 'Dispatched', 'In Transit'];
+const groupBy = (arr, f) => arr.reduce((m, x) => { const k = f(x); (m[k] = m[k] || []).push(x); return m; }, {});
+const shipDate = l => (l.pickups[0] || {}).date || '';
+const dts = iso => iso ? iso.slice(5).replace('-', '/') + '/' + iso.slice(2, 4) : '—';
+const finalDrop = l => l.drops[l.drops.length - 1] || {};
+const fileLink = l => `<span class="file" style="cursor:pointer;color:#0a2fbd;font-weight:700" data-act="view" data-id="${esc(l.id)}">${esc(l.fileNo)}</span>`;
+const trackLink = l => `<button class="btn btn-ghost" style="padding:1px 7px;min-height:0;font-size:11px" data-act="viewTrack" data-id="${esc(l.id)}">Tracking</button>`;
+const hoursSince = ts => ts ? Math.round((Date.now() - ts) / 36e5) : null;
+const lastCheck = l => { const t = trackOf(l); return t.updatedAt ? `${fmtWhen(t.updatedAt)} · ${esc(t.location || '—')}` : '<span class="text-muted">no check call</span>'; };
+const condCell = l => { const c = (l.tracking || {}).condition; return c === 'Running late' ? '<span class="late">LATE</span>' : c === 'Breakdown' ? '<span class="down">BREAKDOWN</span>' : c || '—'; };
+const sumRate = arr => arr.reduce((a, l) => a + rateTotal(l), 0);
+const pctStr = (n, d) => d ? Math.round(100 * n / d) + '%' : '—';
+const onTimeOf = arr => { const j = arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).map(isOnTime).filter(x => x !== null); return { pct: j.length ? Math.round(100 * j.filter(Boolean).length / j.length) : null, n: j.length }; };
+const pctCell = p => p == null ? '—' : `<span class="pct ${pctClass(p)}">${p}%</span>`;
+const laneOf = l => { const p = l.pickups[0] || {}, d = finalDrop(l); return `${(p.city || '?').toUpperCase()}, ${(p.st || '').toUpperCase()} → ${(d.city || '?').toUpperCase()}, ${(d.st || '').toUpperCase()}`; };
+const laneMiles = l => { const p = l.pickups[0] || {}, d = finalDrop(l); return milesBetween(geocode(p.city, p.st, p.zip), geocode(d.city, d.st, d.zip)); };
+const monthKey = iso => iso ? iso.slice(0, 7) : '';
+const monthName = k => k ? new Date(k + '-15T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '—';
+const carrierRec = name => findCarrier(name) || {};
+function tbl(cols, rows) {
+  return `<div class="grid-wrap"><table class="grid rep"><thead><tr>${cols.map(c => `<th class="${c.a || 'l'} nosort">${c.h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((v, i) => `<td class="${cols[i].a || 'l'}">${v == null ? '' : v}</td>`).join('')}</tr>`).join('')}</tbody></table>${rows.length ? '' : '<div class="text-muted empty">Nothing to show for this report right now.</div>'}</div>`;
+}
+const grouped = (title, rows) => `<div class="rep-group"><div class="rep-group-h">${title}</div>${rows}</div>`;
+const loadRowCols = [{ h: 'File #', a: 'c' }, { h: 'Ship', a: 'c' }, { h: 'Office' }, { h: 'Route' }, { h: 'Carrier' }, { h: 'Status', a: 'c' }, { h: 'Last check call' }, { h: 'Cond.', a: 'c' }, { h: '', a: 'r' }];
+const loadRow = l => [fileLink(l), dts(shipDate(l)), esc(l.office || '—'), esc(laneOf(l)), l.carrierName ? esc(l.carrierName) : '<span class="unc" style="color:#c40000">UNCOVERED</span>', esc(l.status), lastCheck(l), condCell(l), trackLink(l)];
+const stopsOf = (arr) => { const out = []; arr.forEach(l => { l.pickups.forEach((p, i) => out.push({ l, s: p, kind: 'Pickup', i })); l.drops.forEach((d, i) => out.push({ l, s: d, kind: 'Delivery', i })); }); return out; };
+const stopKey = x => (x.s.date || '9999') + 'T' + (x.s.time || '23:59');
+const inOut = st => `${st.inAt ? fmtLocal(st.inAt) : '—'} / ${st.outAt ? fmtLocal(st.outAt) : '—'}`;
+const packetMail = c => `mailto:${c.email || ''}?subject=${encodeURIComponent(`Carrier packet — ${c.name} — ${COMPANY.name}`)}&body=${encodeURIComponent(`Hello ${c.dispatchName || c.ownerName || ''},\n\nPlease find our carrier setup packet attached. To get set up with ${COMPANY.name} we need:\n\n  1. Signed broker-carrier agreement\n  2. W-9\n  3. Certificate of insurance listing ${COMPANY.name} as certificate holder ($100k cargo / $1M auto liability)\n  4. MC authority letter (${c.mc || 'MC #'}) and DOT # (${c.dot || 'DOT #'})\n  5. Payment / factoring info\n\nReply to this email with the documents and we will have you loaded in the system within one business day.\n\nThank you,\n${S.user ? S.user.name : ''}\n${COMPANY.name}\n${COMPANY.phone} · ${COMPANY.email}`)}`;
+const inviteMail = c => `mailto:${c.email || ''}?subject=${encodeURIComponent(`Onboard with ${COMPANY.name} — ${c.name}`)}&body=${encodeURIComponent(`Hello ${c.dispatchName || c.ownerName || ''},\n\n${COMPANY.name} would like to onboard ${c.name} as an approved carrier. We run steady freight out of ${OFFICES.join(', ')} and have lanes that fit your equipment${c.equipment ? ' (' + c.equipment + ')' : ''}.\n\nReply to this email and we will send the setup packet, or call ${COMPANY.phone}.\n\nThank you,\n${S.user ? S.user.name : ''}\n${COMPANY.name}\n${COMPANY.phone} · ${COMPANY.email}`)}`;
+const today = () => todayISO(), tomorrow = () => shift(todayISO(), 1);
+const REPORTS = {
+  trace_console: { title: 'Trace Console', sub: 'Every moving load, worst first — delayed, late, breakdown, then stalest check call', body: () => {
+    const rows = S.loads.filter(l => ACTIVE.includes(l.status)).map(l => ({ l, dl: delayAt(l), c: (l.tracking || {}).condition, age: hoursSince((l.tracking || {}).updatedAt) })).sort((a, b) => (b.dl ? 1 : 0) - (a.dl ? 1 : 0) || (b.c === 'Breakdown') - (a.c === 'Breakdown') || (b.c === 'Running late') - (a.c === 'Running late') || (b.age == null ? 999 : b.age) - (a.age == null ? 999 : a.age));
+    return tbl([{ h: 'File #', a: 'c' }, { h: 'Alert', a: 'c' }, { h: 'Office' }, { h: 'Carrier · driver' }, { h: 'Route' }, { h: 'Status', a: 'c' }, { h: 'Last check call' }, { h: 'Age', a: 'r' }, { h: 'Miles to next', a: 'r' }, { h: 'ETA' }, { h: '', a: 'r' }],
+      rows.map(({ l, dl, c, age }) => { const cr = carrierOf(l), t = trackOf(l); return [fileLink(l), dl ? `<span class="down">${delayText(dl).toUpperCase()}</span>` : c === 'Breakdown' ? '<span class="down">BREAKDOWN</span>' : c === 'Running late' ? '<span class="late">LATE</span>' : (age != null && age >= 4 ? '<span class="late">STALE</span>' : ''), esc(l.office || '—'), `${esc(l.carrierName || '—')}${cr.driver ? `<div class="text-muted" style="font-weight:400;font-size:11px">${esc(cr.driver)}${cr.driverPhone ? ' · ' + esc(cr.driverPhone) : ''}</div>` : ''}`, esc(laneOf(l)), esc(l.status), lastCheck(l), age == null ? '—' : age + 'h', t.miles ? fmt(num(t.miles)) : '—', t.eta ? fmtLocal(t.eta) : '—', trackLink(l)]; })); } },
+  tracing_originator: { title: 'Tracing Report — Originator', sub: 'Moving loads grouped by customer', body: () => Object.entries(groupBy(S.loads.filter(l => OPENISH.includes(l.status)), l => (l.customer || '—').toUpperCase())).sort().map(([k, arr]) => grouped(`${esc(k)} · ${arr.length}`, tbl(loadRowCols, arr.map(loadRow)))).join('') },
+  tracing_receiver: { title: 'Tracing Report — Receiver', sub: 'Moving loads grouped by final receiver', body: () => Object.entries(groupBy(S.loads.filter(l => OPENISH.includes(l.status)), l => (finalDrop(l).name || finalDrop(l).city || '—').toUpperCase())).sort().map(([k, arr]) => grouped(`${esc(k)} · ${arr.length}`, tbl(loadRowCols, arr.map(loadRow)))).join('') },
+  tracing_carrier: { title: 'Tracing Report — Carrier', sub: 'Moving loads grouped by carrier', body: () => Object.entries(groupBy(S.loads.filter(l => OPENISH.includes(l.status)), l => l.carrierName || 'UNCOVERED')).sort((a, b) => (a[0] === 'UNCOVERED') - (b[0] === 'UNCOVERED') || a[0].localeCompare(b[0])).map(([k, arr]) => { const cr = carrierRec(k); return grouped(`${esc(k)} · ${arr.length}${cr.dispatchName ? ` · dispatch ${esc(cr.dispatchName)}${cr.dispatchPhone ? ' ' + esc(cr.dispatchPhone) : ''}` : ''}`, tbl(loadRowCols, arr.map(loadRow))); }).join('') },
+  tracing_internal: { title: 'Tracing Report — Internal', sub: 'Every check call, customer update, check-in/out and internal call note, newest first', body: () => {
+    const rows = []; S.loads.forEach(l => { trackOf(l).log.forEach(e => rows.push({ l, e })); l.pickups.concat(l.drops).forEach(st => (st.calls || []).forEach(c => rows.push({ l, e: { at: c.at, by: c.by, kind: 'call', text: `Call · ${st.name || st.city || 'stop'}${c.who ? ' · spoke to ' + c.who : ''}: ${c.text}` } }))); });
+    rows.sort((a, b) => b.e.at - a.e.at);
+    return tbl([{ h: 'When' }, { h: 'Who' }, { h: 'File #', a: 'c' }, { h: 'Customer' }, { h: 'Type', a: 'c' }, { h: 'Entry' }], rows.slice(0, 300).map(({ l, e }) => [fmtWhen(e.at), esc(e.by || ''), fileLink(l), esc(l.customer || ''), esc(e.kind || ''), esc(e.text)])); } },
+  pickup_console: { title: 'Pickup Console', sub: 'Every pickup on an open file, soonest first', body: () => tbl([{ h: 'Date', a: 'c' }, { h: 'Appt', a: 'c' }, { h: 'File #', a: 'c' }, { h: 'Shipper' }, { h: 'City' }, { h: 'PU #s' }, { h: 'Carrier' }, { h: 'Status', a: 'c' }, { h: 'In / Out' }, { h: 'Office' }],
+    stopsOf(S.loads.filter(l => OPENISH.includes(l.status))).filter(x => x.kind === 'Pickup').sort((a, b) => stopKey(a).localeCompare(stopKey(b))).map(x => [dts(x.s.date), x.s.time || '—', fileLink(x.l), esc(x.s.name || '—'), esc(`${x.s.city || ''}${x.s.st ? ', ' + x.s.st : ''}`), esc(refsOf(x.s).map(refLabel).join(' / ') || '—'), esc(x.l.carrierName || '—'), esc(x.l.status), inOut(x.s), esc(x.l.office || '—')])) },
+  appt_browser: { title: 'Appointment Browser', sub: 'All pickup and delivery appointments on open files, in order', body: () => tbl([{ h: 'Date', a: 'c' }, { h: 'Time', a: 'c' }, { h: 'Type', a: 'c' }, { h: 'Facility' }, { h: 'City' }, { h: 'File #', a: 'c' }, { h: 'Customer' }, { h: 'Carrier' }, { h: 'In / Out' }],
+    stopsOf(S.loads.filter(l => OPENISH.includes(l.status))).sort((a, b) => stopKey(a).localeCompare(stopKey(b))).map(x => [dts(x.s.date), x.s.time || '—', x.kind, esc(x.s.name || '—'), esc(`${x.s.city || ''}${x.s.st ? ', ' + x.s.st : ''}`), fileLink(x.l), esc(x.l.customer || ''), esc(x.l.carrierName || '—'), inOut(x.s)])) },
+  edi_acceptance: { title: 'EDI Load Acceptance', sub: 'Tendered files waiting on a carrier to accept', body: () => tbl([{ h: 'File #', a: 'c' }, { h: 'Ship', a: 'c' }, { h: 'Customer' }, { h: 'Route' }, { h: 'Tendered to' }, { h: 'Rate', a: 'r' }, { h: 'Age', a: 'r' }], S.loads.filter(l => l.status === 'Tendered').sort((a, b) => shipDate(a).localeCompare(shipDate(b))).map(l => [fileLink(l), dts(shipDate(l)), esc(l.customer || ''), esc(laneOf(l)), esc(l.carrierName || '— no carrier'), money(rateTotal(l)), (hoursSince(l.createdAt) || 0) + 'h'])) },
+  edi_spot: { title: 'EDI Spot Bid Browser', sub: 'Quoted files — spot bids out to customers', body: () => tbl([{ h: 'File #', a: 'c' }, { h: 'Ship', a: 'c' }, { h: 'Customer' }, { h: 'Route' }, { h: 'Miles', a: 'r' }, { h: 'Quote', a: 'r' }, { h: '$/mi', a: 'r' }], S.loads.filter(l => l.status === 'Quoted').map(l => { const mi = laneMiles(l); return [fileLink(l), dts(shipDate(l)), esc(l.customer || ''), esc(laneOf(l)), mi ? fmt(mi) : '—', money(rateTotal(l)), mi ? '$' + (rateTotal(l) / mi).toFixed(2) : '—']; })) },
+  edi_missing: { title: 'EDI Missing Status Browser', sub: 'Moving loads with no check call in the last 4 hours', body: () => tbl([{ h: 'File #', a: 'c' }, { h: 'Carrier · driver' }, { h: 'Route' }, { h: 'Status', a: 'c' }, { h: 'Last check call' }, { h: 'Hours since', a: 'r' }, { h: '', a: 'r' }], S.loads.filter(l => ACTIVE.includes(l.status)).map(l => ({ l, age: hoursSince((l.tracking || {}).updatedAt) })).filter(x => x.age == null || x.age >= 4).sort((a, b) => (b.age == null ? 9999 : b.age) - (a.age == null ? 9999 : a.age)).map(({ l, age }) => { const cr = carrierOf(l); return [fileLink(l), `${esc(l.carrierName || '—')}${cr.driverPhone ? `<div class="text-muted" style="font-weight:400;font-size:11px">${esc(cr.driver || '')} · ${esc(cr.driverPhone)}</div>` : ''}`, esc(laneOf(l)), esc(l.status), lastCheck(l), age == null ? '<span class="down">never</span>' : `<span class="late">${age}h</span>`, trackLink(l)]; })) },
+  edi_loads: { title: 'EDI Load Browser', sub: 'Every file, newest first', body: () => tbl([{ h: 'File #', a: 'c' }, { h: 'Ship', a: 'c' }, { h: 'Office' }, { h: 'Customer' }, { h: 'Route' }, { h: 'Carrier' }, { h: 'Status', a: 'c' }, { h: 'Rate', a: 'r' }], S.loads.slice().sort((a, b) => shipDate(b).localeCompare(shipDate(a))).map(l => [fileLink(l), dts(shipDate(l)), esc(l.office || '—'), esc(l.customer || ''), esc(laneOf(l)), esc(l.carrierName || '—'), esc(l.status), money(rateTotal(l))])) },
+  load_log: { title: 'Load Log', sub: 'Files in the order they were created', body: () => tbl([{ h: 'Created' }, { h: 'File #', a: 'c' }, { h: 'By', a: 'c' }, { h: 'Office' }, { h: 'Customer' }, { h: 'Route' }, { h: 'Carrier' }, { h: 'Status', a: 'c' }, { h: 'Rate', a: 'r' }], S.loads.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).map(l => [fmtWhen(l.createdAt || 0), fileLink(l), esc(l.fileIn || ''), esc(l.office || '—'), esc(l.customer || ''), esc(laneOf(l)), esc(l.carrierName || '—'), esc(l.status), money(rateTotal(l))])) },
+  load_summary: { title: 'Load Summary', sub: 'Counts and booked revenue by status and by office', body: () => { const byS = groupBy(S.loads, l => l.status), byO = groupBy(S.loads, l => l.office || 'Unassigned'); return `<div class="rep-two">${tbl([{ h: 'Status' }, { h: 'Files', a: 'r' }, { h: 'Revenue', a: 'r' }, { h: 'Avg', a: 'r' }], STATUSES.filter(st => byS[st]).map(st => [esc(st), byS[st].length, money(sumRate(byS[st])), money(sumRate(byS[st]) / byS[st].length)]).concat([[`<strong>All files</strong>`, `<strong>${S.loads.length}</strong>`, `<strong>${money(sumRate(S.loads))}</strong>`, '']]))}${tbl([{ h: 'Office' }, { h: 'Files', a: 'r' }, { h: 'Uncovered', a: 'r' }, { h: 'In transit', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'Revenue', a: 'r' }], Object.entries(byO).sort((a, b) => sumRate(b[1]) - sumRate(a[1])).map(([o, arr]) => [esc(o), arr.length, arr.filter(l => HOT.includes(l.status)).length, arr.filter(l => l.status === 'In Transit').length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, money(sumRate(arr))]))}</div>`; } },
+  load_summary_clients: { title: 'Load Summary — Super Clients', sub: 'Customers ranked by booked revenue', body: () => tbl([{ h: 'Customer' }, { h: 'Files', a: 'r' }, { h: 'Open', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'Revenue', a: 'r' }, { h: 'Avg rate', a: 'r' }, { h: 'Offices' }], Object.entries(groupBy(S.loads, l => (l.customer || '—').toUpperCase())).sort((a, b) => sumRate(b[1]) - sumRate(a[1])).map(([c, arr]) => [esc(c), arr.length, arr.filter(l => OPENISH.includes(l.status)).length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, money(sumRate(arr)), money(sumRate(arr) / arr.length), esc([...new Set(arr.map(l => l.office || 'Unassigned'))].join(', '))])) },
+  high_value: { title: 'High Value Loads', sub: 'Files at $5,000 and up', body: () => tbl([{ h: 'Rate', a: 'r' }, { h: 'File #', a: 'c' }, { h: 'Ship', a: 'c' }, { h: 'Customer' }, { h: 'Route' }, { h: 'Carrier' }, { h: 'Status', a: 'c' }, { h: 'Office' }], S.loads.filter(l => rateTotal(l) >= 5000).sort((a, b) => rateTotal(b) - rateTotal(a)).map(l => [`<strong>${money(rateTotal(l))}</strong>`, fileLink(l), dts(shipDate(l)), esc(l.customer || ''), esc(laneOf(l)), esc(l.carrierName || '—'), esc(l.status), esc(l.office || '—')])) },
+  office_rev_client: { title: 'Office Revenue Share — Client', sub: 'Revenue by office for each customer', body: () => { const clients = Object.entries(groupBy(S.loads, l => (l.customer || '—').toUpperCase())).sort((a, b) => sumRate(b[1]) - sumRate(a[1])); return tbl([{ h: 'Customer' }, ...OFFICES.map(o => ({ h: o, a: 'r' })), { h: 'Total', a: 'r' }], clients.map(([c, arr]) => [esc(c), ...OFFICES.map(o => { const r = sumRate(arr.filter(l => l.office === o)); return r ? money(r) : '—'; }), `<strong>${money(sumRate(arr))}</strong>`])); } },
+  office_rev_review: { title: 'Office Revenue Share — Review', sub: 'Each office\'s share of booked revenue', body: () => { const total = sumRate(S.loads); return tbl([{ h: 'Office' }, { h: 'Files', a: 'r' }, { h: 'Revenue', a: 'r' }, { h: 'Share', a: 'r' }, { h: 'Avg rate', a: 'r' }, { h: 'On-time', a: 'c' }], OFFICES.map(o => { const arr = S.loads.filter(l => l.office === o); const ot = onTimeOf(arr); return [esc(o), arr.length, money(sumRate(arr)), pctStr(sumRate(arr), total), arr.length ? money(sumRate(arr) / arr.length) : '—', pctCell(ot.pct)]; }).concat([[`<strong>Company</strong>`, `<strong>${S.loads.length}</strong>`, `<strong>${money(total)}</strong>`, '100%', '', pctCell(onTimeOf(S.loads).pct)]])); } },
+  trace_req_carrier: { title: 'Trace Request — Carrier', sub: 'Carriers to call for a status right now, stalest first', body: () => tbl([{ h: 'Carrier' }, { h: 'Dispatch' }, { h: 'Moving loads', a: 'r' }, { h: 'Oldest check call' }, { h: 'Hours', a: 'r' }, { h: 'Files' }], Object.entries(groupBy(S.loads.filter(l => ACTIVE.includes(l.status) && l.carrierName), l => l.carrierName)).map(([n, arr]) => { const cr = carrierRec(n); const oldest = Math.min(...arr.map(l => (l.tracking || {}).updatedAt || 0)); return { n, cr, arr, oldest }; }).sort((a, b) => a.oldest - b.oldest).map(({ n, cr, arr, oldest }) => [esc(n), esc(cr.dispatchName ? `${cr.dispatchName}${cr.dispatchPhone ? ' · ' + cr.dispatchPhone : ''}` : (cr.phone || '—')), arr.length, oldest ? fmtWhen(oldest) : '<span class="down">never</span>', oldest ? hoursSince(oldest) : '—', arr.map(fileLink).join(' ')])) },
+  broker_volume: { title: 'Broker Volume / On-Time Summary', sub: 'Volume and on-time delivery by office, then by dispatcher', body: () => `<div class="rep-two">${tbl([{ h: 'Office' }, { h: 'Files', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'On-time', a: 'c' }, { h: 'Revenue', a: 'r' }], OFFICES.map(o => { const arr = S.loads.filter(l => l.office === o); const ot = onTimeOf(arr); return [esc(o), arr.length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, pctCell(ot.pct), money(sumRate(arr))]; }))}${tbl([{ h: 'Dispatcher', a: 'c' }, { h: 'Files', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'On-time', a: 'c' }, { h: 'Revenue', a: 'r' }], Object.entries(groupBy(S.loads, l => l.fileIn || '—')).map(([k, arr]) => { const ot = onTimeOf(arr); return [esc(k), arr.length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, pctCell(ot.pct), money(sumRate(arr))]; }))}</div>` },
+  carrier_ontime: { title: 'Carrier On-Time Delivery', sub: 'Every carrier with delivered freight, best first', body: () => tbl([{ h: 'Carrier' }, { h: 'Loads', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'Judged', a: 'r' }, { h: 'On-time', a: 'c' }, { h: 'Late', a: 'r' }, { h: 'Offices' }], Object.keys(groupBy(S.loads.filter(l => l.carrierName), l => l.carrierName)).map(n => ({ n, st: carrierStats(n) })).filter(x => x.st.delivered).sort((a, b) => (b.st.onTimePct ?? -1) - (a.st.onTimePct ?? -1)).map(({ n, st }) => [esc(n), st.loads.length, st.delivered, st.judged, pctCell(st.onTimePct), st.judged - Math.round(st.judged * (st.onTimePct || 0) / 100), esc(Object.keys(st.byOffice).join(', '))])) },
+  client_ontime: { title: 'Super Client On-Time Delivery', sub: 'On-time delivery by customer', body: () => tbl([{ h: 'Customer' }, { h: 'Files', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'On-time', a: 'c' }, { h: 'Revenue', a: 'r' }], Object.entries(groupBy(S.loads, l => (l.customer || '—').toUpperCase())).map(([c, arr]) => ({ c, arr, ot: onTimeOf(arr) })).sort((a, b) => (b.ot.pct ?? -1) - (a.ot.pct ?? -1)).map(({ c, arr, ot }) => [esc(c), arr.length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, pctCell(ot.pct), money(sumRate(arr))])) },
+  eod_pickups: { title: 'End of Day — Pickups today', sub: today(), body: () => tbl([{ h: 'Appt', a: 'c' }, { h: 'File #', a: 'c' }, { h: 'Shipper' }, { h: 'City' }, { h: 'Carrier' }, { h: 'Status', a: 'c' }, { h: 'In / Out' }], stopsOf(S.loads).filter(x => x.kind === 'Pickup' && x.s.date === today()).sort((a, b) => stopKey(a).localeCompare(stopKey(b))).map(x => [x.s.time || '—', fileLink(x.l), esc(x.s.name || '—'), esc(`${x.s.city || ''}, ${x.s.st || ''}`), esc(x.l.carrierName || '—'), esc(x.l.status), inOut(x.s)])) },
+  eod_deliveries: { title: 'End of Day — Deliveries today', sub: today(), body: () => tbl([{ h: 'Appt', a: 'c' }, { h: 'File #', a: 'c' }, { h: 'Receiver' }, { h: 'City' }, { h: 'Carrier' }, { h: 'Status', a: 'c' }, { h: 'In / Out' }, { h: 'Delivery', a: 'c' }], stopsOf(S.loads).filter(x => x.kind === 'Delivery' && x.s.date === today()).sort((a, b) => stopKey(a).localeCompare(stopKey(b))).map(x => { const ot = isOnTime(x.l); return [x.s.time || '—', fileLink(x.l), esc(x.s.name || '—'), esc(`${x.s.city || ''}, ${x.s.st || ''}`), esc(x.l.carrierName || '—'), esc(x.l.status), inOut(x.s), x.s.inAt ? (ot ? '<span class="pct good">On time</span>' : '<span class="pct bad">Late</span>') : '—']; })) },
+  eod_uncovered: { title: 'End of Day — Uncovered, today & tomorrow', sub: `${today()} – ${tomorrow()}`, body: () => tbl([{ h: 'Ship', a: 'c' }, { h: 'File #', a: 'c' }, { h: 'Customer' }, { h: 'Route' }, { h: 'Status', a: 'c' }, { h: 'Rate', a: 'r' }, { h: 'Office' }], S.loads.filter(l => HOT.includes(l.status) && [today(), tomorrow()].includes(shipDate(l))).sort((a, b) => shipDate(a).localeCompare(shipDate(b))).map(l => [dts(shipDate(l)), fileLink(l), esc(l.customer || ''), esc(laneOf(l)), `<span class="hot-txt" style="color:#c40000">${esc(l.status)}</span>`, money(rateTotal(l)), esc(l.office || '—')])) },
+  fuel: { title: 'Fuel Surcharge Browser', sub: 'Fuel as a share of line haul on every file', body: () => tbl([{ h: 'File #', a: 'c' }, { h: 'Ship', a: 'c' }, { h: 'Carrier' }, { h: 'Route' }, { h: 'Line haul', a: 'r' }, { h: 'Fuel', a: 'r' }, { h: 'Fuel %', a: 'r' }, { h: 'Accessorials', a: 'r' }, { h: 'All-in', a: 'r' }], S.loads.slice().sort((a, b) => num(b.fuel) / (num(b.linehaul) || 1) - num(a.fuel) / (num(a.linehaul) || 1)).map(l => [fileLink(l), dts(shipDate(l)), esc(l.carrierName || '—'), esc(laneOf(l)), money(l.linehaul), money(l.fuel), num(l.linehaul) ? (100 * num(l.fuel) / num(l.linehaul)).toFixed(1) + '%' : '—', money(l.accessorial), money(rateTotal(l))])) },
+  monthly_this: { title: 'Monthly Report — This month', sub: monthName(todayISO().slice(0, 7)), body: () => monthly([todayISO().slice(0, 7)]) },
+  monthly_last: { title: 'Monthly Report — Last month', sub: monthName(shift(todayISO().slice(0, 7) + '-01', -1).slice(0, 7)), body: () => monthly([shift(todayISO().slice(0, 7) + '-01', -1).slice(0, 7)]) },
+  monthly_all: { title: 'Monthly Reports — All months', sub: 'By ship month', body: () => monthly(null) },
+  web_users: { title: 'Web User Summary', sub: 'Who is set up on this board and what they have entered', body: () => tbl([{ h: 'User' }, { h: 'Username' }, { h: 'Office' }, { h: 'Role', a: 'c' }, { h: 'Files entered', a: 'r' }, { h: 'Open', a: 'r' }, { h: 'Revenue', a: 'r' }, { h: 'Check calls', a: 'r' }], S.users.map(u => { const arr = S.loads.filter(l => (l.fileIn || '').toUpperCase() === (u.initials || '').toUpperCase()); const calls = S.loads.reduce((n, l) => n + trackOf(l).log.filter(e => e.by === u.name).length, 0); return [esc(u.name), esc(u.username), esc(u.office || ''), u.role === 'admin' ? 'Admin' : 'Dispatcher', arr.length, arr.filter(l => OPENISH.includes(l.status)).length, money(sumRate(arr)), calls]; })) },
+  billing_po: { title: 'Billing PO Review', sub: 'Delivered files ready to invoice, then invoiced files', body: () => { const cols = [{ h: 'File #', a: 'c' }, { h: 'Customer' }, { h: 'Customer email' }, { h: 'Office' }, { h: 'Delivered' }, { h: 'PU #s' }, { h: 'DEL #' }, { h: 'Rate', a: 'r' }, { h: 'Status', a: 'c' }]; const row = l => [fileLink(l), esc(l.customer || ''), l.customerEmail ? esc(l.customerEmail) : '<span class="down">missing</span>', esc(l.office || '—'), finalDrop(l).outAt ? fmtLocal(finalDrop(l).outAt) : (finalDrop(l).inAt ? fmtLocal(finalDrop(l).inAt) : '—'), esc(l.pickups.map(refText).filter(Boolean).join(' / ') || '—'), esc(finalDrop(l).ref || '—'), money(rateTotal(l)), esc(l.status)]; return grouped('Ready to invoice', tbl(cols, S.loads.filter(l => l.status === 'Delivered').map(row))) + grouped('Invoiced', tbl(cols, S.loads.filter(l => l.status === 'Invoiced').map(row))); } },
+  lockdown: { title: 'Lockdown Browser', sub: 'Cancelled files and do-not-use carriers', body: () => grouped('Cancelled files', tbl([{ h: 'File #', a: 'c' }, { h: 'Ship', a: 'c' }, { h: 'Customer' }, { h: 'Route' }, { h: 'Carrier' }, { h: 'Rate', a: 'r' }], S.loads.filter(l => l.status === 'Cancelled').map(l => [fileLink(l), dts(shipDate(l)), esc(l.customer || ''), esc(laneOf(l)), esc(l.carrierName || '—'), money(rateTotal(l))]))) + grouped('Carriers on hold', tbl([{ h: 'Carrier' }, { h: 'MC #' }, { h: 'Status' }, { h: 'Latest note' }], S.carriers.filter(c => c.status && c.status !== 'Active').map(c => [carLink(c), esc(c.mc || '—'), esc(c.status), esc((c.notes || []).slice(-1)[0]?.text || '')]))) },
+  carrier_packet: { title: 'Send Carrier Packet', sub: 'Opens your mail app with the setup packet request written', body: () => tbl([{ h: 'Carrier' }, { h: 'MC #' }, { h: 'Dispatch email' }, { h: 'Status', a: 'c' }, { h: '', a: 'r' }], S.carriers.slice().sort((a, b) => a.name.localeCompare(b.name)).map(c => [carLink(c), esc(c.mc || '—'), esc(c.email || '—'), esc(c.status || 'Active'), `<a class="btn btn-secondary btn-sm" href="${packetMail(c)}">${I.mail}Send packet</a>`])) },
+  carrier_account_mgr: { title: 'Carrier Account Manager', sub: 'Every carrier with its JTS rep and standing', body: () => tbl([{ h: 'Carrier' }, { h: 'JTS rep' }, { h: 'Offices' }, { h: 'Dispatch' }, { h: 'Owner' }, { h: 'Trucks', a: 'r' }, { h: 'Loads', a: 'r' }, { h: 'On-time', a: 'c' }, { h: 'Last note' }, { h: 'Status', a: 'c' }], S.carriers.slice().sort((a, b) => a.name.localeCompare(b.name)).map(c => { const st = carrierStats(c.name); const n = (c.notes || []).slice(-1)[0]; return [carLink(c), esc(c.salesRep || '—'), esc((c.offices || []).join(', ')), esc(c.dispatchName || '—'), esc(c.ownerName || '—'), fmt(num(c.powerUnits)), st.loads.length, pctCell(st.onTimePct), n ? `${fmtWhen(n.at)} — ${esc(n.text.slice(0, 60))}` : '—', esc(c.status || 'Active')]; })) },
+  carrier_list: { title: 'Carrier List Report', sub: 'Printable master list', body: () => tbl([{ h: 'Carrier' }, { h: 'MC #' }, { h: 'DOT #' }, { h: 'Address' }, { h: 'Phone' }, { h: 'Email' }, { h: 'Dispatch' }, { h: 'Owner' }, { h: 'Trucks', a: 'r' }, { h: 'Trailers', a: 'r' }, { h: 'Equipment' }, { h: 'Offices' }], S.carriers.slice().sort((a, b) => a.name.localeCompare(b.name)).map(c => [carLink(c), esc(c.mc || ''), esc(c.dot || ''), esc([c.address, c.city, c.st, c.zip].filter(Boolean).join(', ')), esc(c.phone || ''), esc(c.email || ''), esc(c.dispatchName ? `${c.dispatchName}${c.dispatchPhone ? ' ' + c.dispatchPhone : ''}` : ''), esc(c.ownerName || ''), fmt(num(c.powerUnits)), fmt(num(c.trailerUnits)), esc(c.equipment || ''), esc((c.offices || []).join(', '))])) },
+  carrier_lane_rates: { title: 'Carrier Lane Rate History Browser', sub: 'What each carrier has hauled each lane for', body: () => tbl([{ h: 'Carrier' }, { h: 'Lane' }, { h: 'Ship', a: 'c' }, { h: 'File #', a: 'c' }, { h: 'Miles', a: 'r' }, { h: 'Line haul', a: 'r' }, { h: 'All-in', a: 'r' }, { h: '$/mi', a: 'r' }], S.loads.filter(l => l.carrierName).sort((a, b) => a.carrierName.localeCompare(b.carrierName) || laneOf(a).localeCompare(laneOf(b)) || shipDate(b).localeCompare(shipDate(a))).map(l => { const mi = laneMiles(l); return [esc(l.carrierName), esc(laneOf(l)), dts(shipDate(l)), fileLink(l), mi ? fmt(mi) : '—', money(l.linehaul), money(rateTotal(l)), mi ? '$' + (rateTotal(l) / mi).toFixed(2) : '—']; })) },
+  carrier_activity: { title: 'Carrier Load Activity Browser', sub: 'Loads by status for each carrier, most active first', body: () => tbl([{ h: 'Carrier' }, { h: 'Total', a: 'r' }, ...['Booked', 'Dispatched', 'In Transit', 'Delivered', 'Invoiced'].map(st => ({ h: st, a: 'r' })), { h: 'Last ship', a: 'c' }, { h: 'Revenue', a: 'r' }], Object.entries(groupBy(S.loads.filter(l => l.carrierName), l => l.carrierName)).sort((a, b) => b[1].length - a[1].length).map(([n, arr]) => [carLink(carrierRec(n), n), arr.length, ...['Booked', 'Dispatched', 'In Transit', 'Delivered', 'Invoiced'].map(st => arr.filter(l => l.status === st).length || '—'), dts(arr.map(shipDate).sort().slice(-1)[0]), money(sumRate(arr))])) },
+  onboard_requests: { title: 'Carrier Onboard Requests', sub: 'Carriers marked Pending setup', body: () => tbl([{ h: 'Carrier' }, { h: 'MC #' }, { h: 'DOT #' }, { h: 'Dispatch' }, { h: 'Email' }, { h: 'Added' }, { h: '', a: 'r' }], S.carriers.filter(c => c.status === 'Pending setup').map(c => [carLink(c), esc(c.mc || '—'), esc(c.dot || '—'), esc(c.dispatchName || '—'), esc(c.email || '—'), c.createdAt ? fmtWhen(c.createdAt) : '—', `<a class="btn btn-secondary btn-sm" href="${packetMail(c)}">${I.mail}Send packet</a>`])) + '<div class="text-muted" style="font-size:12.5px;margin-top:8px">Set a carrier\'s status to <strong>Pending setup</strong> on its profile and it shows here until you switch it to Active.</div>' },
+  onboard_invite: { title: 'Send Carrier Onboard Invitation', sub: 'Invite a carrier to get set up with JTS', body: () => tbl([{ h: 'Carrier' }, { h: 'City' }, { h: 'Equipment' }, { h: 'Email' }, { h: 'Status', a: 'c' }, { h: '', a: 'r' }], S.carriers.slice().sort((a, b) => a.name.localeCompare(b.name)).map(c => [carLink(c), esc(`${c.city || ''}${c.st ? ', ' + c.st : ''}`), esc(c.equipment || '—'), esc(c.email || '—'), esc(c.status || 'Active'), `<a class="btn btn-secondary btn-sm" href="${inviteMail(c)}">${I.mail}Send invitation</a>`])) },
+  carrier_zone: { title: 'Carrier Zone Count Summary', sub: 'How many carriers we have in each state', body: () => tbl([{ h: 'State', a: 'c' }, { h: 'Carriers', a: 'r' }, { h: 'Trucks', a: 'r' }, { h: 'Trailers', a: 'r' }, { h: 'Names' }], Object.entries(groupBy(S.carriers, c => (c.st || '—').toUpperCase())).sort((a, b) => b[1].length - a[1].length).map(([st, arr]) => [esc(st), arr.length, fmt(arr.reduce((n, c) => n + num(c.powerUnits), 0)), fmt(arr.reduce((n, c) => n + num(c.trailerUnits), 0)), arr.map(c => carLink(c)).join(', ')])) },
+  client_perf: { title: 'Client Performance Browser / Report', sub: 'Volume, revenue and service by customer', body: () => tbl([{ h: 'Customer' }, { h: 'Files', a: 'r' }, { h: 'Open', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'On-time', a: 'c' }, { h: 'Revenue', a: 'r' }, { h: 'Avg rate', a: 'r' }, { h: 'Avg $/mi', a: 'r' }, { h: 'Last ship', a: 'c' }, { h: 'Offices' }], Object.entries(groupBy(S.loads, l => (l.customer || '—').toUpperCase())).sort((a, b) => sumRate(b[1]) - sumRate(a[1])).map(([c, arr]) => { const ot = onTimeOf(arr); const withMi = arr.map(l => ({ r: rateTotal(l), mi: laneMiles(l) })).filter(x => x.mi); return [esc(c), arr.length, arr.filter(l => OPENISH.includes(l.status)).length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, pctCell(ot.pct), money(sumRate(arr)), money(sumRate(arr) / arr.length), withMi.length ? '$' + (withMi.reduce((n, x) => n + x.r / x.mi, 0) / withMi.length).toFixed(2) : '—', dts(arr.map(shipDate).sort().slice(-1)[0]), esc([...new Set(arr.map(l => l.office || 'Unassigned'))].join(', '))]; })) },
+  agent_client: { title: 'Agent Client Browser', sub: 'Which customers each office and dispatcher handles', body: () => Object.entries(groupBy(S.loads, l => l.office || 'Unassigned')).sort().map(([o, arr]) => grouped(`${esc(o)} office · ${arr.length} files`, tbl([{ h: 'Customer' }, { h: 'Dispatchers' }, { h: 'Files', a: 'r' }, { h: 'Open', a: 'r' }, { h: 'Revenue', a: 'r' }, { h: 'Last ship', a: 'c' }], Object.entries(groupBy(arr, l => (l.customer || '—').toUpperCase())).sort((a, b) => b[1].length - a[1].length).map(([c, cl]) => [esc(c), esc([...new Set(cl.map(l => l.fileIn || '—'))].join(', ')), cl.length, cl.filter(l => OPENISH.includes(l.status)).length, money(sumRate(cl)), dts(cl.map(shipDate).sort().slice(-1)[0])])))).join('') },
+  lane_rate_history: { title: 'Lane Rate History', sub: 'Every lane we have run, with rate range and $/mile', body: () => tbl([{ h: 'Lane' }, { h: 'Miles', a: 'r' }, { h: 'Loads', a: 'r' }, { h: 'Low', a: 'r' }, { h: 'Avg', a: 'r' }, { h: 'High', a: 'r' }, { h: 'Avg $/mi', a: 'r' }, { h: 'Last', a: 'c' }, { h: 'Carriers' }], Object.entries(groupBy(S.loads, laneOf)).sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0])).map(([lane, arr]) => { const rs = arr.map(rateTotal), mi = laneMiles(arr[0]), avg = rs.reduce((a, b) => a + b, 0) / rs.length; return [esc(lane), mi ? fmt(mi) : '—', arr.length, money(Math.min(...rs)), money(avg), money(Math.max(...rs)), mi ? '$' + (avg / mi).toFixed(2) : '—', dts(arr.map(shipDate).sort().slice(-1)[0]), esc([...new Set(arr.map(l => l.carrierName).filter(Boolean))].join(', ') || '—')]; })) },
+  recv_orig_browser: { title: 'Receiver / Originator Sales Browser', sub: 'Every facility we have picked up from or delivered to, with volume', body: () => { const pick = groupBy(stopsOf(S.loads).filter(x => x.kind === 'Pickup'), x => (x.s.name || x.s.city || '—').toUpperCase()), drop = groupBy(stopsOf(S.loads).filter(x => x.kind === 'Delivery'), x => (x.s.name || x.s.city || '—').toUpperCase()); const cols = [{ h: 'Facility' }, { h: 'City' }, { h: 'Stops', a: 'r' }, { h: 'Customers' }, { h: 'Last', a: 'c' }, { h: 'Contact' }]; const rows = g => Object.entries(g).sort((a, b) => b[1].length - a[1].length).map(([n, arr]) => [esc(n), esc(`${arr[0].s.city || ''}${arr[0].s.st ? ', ' + arr[0].s.st : ''}`), arr.length, esc([...new Set(arr.map(x => x.l.customer || '—'))].join(', ')), dts(arr.map(x => x.s.date || '').sort().slice(-1)[0]), esc(arr.map(x => x.s.contact).find(Boolean) || '—')]); return grouped('Originators (pickup facilities)', tbl(cols, rows(pick))) + grouped('Receivers (delivery facilities)', tbl(cols, rows(drop))); } },
+  late_pay: { title: 'Late Pay', sub: 'Invoiced files by days outstanding since delivery — 30+ days is late', body: () => {
+    const rows = S.loads.filter(l => l.status === 'Invoiced').map(l => { const d = finalDrop(l); const ref = parseLocal(d.outAt || d.inAt) || (d.date ? parseLocal(d.date + 'T12:00') : null) || new Date(l.createdAt || Date.now()); const days = Math.max(0, Math.floor((Date.now() - ref) / 864e5)); return { l, days, ref }; }).sort((a, b) => b.days - a.days);
+    const bucket = d => d > 60 ? '<span class="down">61+ days</span>' : d > 30 ? '<span class="late">31–60 days</span>' : 'Current';
+    const byC = groupBy(rows, r => (r.l.customer || '—').toUpperCase());
+    return `<div class="tiles" style="margin-bottom:var(--space-4)"><div><div class="kicker">Outstanding</div><div class="n">${money(sumRate(rows.map(r => r.l)))}</div></div><div><div class="kicker">Current</div><div class="n">${money(sumRate(rows.filter(r => r.days <= 30).map(r => r.l)))}</div></div><div><div class="kicker">31–60 days</div><div class="n pct warn">${money(sumRate(rows.filter(r => r.days > 30 && r.days <= 60).map(r => r.l)))}</div></div><div><div class="kicker">61+ days</div><div class="n pct bad">${money(sumRate(rows.filter(r => r.days > 60).map(r => r.l)))}</div></div></div>`
+      + grouped('By customer', tbl([{ h: 'Customer' }, { h: 'Invoices', a: 'r' }, { h: 'Outstanding', a: 'r' }, { h: 'Oldest', a: 'r' }, { h: 'Late (31+)', a: 'r' }], Object.entries(byC).sort((a, b) => Math.max(...b[1].map(r => r.days)) - Math.max(...a[1].map(r => r.days))).map(([c, arr]) => [esc(c), arr.length, money(sumRate(arr.map(r => r.l))), Math.max(...arr.map(r => r.days)) + ' days', arr.filter(r => r.days > 30).length])))
+      + grouped('Invoices', tbl([{ h: 'Aging', a: 'c' }, { h: 'Days', a: 'r' }, { h: 'File #', a: 'c' }, { h: 'Customer' }, { h: 'Customer email' }, { h: 'Delivered' }, { h: 'Office' }, { h: 'Amount', a: 'r' }], rows.map(({ l, days, ref }) => [bucket(days), days, fileLink(l), esc(l.customer || ''), esc(l.customerEmail || '—'), ref.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), esc(l.office || '—'), money(rateTotal(l))]))); } },
+  credit_history: { title: 'Credit History', sub: 'Billing history and standing by customer', body: () => tbl([{ h: 'Customer' }, { h: 'Files', a: 'r' }, { h: 'Billed (invoiced)', a: 'r' }, { h: 'Outstanding', a: 'r' }, { h: 'Oldest open', a: 'r' }, { h: 'Late (31+)', a: 'r' }, { h: 'Ready to invoice', a: 'r' }, { h: 'Cancelled', a: 'r' }, { h: 'Avg rate', a: 'r' }, { h: 'First ship', a: 'c' }, { h: 'Last ship', a: 'c' }, { h: 'On-time', a: 'c' }],
+    Object.entries(groupBy(S.loads, l => (l.customer || '—').toUpperCase())).sort((a, b) => sumRate(b[1]) - sumRate(a[1])).map(([c, arr]) => { const inv = arr.filter(l => l.status === 'Invoiced'); const ages = inv.map(l => { const d = finalDrop(l); const ref = parseLocal(d.outAt || d.inAt) || (d.date ? parseLocal(d.date + 'T12:00') : null) || new Date(l.createdAt || Date.now()); return Math.max(0, Math.floor((Date.now() - ref) / 864e5)); }); const dates = arr.map(shipDate).filter(Boolean).sort(); return [esc(c), arr.length, money(sumRate(inv)), money(sumRate(inv)), ages.length ? Math.max(...ages) + ' d' : '—', ages.filter(d => d > 30).length, arr.filter(l => l.status === 'Delivered').length, arr.filter(l => l.status === 'Cancelled').length, money(sumRate(arr) / arr.length), dts(dates[0]), dts(dates.slice(-1)[0]), pctCell(onTimeOf(arr).pct)]; })) },
+  rate_calc: { title: 'Rate per mile calculator', sub: 'Type two cities or ZIPs and a rate', body: () => `<div class="card blueprint" style="max-width:760px">${CORNERS}<div class="grid6">
+      <div class="field ac" style="grid-column:span 3"><label>Origin — city or ZIP</label><input class="input" autocomplete="off" placeholder="Fresno, CA" value="${esc(S.calc.origin)}" data-bind="calc.origin" data-ac="calcO"></div>
+      <div class="field ac" style="grid-column:span 3"><label>Destination — city or ZIP</label><input class="input" autocomplete="off" placeholder="Dallas, TX" value="${esc(S.calc.dest)}" data-bind="calc.dest" data-ac="calcD"></div>
+      <div class="field half" style="grid-column:span 2"><label>Line haul ($)</label><input class="input" type="number" min="0" value="${esc(S.calc.rate)}" data-bind="calc.rate"></div>
+      <div class="field half" style="grid-column:span 2"><label>Fuel ($)</label><input class="input" type="number" min="0" value="${esc(S.calc.fuel)}" data-bind="calc.fuel"></div>
+      <div style="grid-column:span 6" id="calc-out">${calcOut()}</div></div></div>` }
+};
+function monthly(keys) {
+  const by = groupBy(S.loads.filter(l => shipDate(l)), l => monthKey(shipDate(l)));
+  const ks = keys || Object.keys(by).sort().reverse();
+  return tbl([{ h: 'Month' }, { h: 'Files', a: 'r' }, { h: 'Uncovered', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'On-time', a: 'c' }, { h: 'Revenue', a: 'r' }, { h: 'Avg rate', a: 'r' }, ...OFFICES.map(o => ({ h: o, a: 'r' }))], ks.map(k => { const arr = by[k] || []; const ot = onTimeOf(arr); return [esc(monthName(k)), arr.length, arr.filter(l => HOT.includes(l.status)).length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, pctCell(ot.pct), money(sumRate(arr)), arr.length ? money(sumRate(arr) / arr.length) : '—', ...OFFICES.map(o => { const n = arr.filter(l => l.office === o).length; return n || '—'; })]; }));
+}
+function carLink(c, name) { return c && c.id ? `<span class="file" style="cursor:pointer;color:#0a2fbd;font-weight:700" data-act="carOpen" data-id="${esc(c.id)}">${esc(c.name)}</span>` : esc(name || (c && c.name) || '—'); }
+function calcOut() {
+  const c = S.calc; if (!c.oGeo && c.origin) { const g = geocodeText(c.origin); if (g) c.oGeo = { lat: g.lat, lon: g.lon }; } if (!c.dGeo && c.dest) { const g = geocodeText(c.dest); if (g) c.dGeo = { lat: g.lat, lon: g.lon }; }
+  const mi = milesBetween(c.oGeo, c.dGeo), total = num(c.rate) + num(c.fuel);
+  if (!mi) return '<div class="text-muted" style="font-size:13px">Pick both places from the list to get miles.</div>';
+  return `<div class="tiles"><div><div class="kicker">Miles (≈ road)</div><div class="n">${fmt(mi)}</div></div><div><div class="kicker">Line haul / mi</div><div class="n">${num(c.rate) ? '$' + (num(c.rate) / mi).toFixed(2) : '—'}</div></div><div><div class="kicker">All-in / mi</div><div class="n">${total ? '$' + (total / mi).toFixed(2) : '—'}</div></div><div><div class="kicker">All-in</div><div class="n">${money(total)}</div></div></div>`;
+}
+function renderReport() {
+  const r = REPORTS[S.reportKey]; if (!r) { S.view = 'board'; return renderBoard(); }
+  return `<main id="report">
+    <div class="page-head no-print" style="margin-bottom:var(--space-3)">
+      <h1 style="font-size:26px">${esc(r.title)}</h1><span class="text-muted" style="font-size:13px">${r.sub}</span>
+      <div class="spacer"></div>
+      <button class="btn btn-secondary btn-sm" data-act="goBoard">${I.back}Board</button>
+      <button class="btn btn-secondary btn-sm" data-act="print">${I.print}Print</button>
+    </div>
+    <div class="rep-print-title">${esc(r.title)} · ${esc(COMPANY.name)} · ${new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>
+    ${r.body()}
+  </main>`;
+}
+
 // ── Carrier directory ──────────────────────────────────────────────────────
 const blankCarrierRec = () => ({ id: null, name: '', mc: '', dot: '', address: '', city: '', st: '', zip: '', phone: '', email: '', dispatchName: '', dispatchPhone: '', ownerName: '', ownerPhone: '', powerUnits: '', trailerUnits: '', equipment: '', offices: [(S.user && S.user.office) || OFFICES[0]], salesRep: '', status: 'Active', notes: [], createdAt: 0 });
 const carKey = n => String(n || '').trim().toLowerCase();
@@ -1506,6 +1713,8 @@ function acPick(i) {
   if (input.dataset.ac === 'track') {
     const label = placeLabel(p, zip); input.value = label; S.trackDraft.location = label; S.trackDraft.geo = { lat: p.lat, lon: p.lon };
     refreshDistances();
+  } else if (input.dataset.ac === 'calcO' || input.dataset.ac === 'calcD') {
+    const k = input.dataset.ac === 'calcO' ? 'origin' : 'dest'; S.calc[k] = placeLabel(p, zip); S.calc[k === 'origin' ? 'oGeo' : 'dGeo'] = { lat: p.lat, lon: p.lon }; input.value = S.calc[k]; const o = $('#calc-out'); if (o) o.innerHTML = calcOut();
   } else if (input.dataset.ac === 'carcity') {
     S.carDraft.city = p.name; S.carDraft.st = p.st; if (!S.carDraft.zip) S.carDraft.zip = zip || p.zips.split(/[,-]/)[0];
     input.value = p.name; const g = input.closest('.grid6'); g.querySelector('[data-bind="carDraft.st"]').value = S.carDraft.st; g.querySelector('[data-bind="carDraft.zip"]').value = S.carDraft.zip;
@@ -1779,6 +1988,7 @@ function render() {
   else if (S.view === 'users') v.innerHTML = renderUsers();
   else if (S.view === 'carriers') v.innerHTML = renderCarriers();
   else if (S.view === 'carrier') v.innerHTML = renderCarrierDetail();
+  else if (S.view === 'report') v.innerHTML = renderReport();
   measureShell();
 }
 function measureShell() {
@@ -1908,6 +2118,7 @@ const ACT = {
     render();
   },
   // carrier directory
+  viewTrack: el => { S.fileTab = 'tracking'; set({ tenderId: el.dataset.id, view: 'tender' }); window.scrollTo(0, 0); },
   goCarriers: () => { set({ view: 'carriers', openMenu: null }); window.scrollTo(0, 0); },
   carTab: el => { S.carTab = el.dataset.v; render(); },
   carOpen: el => { S.carrierId = el.dataset.id; S.carDraft = null; S.carrierTab = 'profile'; set({ view: 'carrier' }); window.scrollTo(0, 0); },
@@ -1973,6 +2184,7 @@ app.addEventListener('input', e => {
   if (path === 'search') renderBoardBody();
   else if (path === 'carSearch') { const v = $('#view'); const y = window.scrollY; v.innerHTML = renderCarriers(); window.scrollTo(0, y); const inp = document.querySelector('[data-bind="carSearch"]'); if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } }
   else if (path === 'trackDraft.nextStop') refreshDistances();
+  else if (path.startsWith('calc.')) { if (path === 'calc.origin') S.calc.oGeo = null; if (path === 'calc.dest') S.calc.dGeo = null; const o = $('#calc-out'); if (o) o.innerHTML = calcOut(); }
   else if (path.startsWith('draft.')) builderDerived();
 });
 
@@ -1983,7 +2195,7 @@ app.addEventListener('keydown', e => {
   else if (e.key === 'Enter') { e.preventDefault(); acPick(AC.idx >= 0 ? AC.idx : 0); }
   else if (e.key === 'Escape') acClose();
 });
-app.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.ac) setTimeout(() => { if (document.activeElement === e.target) return; if (AC.el === e.target) acClose(); if (e.target.dataset.ac === 'track' && S.trackDraft && !S.trackDraft.geo) refreshDistances(); }, 150); });
+app.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.ac) setTimeout(() => { if (document.activeElement === e.target) return; if (AC.el === e.target) acClose(); if (e.target.dataset.ac === 'track' && S.trackDraft && !S.trackDraft.geo) refreshDistances(); if (e.target.dataset.ac === 'calcO' || e.target.dataset.ac === 'calcD') { const o = $('#calc-out'); if (o) o.innerHTML = calcOut(); } }, 150); });
 app.addEventListener('submit', e => {
   const form = e.target.closest('[data-form="login"]'); if (!form) return;
   e.preventDefault();
