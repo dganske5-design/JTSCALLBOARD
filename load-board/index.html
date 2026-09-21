@@ -449,7 +449,7 @@ const COMPANY = {
   email: 'dispatch@johansontransportation.com'
 };
 const OFFICES = ['Fresno', 'Dallas', 'Chicago', 'Atlanta']; // branch offices — first one is the default
-const STORE_KEY = 'jts_loadboard_v7';
+const STORE_KEY = 'jts_loadboard_v8';
 const LAYOUT_KEY = 'jts_loadboard_layout';
 const SKIN_KEY = 'jts_loadboard_skin';
 const RAIL_KEY = 'jts_loadboard_rail';
@@ -689,15 +689,15 @@ const tagFor = s => ({ Open: 'tag-outline', Quoted: 'tag-neutral', Tendered: 'ta
 const localDT = ts => { const d = new Date(ts); d.setSeconds(0, 0); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
 function demoData() {
   const shippers = [
-    { id: 's1', name: 'Great Lakes Packaging', address: '1450 Velp Ave', city: 'Green Bay', st: 'WI', zip: '54303', contact: 'Dana Kowalski', phone: '(920) 555-0142' },
-    { id: 's2', name: 'Midwest Cold Storage', address: '220 Remington Blvd', city: 'Bolingbrook', st: 'IL', zip: '60440', contact: 'Luis Herrera', phone: '(630) 555-0177' },
-    { id: 's3', name: 'Prairie Foods — Plant 2', address: '3801 Vandalia Rd', city: 'Des Moines', st: 'IA', zip: '50317', contact: 'Shift Office', phone: '(515) 555-0109' },
-    { id: 's4', name: 'Lakeside Paper Mill', address: '900 Mill St', city: 'Kalamazoo', st: 'MI', zip: '49001', contact: 'Dock 4', phone: '(269) 555-0130' }];
+    { id: 's1', name: 'Central Valley Packing', address: '4590 E Central Ave', city: 'Fresno', st: 'CA', zip: '93727', contact: 'Dana Kowalski', phone: '(559) 555-0142' },
+    { id: 's2', name: 'Fresno Cold Storage', address: '2950 S Peach Ave', city: 'Fresno', st: 'CA', zip: '93727', contact: 'Luis Herrera', phone: '(559) 555-0177' },
+    { id: 's3', name: 'Valley Fresh Foods — Plant 2', address: '5385 E Olive Ave', city: 'Fresno', st: 'CA', zip: '93727', contact: 'Shift Office', phone: '(559) 555-0109' },
+    { id: 's4', name: 'Sierra Paper Products', address: '3120 S Willow Ave', city: 'Fresno', st: 'CA', zip: '93727', contact: 'Dock 4', phone: '(559) 555-0130' }];
   const receivers = [
-    { id: 'r1', name: 'Bluegrass Distribution Center', address: '7200 Cedar Grove Rd', city: 'Louisville', st: 'KY', zip: '40219', contact: 'Receiving', phone: '(502) 555-0168' },
-    { id: 'r2', name: 'Summit Grocery DC', address: '2100 Rohr Rd', city: 'Columbus', st: 'OH', zip: '43137', contact: 'Appt Desk', phone: '(614) 555-0122' },
-    { id: 'r3', name: 'Riverport Warehouse', address: '4550 Pidgeon Rd', city: 'Memphis', st: 'TN', zip: '38109', contact: 'Gate Office', phone: '(901) 555-0184' },
-    { id: 'r4', name: 'Northgate Retail DC', address: '5959 Decatur Blvd', city: 'Indianapolis', st: 'IN', zip: '46241', contact: 'Receiving', phone: '(317) 555-0151' }];
+    { id: 'r1', name: 'Philadelphia Regional Produce Market', address: '6700 Essington Ave', city: 'Philadelphia', st: 'PA', zip: '19153', contact: 'Receiving', phone: '(215) 555-0168' },
+    { id: 'r2', name: 'Delaware Valley Grocery DC', address: '2100 Bartram Ave', city: 'Philadelphia', st: 'PA', zip: '19153', contact: 'Appt Desk', phone: '(215) 555-0122' },
+    { id: 'r3', name: 'Liberty Cold Storage', address: '4550 Comly St', city: 'Philadelphia', st: 'PA', zip: '19135', contact: 'Gate Office', phone: '(215) 555-0184' },
+    { id: 'r4', name: 'Keystone Retail DC', address: '5959 Tacony St', city: 'Philadelphia', st: 'PA', zip: '19135', contact: 'Receiving', phone: '(215) 555-0151' }];
   const stop = (f, ref, date, time, notes) => ({ id: uid(), facilityId: f.id, name: f.name, address: f.address, city: f.city, st: f.st, zip: f.zip, contact: f.contact, phone: f.phone, ref, po: '', date, time, notes: notes || '' });
   const line = (c, p, cs, w, di) => ({ id: uid(), commodity: c, pallets: String(p), cases: String(cs), weight: String(w), dropIdx: di || 0 });
   const CARRIER = { carrierName: 'Ganske Truck', carrierEmail: 'dispatch@gansketruck.com' };
@@ -716,8 +716,8 @@ function demoData() {
     { id: 'L3', fileNo: '2440855', customer: 'Mosqueda Inc.', customerEmail: 'logistics@mosqueda.example', fileIn: 'DG', trIn: 'DG', status: 'In Transit', temp: '', createdAt: Date.now() - 1728e5,
       linehaul: '980', fuel: '120', accessorial: '0', ...CARRIER,
       carrier: { ...CARRIER_RIG, driver: 'Tanya Bell', driverPhone: '(559) 555-0142', coDriver: 'Ray Bell', coDriverPhone: '(559) 555-0143', tractor: '4488', trailer: 'D-0917', year: '2021', plate: 'CA 7PXR208' },
-      tracking: { location: 'I-65 near Seymour, IN', miles: '58', nextStop: 'd0', eta: '', condition: 'Running late', notes: 'Weather hold north of Louisville', updatedAt: Date.now() - 32e5,
-        log: [{ at: Date.now() - 7e6, by: 'Drew Ganske', kind: 'carrier', text: 'Carrier Ganske Truck assigned · Driver Tanya Bell · Tractor 4488 / Trailer D-0917' }, { at: Date.now() - 32e5, by: 'Drew Ganske', kind: 'check', text: 'Check call: I-65 near Seymour, IN · 58 mi from Delivery 1 — Northgate Retail DC · Running late — Weather hold north of Louisville' }, { at: Date.now() - 31e5, by: 'Drew Ganske', kind: 'email', text: 'Customer update: Checked out of shipper (loaded) — Pickup 1 — Lakeside Paper Mill' }] },
+      tracking: { location: 'I-70 near Columbus, OH', miles: '470', nextStop: 'd0', eta: '', condition: 'Running late', notes: 'Weather hold east of Columbus', updatedAt: Date.now() - 32e5,
+        log: [{ at: Date.now() - 7e6, by: 'Drew Ganske', kind: 'carrier', text: 'Carrier Ganske Truck assigned · Driver Tanya Bell · Tractor 4488 / Trailer D-0917' }, { at: Date.now() - 32e5, by: 'Drew Ganske', kind: 'check', text: 'Check call: I-70 near Columbus, OH · 470 mi from Delivery 1 — Keystone Retail DC · Running late — Weather hold east of Columbus' }, { at: Date.now() - 31e5, by: 'Drew Ganske', kind: 'email', text: 'Customer update: Checked out of shipper (loaded) — Pickup 1 — Sierra Paper Products' }] },
       pickups: [{ ...stop(shippers[3], 'test 1234', '2026-08-30', '09:00', ''), lines: [line('Kraft paper rolls', 20, 20, 42000, 0)] }],
       drops: [stop(receivers[3], 'test 1234', '2026-08-31', '08:00', '')] },
     { id: 'L4', fileNo: '2440848', customer: 'Mosqueda Inc.', fileIn: 'DG', trIn: 'DG', status: 'Delivered', temp: '', createdAt: Date.now() - 3456e5,
@@ -748,17 +748,16 @@ function demoExtra() {
   const out = [];
   for (let i = 0; i < 32; i++) {
     fn += 1 + rnd(9);
-    let a = rnd(CITY.length), b = rnd(CITY.length);
-    if (b === a) b = (b + 7) % CITY.length;
+    rnd(CITY.length); rnd(CITY.length); // keep the seeded sequence stable
     const c = COMM[rnd(COMM.length)];
     const status = ST[rnd(ST.length)];
     const date = '2026-09-' + String(1 + rnd(20)).padStart(2, '0');
     const rate = 1800 + rnd(70) * 100;
     const orig = i % 3 === 0 ? 'MOSQUEDA INC. - REGIONAL DRIVEN' : 'MOSQUEDA INC.';
     const fileNo = String(fn);
-    const pu = { id: uid(), facilityId: '', name: cap(orig) + ' — ' + cap(CITY[a][0]) + ' Shipping', address: '1200 Industrial Pkwy', city: cap(CITY[a][0]), st: CITY[a][1], zip: '', contact: 'Shipping Office', phone: '', ref: 'test 1234', po: '', date, time: '08:00', notes: '',
+    const pu = { id: uid(), facilityId: '', name: cap(orig) + ' — Fresno Shipping', address: '4590 E Central Ave', city: 'Fresno', st: 'CA', zip: '93727', contact: 'Shipping Office', phone: '(559) 555-0100', ref: 'test 1234', po: '', date, time: '08:00', notes: '',
       lines: [{ id: uid(), no: 'test 1234', pos: '', commodity: c[0], pallets: String(c[1]), cases: String(c[2]), weight: String(c[3]), dropIdx: 0 }] };
-    const dl = { id: uid(), facilityId: '', name: cap(CITY[b][0]) + ' Distribution Center', address: '4400 Commerce Dr', city: cap(CITY[b][0]), st: CITY[b][1], zip: '', contact: 'Receiving', phone: '', ref: 'test 1234', po: '', date, time: '06:00', notes: '' };
+    const dl = { id: uid(), facilityId: '', name: 'Philadelphia Distribution Center', address: '6700 Essington Ave', city: 'Philadelphia', st: 'PA', zip: '19153', contact: 'Receiving', phone: '(215) 555-0100', ref: 'test 1234', po: '', date, time: '06:00', notes: '' };
     out.push({ id: 'X' + fileNo, fileNo, fileIn: 'DG', trIn: 'DG', customer: orig, status, temp: /34°F/.test(c[0]) ? '34°F continuous' : '',
       linehaul: String(Math.round(rate * 0.86)), fuel: String(rate - Math.round(rate * 0.86)), accessorial: '0',
       carrierName: COVERED.includes(status) ? CARR[rnd(CARR.length)] : '', carrierEmail: COVERED.includes(status) ? 'dispatch@gansketruck.com' : '',
@@ -1681,7 +1680,8 @@ function geocodeText(txt) {
   if (!txt) return null; const t = txt.trim();
   const z = t.match(/\b(\d{5})\b/); if (z && ZIPIDX && ZIPIDX.get(z[1])) return ZIPIDX.get(z[1]);
   places(); if (z && ZIPIDX.get(z[1])) return ZIPIDX.get(z[1]);
-  const m = t.match(/^([^,\d]+?)\s*,\s*([A-Za-z]{2})\b/); if (m) return geocode(m[1], m[2]);
+  const m = t.match(/^([^,\d]+?)\s*,\s*([A-Za-z]{2})\b/); if (m) { const g = geocode(m[1], m[2]); if (g) return g; }
+  const m2 = t.match(/(?:near|outside|by|at|in)\s+([A-Za-z .'-]+?)\s*,\s*([A-Za-z]{2})\b/i); if (m2) { const g = geocode(m2[1], m2[2]); if (g) return g; } // "I-70 near Columbus, OH"
   const r = searchPlaces(t, 1); return r.length ? r[0].p : null;
 }
 const ROAD_FACTOR = 1.18; // straight-line → approximate road miles
