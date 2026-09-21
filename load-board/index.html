@@ -449,7 +449,7 @@ const COMPANY = {
   email: 'dispatch@johansontransportation.com'
 };
 const OFFICES = ['Fresno', 'Dallas', 'Chicago', 'Atlanta']; // branch offices — first one is the default
-const STORE_KEY = 'jts_loadboard_v8';
+const STORE_KEY = 'jts_loadboard_v9';
 const LAYOUT_KEY = 'jts_loadboard_layout';
 const SKIN_KEY = 'jts_loadboard_skin';
 const RAIL_KEY = 'jts_loadboard_rail';
@@ -687,6 +687,9 @@ const tagFor = s => ({ Open: 'tag-outline', Quoted: 'tag-neutral', Tendered: 'ta
 
 // ── Demo data (deterministic) ──────────────────────────────────────────────
 const localDT = ts => { const d = new Date(ts); d.setSeconds(0, 0); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
+// Demo dates: pickups land between today and the coming Friday, deliveries 4 days after pickup.
+function demoPickupDate(k) { const t = todayISO(); const dow = new Date(t + 'T12:00:00').getDay(); const toFri = dow <= 5 ? 5 - dow : 6; return shift(t, k % (toFri + 1)); }
+const demoDeliveryDate = pu => shift(pu, 4);
 function demoData() {
   const shippers = [
     { id: 's1', name: 'Central Valley Packing', address: '4590 E Central Ave', city: 'Fresno', st: 'CA', zip: '93727', contact: 'Dana Kowalski', phone: '(559) 555-0142' },
@@ -705,25 +708,25 @@ function demoData() {
   const loads = [
     { id: 'L1', fileNo: '2440871', customer: 'Mosqueda Inc.', fileIn: 'DG', trIn: 'DG', status: 'Tendered', temp: '-10°F continuous', createdAt: Date.now() - 36e5,
       linehaul: '1850', fuel: '210', accessorial: '0', carrierName: '', carrierEmail: '',
-      pickups: [{ ...stop(shippers[1], 'test 1234', '2026-09-02', '08:00', 'Check in at guard shack. FCFS 06:00–14:00.'), lines: [{ ...line('Frozen entrées — keep at -10°F', 18, 1440, 32400, 0), no: 'test 1234', pos: 'Load by shipper' }, { ...line('Ice cream novelties', 8, 640, 14200, 1), no: 'test 1234', pos: 'Tail' }] }],
-      drops: [stop(receivers[0], 'test 1234', '2026-09-03', '07:30', ''), stop(receivers[2], 'test 1234', '2026-09-04', '09:00', 'Lumper on site — receipt required.')] },
+      pickups: [{ ...stop(shippers[1], 'test 1234', demoPickupDate(1), '08:00', 'Check in at guard shack. FCFS 06:00–14:00.'), lines: [{ ...line('Frozen entrées — keep at -10°F', 18, 1440, 32400, 0), no: 'test 1234', pos: 'Load by shipper' }, { ...line('Ice cream novelties', 8, 640, 14200, 1), no: 'test 1234', pos: 'Tail' }] }],
+      drops: [stop(receivers[0], 'test 1234', demoDeliveryDate(demoPickupDate(1)), '07:30', ''), stop(receivers[2], 'test 1234', demoDeliveryDate(demoPickupDate(1)), '09:00', 'Lumper on site — receipt required.')] },
     { id: 'L2', fileNo: '2440864', customer: 'Mosqueda Inc.', customerEmail: 'logistics@mosqueda.example', fileIn: 'DG', trIn: 'DG', status: 'Booked', temp: '', createdAt: Date.now() - 864e5,
       linehaul: '1425', fuel: '165', accessorial: '75', ...CARRIER,
       carrier: { ...CARRIER_RIG, driver: 'Marcus Reed', driverPhone: '(559) 555-0188', tractor: '4471', trailer: 'R-2210', year: '2022', plate: 'CA 9KLT441' },
-      pickups: [{ ...stop(shippers[2], 'test 1234, test 5678', '2026-09-01', '10:00', ''), inAt: localDT(Date.now() - 197 * 60000), lines: [{ ...line('Organic rolled oats — 50 lb bags', 10, 400, 20000, 0), no: 'test 1234', pos: 'Nose' }, { ...line('Organic steel-cut oats — 25 lb bags', 4, 160, 8000, 0), no: 'test 5678', pos: 'Tail' }] },
-                { ...stop(shippers[0], 'test 1234', '2026-09-01', '15:30', 'Appt required.'), lines: [line('Retail display cartons', 8, 320, 6400, 0)] }],
-      drops: [stop(receivers[1], 'test 1234', '2026-09-02', '06:00', '')] },
+      pickups: [{ ...stop(shippers[2], 'test 1234, test 5678', demoPickupDate(0), '10:00', ''), inAt: localDT(Date.now() - 197 * 60000), lines: [{ ...line('Organic rolled oats — 50 lb bags', 10, 400, 20000, 0), no: 'test 1234', pos: 'Nose' }, { ...line('Organic steel-cut oats — 25 lb bags', 4, 160, 8000, 0), no: 'test 5678', pos: 'Tail' }] },
+                { ...stop(shippers[0], 'test 1234', demoPickupDate(0), '15:30', 'Appt required.'), lines: [line('Retail display cartons', 8, 320, 6400, 0)] }],
+      drops: [stop(receivers[1], 'test 1234', demoDeliveryDate(demoPickupDate(0)), '06:00', '')] },
     { id: 'L3', fileNo: '2440855', customer: 'Mosqueda Inc.', customerEmail: 'logistics@mosqueda.example', fileIn: 'DG', trIn: 'DG', status: 'In Transit', temp: '', createdAt: Date.now() - 1728e5,
       linehaul: '980', fuel: '120', accessorial: '0', ...CARRIER,
       carrier: { ...CARRIER_RIG, driver: 'Tanya Bell', driverPhone: '(559) 555-0142', coDriver: 'Ray Bell', coDriverPhone: '(559) 555-0143', tractor: '4488', trailer: 'D-0917', year: '2021', plate: 'CA 7PXR208' },
       tracking: { location: 'I-70 near Columbus, OH', miles: '470', nextStop: 'd0', eta: '', condition: 'Running late', notes: 'Weather hold east of Columbus', updatedAt: Date.now() - 32e5,
         log: [{ at: Date.now() - 7e6, by: 'Drew Ganske', kind: 'carrier', text: 'Carrier Ganske Truck assigned · Driver Tanya Bell · Tractor 4488 / Trailer D-0917' }, { at: Date.now() - 32e5, by: 'Drew Ganske', kind: 'check', text: 'Check call: I-70 near Columbus, OH · 470 mi from Delivery 1 — Keystone Retail DC · Running late — Weather hold east of Columbus' }, { at: Date.now() - 31e5, by: 'Drew Ganske', kind: 'email', text: 'Customer update: Checked out of shipper (loaded) — Pickup 1 — Sierra Paper Products' }] },
-      pickups: [{ ...stop(shippers[3], 'test 1234', '2026-08-30', '09:00', ''), lines: [line('Kraft paper rolls', 20, 20, 42000, 0)] }],
-      drops: [stop(receivers[3], 'test 1234', '2026-08-31', '08:00', '')] },
+      pickups: [{ ...stop(shippers[3], 'test 1234', demoPickupDate(2), '09:00', ''), lines: [line('Kraft paper rolls', 20, 20, 42000, 0)] }],
+      drops: [stop(receivers[3], 'test 1234', demoDeliveryDate(demoPickupDate(2)), '08:00', '')] },
     { id: 'L4', fileNo: '2440848', customer: 'Mosqueda Inc.', fileIn: 'DG', trIn: 'DG', status: 'Delivered', temp: '', createdAt: Date.now() - 3456e5,
       linehaul: '1210', fuel: '140', accessorial: '0', ...CARRIER,
-      pickups: [{ ...stop(shippers[1], 'test 1234', '2026-08-27', '07:00', ''), lines: [line('Frozen vegetables — mixed', 22, 1760, 39600, 0)] }],
-      drops: [stop(receivers[0], 'test 1234', '2026-08-28', '06:30', '')] }];
+      pickups: [{ ...stop(shippers[1], 'test 1234', demoPickupDate(3), '07:00', ''), lines: [line('Frozen vegetables — mixed', 22, 1760, 39600, 0)] }],
+      drops: [stop(receivers[0], 'test 1234', demoDeliveryDate(demoPickupDate(3)), '06:30', '')] }];
   loads.forEach((l, i) => { l.office = OFFICES[i % 2]; });
   const carriers = [
     { id: 'c1', name: 'Ganske Truck', mc: 'MC-884210', dot: '3312077', address: '2210 E Jensen Ave', city: 'Fresno', st: 'CA', zip: '93706', phone: '(559) 555-0180', email: 'dispatch@gansketruck.com', dispatchName: 'Rosa Delgado', dispatchPhone: '(559) 555-0181', ownerName: 'Mike Ganske', ownerPhone: '(559) 555-0189', powerUnits: '42', trailerUnits: '68', equipment: 'Reefer, dry van', offices: ['Fresno', 'Dallas'], salesRep: 'Drew Ganske', status: 'Active', createdAt: Date.now() - 400 * 864e5,
@@ -751,22 +754,22 @@ function demoExtra() {
     rnd(CITY.length); rnd(CITY.length); // keep the seeded sequence stable
     const c = COMM[rnd(COMM.length)];
     const status = ST[rnd(ST.length)];
-    const date = '2026-09-' + String(1 + rnd(20)).padStart(2, '0');
+    const date = demoPickupDate(rnd(20)), delDate = demoDeliveryDate(date);
     const rate = 1800 + rnd(70) * 100;
     const orig = i % 3 === 0 ? 'MOSQUEDA INC. - REGIONAL DRIVEN' : 'MOSQUEDA INC.';
     const fileNo = String(fn);
     const pu = { id: uid(), facilityId: '', name: cap(orig) + ' — Fresno Shipping', address: '4590 E Central Ave', city: 'Fresno', st: 'CA', zip: '93727', contact: 'Shipping Office', phone: '(559) 555-0100', ref: 'test 1234', po: '', date, time: '08:00', notes: '',
       lines: [{ id: uid(), no: 'test 1234', pos: '', commodity: c[0], pallets: String(c[1]), cases: String(c[2]), weight: String(c[3]), dropIdx: 0 }] };
-    const dl = { id: uid(), facilityId: '', name: 'Philadelphia Distribution Center', address: '6700 Essington Ave', city: 'Philadelphia', st: 'PA', zip: '19153', contact: 'Receiving', phone: '(215) 555-0100', ref: 'test 1234', po: '', date, time: '06:00', notes: '' };
+    const dl = { id: uid(), facilityId: '', name: 'Philadelphia Distribution Center', address: '6700 Essington Ave', city: 'Philadelphia', st: 'PA', zip: '19153', contact: 'Receiving', phone: '(215) 555-0100', ref: 'test 1234', po: '', date: delDate, time: '06:00', notes: '' };
     out.push({ id: 'X' + fileNo, fileNo, fileIn: 'DG', trIn: 'DG', customer: orig, status, temp: /34°F/.test(c[0]) ? '34°F continuous' : '',
       linehaul: String(Math.round(rate * 0.86)), fuel: String(rate - Math.round(rate * 0.86)), accessorial: '0',
       carrierName: COVERED.includes(status) ? CARR[rnd(CARR.length)] : '', carrierEmail: COVERED.includes(status) ? 'dispatch@gansketruck.com' : '',
       office: OFFICES[rnd(OFFICES.length)],
-      pickups: [pu], drops: [dl], createdAt: new Date(date + 'T12:00:00').getTime() });
+      pickups: [pu], drops: [dl], createdAt: Date.now() - (1 + rnd(72)) * 36e5 });
     const last = out[out.length - 1];
     if (['Delivered', 'Invoiced'].includes(status)) { // record arrival at the receiver: mostly on time, sometimes late
       const lateMin = rnd(10) < 7 ? -(15 + rnd(90)) : 20 + rnd(240);
-      const t = new Date(date + 'T06:00:00'); t.setMinutes(t.getMinutes() + lateMin);
+      const t = new Date(delDate + 'T06:00:00'); t.setMinutes(t.getMinutes() + lateMin);
       last.drops[0].inAt = localDT(t.getTime()); const o2 = new Date(t.getTime() + (45 + rnd(90)) * 60000); last.drops[0].outAt = localDT(o2.getTime());
     }
   }
