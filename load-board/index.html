@@ -470,6 +470,124 @@ body.m #users .fac { flex-wrap: wrap; }
   #tender-sheet .corner { display: none !important; }
   .grid-wrap { border-color: #000; }
 }
+/* ── Carrier vetting · rate con · check calls ───────────────────────────── */
+:root { --jts-navy: #0B1F3A; --jts-gold: #D4AF37; }
+.vet .vet-calc { display: flex; align-items: center; min-height: 36px; font-size: 13px; font-weight: 600; background: color-mix(in srgb, var(--color-surface) 70%, transparent); }
+.vet .vet-calc.bad { color: #c40000; }
+.vet-flags { display: flex; flex-wrap: wrap; gap: 6px; }
+.vet-flag { display: inline-flex; align-items: center; font-size: 12px; font-weight: 700; padding: 4px 10px; background: #ffd9d9; color: #8a0000; border-left: 3px solid #c40000; }
+.vet-clear { font-size: 12.5px; font-weight: 600; color: #1f6b2a; }
+.tag.vet-new { background: var(--jts-gold); color: var(--jts-navy); font-weight: 700; }
+.tag.vet-known { background: var(--jts-navy); color: #fff; font-weight: 600; }
+.tag.vet-ok { background: #cdeccd; color: #1f6b2a; font-weight: 700; }
+.tag.vet-bad { background: #c40000; color: #fff; font-weight: 700; }
+.tag.vet-over { background: #ffe1b8; color: #7a4a00; font-weight: 700; }
+.vet-override-note { font-size: 12.5px; padding: 6px 10px; background: #fff3dd; border-left: 3px solid var(--jts-gold); }
+.vp-btn:not([disabled]) { background: var(--jts-navy); color: #fff; border-color: var(--jts-navy); }
+.vp-btn:not([disabled]):hover { background: #142e52; }
+.btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+/* rate con document (fixed brand colors: it prints) */
+.rc-preview { background: #fff; color: #111; border: 1px solid var(--color-divider); padding: 28px 32px; max-width: 900px; box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+.rc-acc-tbl .input { min-height: 30px; padding: 3px 6px; font-size: 13px; text-align: right; width: 110px; max-width: 100%; }
+.rc-doc { font-family: "IBM Plex Sans", "Barlow", system-ui, sans-serif; font-size: 12px; line-height: 1.4; color: #111; }
+.rc-head { display: flex; align-items: flex-start; gap: 16px; }
+.rc-brand { display: flex; align-items: center; gap: 12px; }
+.rc-mark { width: 58px; height: 58px; background: var(--jts-navy); color: var(--jts-gold); display: flex; align-items: center; justify-content: center; font-family: "Oswald", "Barlow Condensed", system-ui, sans-serif; font-weight: 700; font-size: 24px; letter-spacing: 0.06em; border-bottom: 4px solid var(--jts-gold); flex: none; }
+.rc-co { font-family: "Oswald", "Barlow Condensed", system-ui, sans-serif; font-weight: 600; font-size: 19px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--jts-navy); line-height: 1.1; }
+.rc-addr { font-size: 11px; color: #444; margin-top: 3px; }
+.rc-title-blk { margin-left: auto; text-align: right; }
+.rc-title { font-family: "Oswald", "Barlow Condensed", system-ui, sans-serif; font-size: 24px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--jts-navy); line-height: 1; }
+.rc-no { font-weight: 700; font-size: 15px; color: var(--jts-gold); margin-top: 4px; letter-spacing: 0.04em; }
+.rc-meta { font-size: 11.5px; color: #333; margin-top: 4px; }
+.rc-rule { height: 3px; background: var(--jts-navy); margin: 14px 0 12px; border-bottom: 2px solid var(--jts-gold); }
+.rc-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.rc-box { border: 1px solid #c9ced8; padding: 8px 10px; }
+.rc-box-h { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--jts-navy); font-weight: 700; border-bottom: 1px solid var(--jts-gold); padding-bottom: 3px; margin-bottom: 5px; }
+.rc-big { font-weight: 700; font-size: 15px; margin-bottom: 3px; }
+.rc-kv { display: flex; gap: 8px; }
+.rc-kv > span { flex: none; width: 82px; color: #555; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; padding-top: 1px; }
+.rc-stops { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.rc-stop { border: 1px solid #c9ced8; border-top: 3px solid var(--jts-navy); padding: 8px 10px; }
+.rc-stop-h { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--jts-gold); font-weight: 700; }
+.rc-stop-n { font-weight: 700; font-size: 14px; }
+.rc-rates { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+.rc-rates th { text-align: left; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; background: var(--jts-navy); color: #fff; padding: 5px 8px; }
+.rc-rates td { padding: 4px 8px; border-bottom: 1px solid #dfe3ea; }
+.rc-rates .r { text-align: right; white-space: nowrap; }
+.rc-rates .rc-sub td { font-size: 10.5px; color: #555; background: #f4f6fa; }
+.rc-basis { color: #666; font-size: 11px; }
+.rc-rates .rc-total td { font-weight: 700; font-size: 14px; border-top: 2px solid var(--jts-navy); border-bottom: 2px solid var(--jts-gold); }
+.rc-terms-line { margin-bottom: 4px; }
+.rc-terms { margin-top: 10px; }
+.rc-terms ol { margin: 0; padding-left: 18px; font-size: 10.5px; color: #222; }
+.rc-terms li { margin-bottom: 2px; }
+.rc-sign { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 22px; }
+.rc-line { border-bottom: 1px solid #111; height: 26px; font-size: 12px; display: flex; align-items: flex-end; padding-bottom: 2px; }
+.rc-sig-l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #555; margin-top: 3px; }
+.rc-foot { margin-top: 14px; font-size: 10px; color: #666; text-align: center; border-top: 1px solid #dfe3ea; padding-top: 6px; }
+#rc-print { display: none; }
+body.rc-printing #app { display: none !important; }
+body.rc-printing #rc-print { display: block; background: #fff; padding: 0.35in 0.45in; }
+body.m .rc-two, body.m .rc-stops, body.m .rc-sign { grid-template-columns: 1fr; }
+body.m .rc-head { flex-wrap: wrap; }
+body.m .rc-title-blk { margin-left: 0; text-align: left; width: 100%; }
+body.m .rc-doc { font-size: 11.5px; }
+body.m .rc-preview { padding: 16px 12px; }
+body.m .rc-acc-tbl td:nth-child(2), body.m .rc-acc-tbl th:nth-child(2) { display: none; }
+body.m .rc-acc-tbl .input { width: 84px; }
+body.m .rc-acc-tbl td, body.m .rc-acc-tbl th { padding: 4px; }
+@media print {
+  body.rc-printing { background: #fff !important; }
+  body.rc-printing #rc-print { display: block !important; }
+  .rc-doc { font-size: 11px; }
+  .rc-mark, .rc-rates th, .rc-rule { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .rc-terms { page-break-inside: avoid; }
+}
+/* check-call timeline */
+.cc-pill { display: inline-flex; align-items: center; padding: 3px 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.02em; }
+.cc-pill.ok { background: #cdeccd; color: #1f6b2a; }
+.cc-pill.soon { background: #ffe1b8; color: #7a4a00; }
+.cc-pill.over { background: #c40000; color: #fff; }
+.tl { display: flex; flex-direction: column; position: relative; padding-left: 4px; }
+.tl-it { display: flex; gap: 12px; position: relative; padding: 8px 0 10px; }
+.tl-it::before { content: ''; position: absolute; left: 6px; top: 22px; bottom: -2px; width: 2px; background: var(--color-divider); }
+.tl-it:last-child::before { display: none; }
+.tl-dot { flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--jts-navy); border: 3px solid var(--jts-gold); margin-top: 3px; z-index: 1; }
+.tl-body { flex: 1; min-width: 0; border: 1px solid var(--color-divider); padding: 7px 10px; background: color-mix(in srgb, var(--color-surface) 60%, transparent); }
+.tl-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tl-type { font-family: var(--font-heading); font-weight: 700; font-size: 13.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--jts-navy); }
+.tl-h time { font-size: 11.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.tl-temp { font-size: 11.5px; font-weight: 700; padding: 1px 7px; background: #cdeccd; color: #1f6b2a; }
+.tl-temp.bad { background: #c40000; color: #fff; }
+.tl-loc { display: flex; align-items: center; gap: 4px; font-size: 12.5px; margin-top: 3px; }
+.tl-loc svg { width: 13px; height: 13px; opacity: 0.7; }
+.tl-note { font-size: 13px; margin-top: 3px; }
+.tl-by { font-size: 11px; color: color-mix(in srgb, var(--color-text) 55%, transparent); margin-top: 3px; }
+.tl-it.ex .tl-dot { background: #c40000; border-color: #ffb3b3; }
+.tl-it.ex .tl-body { background: #ffe8e8; border: 2px solid #c40000; }
+.tl-it.ex .tl-type { color: #c40000; }
+.tl-it.bad:not(.ex) .tl-body { border-color: #c40000; }
+[data-skin="midnight"] .tl-type, [data-skin="terminal"] .tl-type, [data-skin="sunset"] .tl-type { color: var(--color-accent-700); }
+[data-skin="midnight"] .tl-it.ex .tl-body, [data-skin="terminal"] .tl-it.ex .tl-body, [data-skin="sunset"] .tl-it.ex .tl-body { background: #4a1414; color: #fff; }
+/* board rows */
+.grid tr.cc-soon td { background: #fff1c9 !important; }
+.grid tr.cc-over td { background: #ffd6d6 !important; }
+.grid tr.cc-over td.status { color: #8a0000; }
+.cc-tag { font-size: 9.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; line-height: 1.15; margin-top: 2px; white-space: normal; }
+.cc-tag.soon { color: #7a4a00; }
+.cc-tag.over { color: #c40000; }
+.lc.cc-soon { background: #fff1c9; }
+.lc.cc-over { background: #ffd6d6; border-color: #c40000; }
+.lc .cc-tag { font-size: 11px; }
+.chip.ccover.on { background: #c40000; color: #fff; border-color: #c40000; }
+.stats .cc-n { color: #fff; background: #c40000; padding: 0 6px; }
+.cc-badge { background: #c40000 !important; color: #fff !important; border-color: #c40000 !important; font-weight: 700; font-size: 11.5px; min-height: 0; padding: 3px 9px; gap: 4px; letter-spacing: 0.02em; }
+.cc-badge svg { width: 13px; height: 13px; }
+.cc-badge:hover { background: #a10000 !important; }
+body.m .rail { flex-wrap: wrap; }
+body.m .rail button { flex: 1 1 30%; }
+.rail .sub.over { color: #ff8a8a; font-weight: 700; }
+.rail button:not(.on) .sub.over { color: #c40000; }
 </style>
 </head>
 <body>
@@ -30094,7 +30212,9 @@ Zwolle|LA|31.61|-93.66|71486
 const COMPANY = {
   name: 'Johanson Transportation Services',
   phone: '(559) 555-0100',
-  email: 'dispatch@johansontransportation.com'
+  email: 'dispatch@johansontransportation.com',
+  address: '5588 N Palm Ave',
+  cityLine: 'Fresno, CA 93704'
 };
 const OFFICES = ['Fresno', 'Dallas', 'Chicago', 'Atlanta']; // branch offices — first one is the default
 const STORE_KEY = 'jts_loadboard_v9';
@@ -30439,19 +30559,20 @@ const S = (() => {
     boardDate: todayISO(), dateScope: 'day', refreshedAt: Date.now(),
     dirDraft: { shippers: blankFac(), receivers: blankFac() },
     loads: p && p.loads ? p.loads : d.loads,
-    carriers: p && p.carriers ? p.carriers : d.carriers, rt: null, carTab: 'branch', carSearch: '', carrierId: null, carrierTab: 'profile', carDraft: null, reportKey: null, calc: { origin: '', dest: '', oGeo: null, dGeo: null, rate: '', fuel: '' },
+    carriers: p && p.carriers ? p.carriers : d.carriers, rt: null,
+    vetProfiles: p && p.vetProfiles ? p.vetProfiles : {}, rcSeq: p && p.rcSeq ? p.rcSeq : 100000, vetDraft: null, rcDraft: null, ccDraft: null, onlyOverdueCC: false, carTab: 'branch', carSearch: '', carrierId: null, carrierTab: 'profile', carDraft: null, reportKey: null, calc: { origin: '', dest: '', oGeo: null, dGeo: null, rate: '', fuel: '' },
     shippers: p && p.shippers ? p.shippers : d.shippers,
     receivers: p && p.receivers ? p.receivers : d.receivers
   };
 })();
 const isMobile = () => S.layout === 'mobile' || (S.layout === 'auto' && window.innerWidth <= MOBILE_BP);
 function setLayout(v) { S.layout = v; try { localStorage.setItem(LAYOUT_KEY, v); } catch (e) {} render(); }
-function persist() { DATA_VER++; try { localStorage.setItem(STORE_KEY, JSON.stringify({ loads: S.loads, shippers: S.shippers, receivers: S.receivers, carriers: S.carriers })); } catch (e) {} }
+function persist() { DATA_VER++; try { localStorage.setItem(STORE_KEY, JSON.stringify({ loads: S.loads, shippers: S.shippers, receivers: S.receivers, carriers: S.carriers, vetProfiles: S.vetProfiles || {}, rcSeq: S.rcSeq || 100000 })); } catch (e) {} }
 function set(patch) { Object.assign(S, patch); persist(); render(); }
 function reloadFromStore() {
   const p = readStore();
   S.refreshedAt = Date.now(); DATA_VER++;
-  if (p && p.loads) { S.loads = p.loads; S.shippers = p.shippers || S.shippers; S.receivers = p.receivers || S.receivers; S.carriers = p.carriers || S.carriers; }
+  if (p && p.loads) { S.loads = p.loads; S.shippers = p.shippers || S.shippers; S.receivers = p.receivers || S.receivers; S.carriers = p.carriers || S.carriers; S.vetProfiles = p.vetProfiles || S.vetProfiles; if (p.rcSeq) S.rcSeq = Math.max(S.rcSeq || 0, p.rcSeq); }
   if (S.view === 'board') renderBoardBody(); else if (S.view !== 'builder') render();
 }
 
@@ -30563,6 +30684,7 @@ function renderShell() {
   $('#nav').innerHTML = `
     <div class="brand">${I.truckNav}<div class="brand-name">${m ? 'JTS Operations' : esc(COMPANY.name)}</div><span class="tag tag-outline">Dispatch</span></div>
     <button class="btn btn-ghost navbtn${S.view === 'board' ? ' on' : ''}" data-act="goBoard">Load board</button>
+    ${(() => { const n = ccOverdueCount(); return n ? `<button class="btn cc-badge" data-act="chipOverdueCC" title="${n} load${n === 1 ? '' : 's'} with an overdue check call. Click to filter the board.">${I.clock18}${n} overdue</button>` : ''; })()}
     <button class="btn btn-ghost navbtn${S.view === 'directory' ? ' on' : ''}" data-act="goDirectory">Shippers &amp; receivers</button>
     <button class="btn btn-ghost navbtn${S.view === 'carriers' || S.view === 'carrier' ? ' on' : ''}" data-act="goCarriers">Carriers</button>
     <button class="btn btn-ghost navbtn${S.view === 'rates' ? ' on' : ''}" data-act="goRates">Rate trends</button>
@@ -30610,7 +30732,7 @@ const COLS = [
   { key: 'carrier', label: 'Carrier', align: 'l', w: 148 },
   { key: 'status', label: 'Status', align: 'c', w: 88 },
   { key: 'rate', label: 'Rate', align: 'r', w: 86 },
-  { key: '', label: '', align: 'r', w: 118 }
+  { key: '', label: '', align: 'r', w: 178 }
 ];
 function inScope(iso) {
   if (S.dateScope === 'all') return true;
@@ -30634,6 +30756,7 @@ function boardRows() {
     if (!inScope((l.pickups[0] || {}).date)) return false;
     if (S.statusFilter.length && !S.statusFilter.includes(l.status)) return false;
     if (S.onlyDelayed && !delayAt(l)) return false;
+    if (S.onlyOverdueCC && !ccOverdue(l)) return false;
     if (!q) return true;
     const hay = [l.fileNo, l.customer, l.carrierName,
       ...l.pickups.map(p => `${p.name} ${p.city} ${refText(p)}`),
@@ -30721,7 +30844,7 @@ function renderBoardBody() {
     const dt = r.shipDate ? r.shipDate.slice(5).replace('-', '/') + '/' + r.shipDate.slice(2, 4) : '—';
     const driven = /DRIVEN/.test(r.originator);
     const H = hot ? ' hot' : '';
-    return `<tr>
+    return `<tr class="${ccRowClass(l).trim()}">
       <td class="c pale file${H}" title="Open load tender" data-act="view" data-id="${esc(l.id)}">${esc(r.fileNo)}</td>
       <td class="c pale${H}">${esc(r.fileIn)}</td>
       <td class="c trin">${esc(r.trIn)}</td>
@@ -30732,10 +30855,11 @@ function renderBoardBody() {
       <td class="r green">${esc(r.delCity)}</td>
       <td class="c green">${esc(r.delSt)}</td>
       <td class="l carrier${r.carrier ? '' : ' unc'}">${r.carrier ? esc(r.carrier) : 'UNCOVERED'}</td>
-      ${(() => { const dl = delayAt(l); return dl ? `<td class="c status delayed" title="${esc(dl.label)} — ${esc(dl.stop.name || '')} · on site ${fmtMins(dl.mins)}">${delayText(dl)}</td>` : `<td class="c status${hot ? ' hot-txt' : ''}">${esc(l.status)}${condMark(l)}</td>`; })()}
+      ${(() => { const dl = delayAt(l); return dl ? `<td class="c status delayed" title="${esc(dl.label)} — ${esc(dl.stop.name || '')} · on site ${fmtMins(dl.mins)}">${delayText(dl)}${ccRowTag(l)}</td>` : `<td class="c status${hot ? ' hot-txt' : ''}">${esc(l.status)}${condMark(l)}${ccRowTag(l)}</td>`; })()}
       <td class="r">${money(r.rate)}</td>
       <td class="r act"><div>
         <button class="btn btn-ghost tender" data-act="view" data-id="${esc(l.id)}">Tender</button>
+        ${COVERED.includes(l.status) && l.carrierName ? `<button class="btn btn-icon btn-ghost" title="${l.rateCon ? 'Reprint rate con ' + esc(l.rateCon.no) : 'Rate confirmation PDF'}" data-act="rcQuick" data-id="${esc(l.id)}">${I.doc12}</button>` : ''}
         <button class="btn btn-icon btn-ghost" title="Edit load" data-act="edit" data-id="${esc(l.id)}">${I.pencil12}</button>
         <button class="btn btn-icon btn-ghost" title="Delete load" data-act="delete" data-id="${esc(l.id)}">${I.trash12}</button>
       </div></td>
@@ -30745,8 +30869,9 @@ function renderBoardBody() {
     const l = r.l, hot = HOT.includes(l.status);
     const dt = r.shipDate ? r.shipDate.slice(5).replace('-', '/') + '/' + r.shipDate.slice(2, 4) : '—';
     const driven = /DRIVEN/.test(r.originator);
-    return `<div class="lc${hot ? ' hot' : ''}" data-act="view" data-id="${esc(l.id)}">
+    return `<div class="lc${hot ? ' hot' : ''}${ccRowClass(l)}" data-act="view" data-id="${esc(l.id)}">
       <div class="row"><span class="file">${esc(r.fileNo)}</span><span class="text-muted" style="font-weight:600">${dt}</span>${(() => { const dl = delayAt(l); return dl ? `<span class="st delayed">${delayText(dl)} · ${fmtMins(dl.mins)}</span>` : `<span class="st">${esc(l.status)}${condMark(l)}</span>`; })()}</div>
+      ${ccRowTag(l)}
       <div class="row"><span class="orig${driven ? ' driven' : ''}">${esc(r.originator)}</span></div>
       <div class="row"><span>${esc(r.puCity)}, ${esc(r.puSt)} → ${esc(r.delCity)}, ${esc(r.delSt)}</span></div>
       <div class="row"><span class="${r.carrier ? '' : 'unc'}">${r.carrier ? esc(r.carrier) : 'UNCOVERED'}</span><span class="rate">${money(r.rate)}</span></div>
@@ -30755,12 +30880,14 @@ function renderBoardBody() {
   }).join('');
   const base = baseRows(), cnt = st => base.filter(l => l.status === st).length;
   const uncN = base.filter(l => HOT.includes(l.status)).length, delN = base.filter(l => delayAt(l)).length;
-  const isAll = !S.statusFilter.length && !S.onlyDelayed, isUnc = HOT.every(h => S.statusFilter.includes(h)) && S.statusFilter.length === HOT.length;
+  const ccN = base.filter(ccOverdue).length;
+  const isAll = !S.statusFilter.length && !S.onlyDelayed && !S.onlyOverdueCC, isUnc = HOT.every(h => S.statusFilter.includes(h)) && S.statusFilter.length === HOT.length;
   const chips = $('#status-chips');
   if (chips) chips.innerHTML = `<span class="chip-lbl">Status</span>
     <button class="chip${isAll ? ' on' : ''}" data-act="chipAll">All <span class="n">${base.length}</span></button>
     <button class="chip hot${isUnc ? ' on' : ''}" data-act="chipUnc" title="Open + Quoted + Tendered">Uncovered <span class="n">${uncN}</span></button>
     <button class="chip delayed${S.onlyDelayed ? ' on' : ''}" data-act="chipDelayed" title="3h+ at a stop">Delayed <span class="n">${delN}</span></button>
+    <button class="chip ccover${S.onlyOverdueCC ? ' on' : ''}" data-act="chipOverdueCC" title="In-transit loads past their check-call cadence">Overdue check calls <span class="n">${ccN}</span></button>
     <span class="chip-sep"></span>
     ${STATUSES.map(st => `<button class="chip${S.statusFilter.includes(st) ? ' on' : ''}${HOT.includes(st) ? ' hot' : ''}" data-act="chip" data-st="${st}">${st} <span class="n">${cnt(st)}</span></button>`).join('')}
     ${isAll ? '' : '<button class="chip clear" data-act="chipAll">✕ Clear</button>'}`;
@@ -30769,6 +30896,7 @@ function renderBoardBody() {
       <div><span class="text-muted">Showing</span> <strong>${shown}</strong> <span class="text-muted">of ${all} files</span></div>
       <div><span class="text-muted">Uncovered</span> <strong style="color:#c40000">${unc}</strong></div>
       ${(() => { const n = S.loads.filter(l => delayAt(l)).length; return n ? `<div><span class="text-muted">Delayed</span> <strong class="delayed-n">${n}</strong></div>` : ''; })()}
+      ${(() => { const n = ccOverdueCount(); return n ? `<div><span class="text-muted">Check calls overdue</span> <strong class="cc-n">${n}</strong></div>` : ''; })()}
       <div><span class="text-muted">In transit</span> <strong>${transit}</strong></div>
       <div><span class="text-muted">Delivered</span> <strong>${delivered}</strong></div>
       <div><span class="text-muted">Booked revenue</span> <strong>${revenue}</strong></div>
@@ -30903,6 +31031,8 @@ function builderDerived() {
 }
 function saveDraft() {
   const d = clone(S.draft);
+  const was = S.loads.find(l => l.id === d.id);
+  if (COVERED.includes(d.status) && (!was || HOT.includes(was.status)) && vetBlocked(d)) { vetGateDialog(was || d, () => { if (was) { const ov = (S.loads.find(l => l.id === d.id) || {}).vetting; if (ov) S.draft.vetting = ov; } else S.draft.vetting = d.vetting; saveDraft(); }); return; }
   d.pickups.forEach(p => { p.lines.forEach(l => { l.no = (l.no || '').trim(); }); delete p.refs; p.ref = refText(p); });
   if (!d.id) { d.id = uid(); d.createdAt = Date.now(); }
   const exists = S.loads.some(l => l.id === d.id);
@@ -31734,6 +31864,406 @@ function demoHistory() {
   return out.sort((a, b) => a.pickups[0].date.localeCompare(b.pickups[0].date));
 }
 
+// ── Carrier vetting · Rate confirmation · Check-call timeline ──────────────
+const JTS_NAVY = '#0B1F3A', JTS_GOLD = '#D4AF37';
+const fmtLong = ts => new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+const fmtDur = m => { m = Math.max(0, Math.round(m)); const d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60; return d ? `${d}d ${h}h` : h ? `${h}h ${String(mm).padStart(2, '0')}m` : `${mm}m`; };
+const fileLoad = () => S.loads.find(x => x.id === S.tenderId);
+const noDash = t => String(t).replace(/\s*[\u2014\u2013]\s*/g, ' - ');
+const opsLog = (l, kind, text) => { const t = trackOf(l); t.log.push({ at: Date.now(), by: S.user ? S.user.name : '', kind, text }); l.tracking = t; };
+function copyText(text) { // clipboard with a selection fallback for hosts that block the async API
+  return new Promise(res => {
+    const fb = () => { try { const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0'; document.body.appendChild(ta); ta.focus(); ta.select(); const ok = document.execCommand('copy'); ta.remove(); res(!!ok); } catch (e) { res(false); } };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => res(true), fb); else fb();
+  });
+}
+
+// ── Feature 1: carrier vetting at tender ──────────────────────────────────
+const AUTHORITY = ['Active', 'Pending', 'Inactive', 'Revoked'];
+const mcKey = v => String(v || '').replace(/\D/g, '');
+const phoneKey = v => String(v || '').replace(/\D/g, '');
+const emailKey = v => String(v || '').trim().toLowerCase();
+const blankVet = () => ({ mc: '', dot: '', authority: '', authorityDate: '', insCarrier: '', insExpiry: '', contactName: '', contactPhone: '', contactEmail: '', vettedAt: 0, vettedBy: '', override: null, sentToVP: null });
+function monthsSince(iso) { if (!iso) return null; const d = parseLocal(iso + 'T12:00'); if (!d) return null; const n = new Date(); let m = (n.getFullYear() - d.getFullYear()) * 12 + (n.getMonth() - d.getMonth()); if (n.getDate() < d.getDate()) m--; return m; }
+function daysUntil(iso) { if (!iso) return null; const d = parseLocal(iso + 'T12:00'); if (!d) return null; const t = new Date(); t.setHours(12, 0, 0, 0); return Math.round((d - t) / 864e5); }
+function vetProfile(mc) { const k = mcKey(mc); return k ? (S.vetProfiles || {})[k] || null : null; }
+function vetPrevContact(mc, loadId) { // the contact this carrier gave us on its previous load
+  const p = vetProfile(mc); if (!p) return null;
+  const h = (p.history || []).filter(x => x.loadId !== loadId).sort((a, b) => b.at - a.at)[0];
+  return h ? { phone: h.phone || '', email: h.email || '', fileNo: h.fileNo } : null;
+}
+function vetFlags(v, prev) { // live red flags: evaluated every time, so an insurance date that lapses later still trips
+  const f = [];
+  if (!v) return f;
+  if (v.authority !== 'Active') f.push(v.authority ? `Authority ${v.authority.toLowerCase()}` : 'Authority status not confirmed');
+  const age = monthsSince(v.authorityDate);
+  if (v.authorityDate && age !== null && age < 6) f.push(`Authority only ${age} month${age === 1 ? '' : 's'} old`);
+  if (!v.authorityDate) f.push('Authority grant date missing');
+  const days = daysUntil(v.insExpiry);
+  if (!v.insExpiry) f.push('Insurance expiry missing');
+  else if (days < 0) f.push(`Insurance expired ${fmtDate(v.insExpiry)}`);
+  else if (days <= 30) f.push(`Insurance expires in ${days} day${days === 1 ? '' : 's'}`);
+  if (prev) {
+    if (prev.phone && v.contactPhone && phoneKey(prev.phone) !== phoneKey(v.contactPhone)) f.push(`Contact phone changed since file ${prev.fileNo}`);
+    if (prev.email && v.contactEmail && emailKey(prev.email) !== emailKey(v.contactEmail)) f.push(`Contact email changed since file ${prev.fileNo}`);
+  }
+  return f;
+}
+const vetOf = l => (l.vetting && l.vetting.vettedAt) ? l.vetting : null;
+function vetOpenFlags(l) { const v = vetOf(l); return v ? vetFlags(v, vetPrevContact(v.mc, l.id)) : []; }
+function vetBlocked(l) { const v = vetOf(l); return !!v && vetOpenFlags(l).length > 0 && !v.override; }
+function ensureVetDraft(l) { if (!S.vetDraft || S.vetDraft._id !== l.id) S.vetDraft = { _id: l.id, ...blankVet(), ...(l.vetting || {}) }; }
+function vetFill(d, p) { if (!p) return; ['dot', 'authority', 'authorityDate', 'insCarrier', 'insExpiry', 'contactName', 'contactPhone', 'contactEmail'].forEach(k => { d[k] = p[k] || ''; }); d.mc = p.mc || d.mc; }
+function vetUpsertProfile(l, v) {
+  const k = mcKey(v.mc); if (!k) return;
+  S.vetProfiles = S.vetProfiles || {};
+  const p = S.vetProfiles[k] || { mc: v.mc, history: [], createdAt: Date.now() };
+  Object.assign(p, { mc: v.mc, dot: v.dot, name: l.carrierName || p.name || '', authority: v.authority, authorityDate: v.authorityDate, insCarrier: v.insCarrier, insExpiry: v.insExpiry, contactName: v.contactName, contactPhone: v.contactPhone, contactEmail: v.contactEmail, updatedAt: Date.now() });
+  p.history = (p.history || []).filter(x => x.loadId !== l.id);
+  p.history.push({ loadId: l.id, fileNo: l.fileNo, at: Date.now(), phone: v.contactPhone, email: v.contactEmail, name: v.contactName });
+  S.vetProfiles[k] = p;
+}
+function renderVetPanel(l) {
+  ensureVetDraft(l);
+  const d = S.vetDraft, saved = vetOf(l), prof = vetProfile(d.mc), prev = vetPrevContact(d.mc, l.id);
+  const live = vetFlags(d, prev), open = saved ? vetOpenFlags(l) : [], age = monthsSince(d.authorityDate), days = daysUntil(d.insExpiry);
+  const f = (k, span, label, extra = '') => `<div class="field${span <= 2 ? ' half' : ''}" style="grid-column:span ${span}"><label>${label}</label><input class="input" ${extra} value="${esc(d[k] ?? '')}" data-bind="vetDraft.${k}"></div>`;
+  const priorN = prof ? (prof.history || []).filter(x => x.loadId !== l.id).length : 0;
+  const who = !mcKey(d.mc) ? '' : prof ? `<span class="tag vet-known">KNOWN CARRIER · ${priorN} prior load${priorN === 1 ? '' : 's'}${prev ? ' · last file ' + esc(prev.fileNo) : ''}</span>` : '<span class="tag vet-new">NEW CARRIER</span>';
+  const state = !saved ? '<span class="tag tag-neutral">Not vetted</span>'
+    : saved.override ? '<span class="tag vet-over">OVERRIDE ON FILE</span>'
+    : open.length ? `<span class="tag vet-bad">${open.length} RED FLAG${open.length === 1 ? '' : 'S'}</span>` : '<span class="tag vet-ok">CLEARED</span>';
+  const flagsHtml = live.length ? `<div class="vet-flags">${live.map(x => `<span class="vet-flag">${esc(x)}</span>`).join('')}</div>` : (mcKey(d.mc) ? '<div class="vet-clear">No red flags on the details entered.</div>' : '');
+  const canSend = !!(saved && l.carrierName && !vetBlocked(l));
+  return `<div class="card blueprint vet" id="vet-panel" style="margin-top:var(--space-4)">${CORNERS}
+    <div class="card-kicker" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">Carrier vetting · File ${esc(l.fileNo)} <span class="spacer"></span>${who}${state}</div>
+    <div class="text-muted" style="font-size:12.5px;margin-top:-4px">Type the MC number and look it up. Known carriers fill from their profile; red flags block the file from moving to Covered unless someone overrides and accepts the risk.</div>
+    <div class="grid6">
+      <div class="field half" style="grid-column:span 2"><label>MC number</label><div style="display:flex;gap:6px"><input class="input" placeholder="MC-123456" autocomplete="off" value="${esc(d.mc)}" data-bind="vetDraft.mc" data-enter="vet-lookup"><button class="btn btn-secondary btn-sm" id="vet-lookup" data-act="vetLookup" title="Load this MC's saved profile" style="white-space:nowrap;flex:none">Look up</button></div></div>
+      ${f('dot', 2, 'DOT number', 'placeholder="1234567"')}
+      <div class="field half" style="grid-column:span 2"><label>Authority status</label><select class="input" data-act="vetAuthority"><option value=""${d.authority ? '' : ' selected'}>Not confirmed</option>${AUTHORITY.map(a => `<option${d.authority === a ? ' selected' : ''}>${a}</option>`).join('')}</select></div>
+      ${f('authorityDate', 2, 'Authority grant date', 'type="date"')}
+      <div class="field half" style="grid-column:span 1"><label>Authority age</label><div class="input vet-calc${age !== null && age < 6 ? ' bad' : ''}">${age === null ? 'n/a' : `${age} mo`}</div></div>
+      ${f('insCarrier', 3, 'Insurance carrier', 'placeholder="e.g. Great West Casualty"')}
+      ${f('insExpiry', 2, 'Insurance expiry date', 'type="date"')}
+      <div class="field half" style="grid-column:span 1"><label>Expires in</label><div class="input vet-calc${days !== null && days <= 30 ? ' bad' : ''}">${days === null ? 'n/a' : days < 0 ? 'Expired' : `${days} d`}</div></div>
+      ${f('contactName', 2, 'Contact name')}
+      ${f('contactPhone', 2, 'Contact phone', 'type="tel" placeholder="(555) 555-0100"')}
+      ${f('contactEmail', 2, 'Contact email', 'type="email" placeholder="dispatch@carrier.com"')}
+      ${prev ? `<div class="text-muted" style="grid-column:span 6;font-size:12px">Previous load (file ${esc(prev.fileNo)}) contact: ${esc(prev.phone || 'no phone')} · ${esc(prev.email || 'no email')}</div>` : ''}
+    </div>
+    ${flagsHtml}
+    ${saved && saved.override ? `<div class="vet-override-note">Override and accept risk by <strong>${esc(saved.override.by)}</strong> · ${fmtLong(saved.override.at)}${saved.override.reason ? ` · ${esc(saved.override.reason)}` : ''}</div>` : ''}
+    ${saved ? `<div class="text-muted" style="font-size:12px">Vetted by ${esc(saved.vettedBy)} · ${fmtLong(saved.vettedAt)}${saved.sentToVP ? ` · Sent to Verified Pickup by ${esc(saved.sentToVP.by)} ${fmtLong(saved.sentToVP.at)}` : ''}</div>` : ''}
+    <div class="ctl-row" style="margin-top:var(--space-2)">
+      <button class="btn btn-primary blueprint" data-act="vetSave">${CORNERS}Save vetting</button>
+      ${saved && open.length && !saved.override ? `<button class="btn btn-danger" data-act="vetOverride">Override and accept risk</button>` : ''}
+      <div class="spacer"></div>
+      <button class="btn btn-secondary vp-btn" data-act="vpSend"${canSend ? '' : ' disabled'} title="${canSend ? 'Hand carrier name, MC, driver contact and the JTS File # to Verified Pickup' : !l.carrierName ? 'Save the carrier on this file first' : !saved ? 'Save the vetting first' : 'Clear or override the red flags first'}">Send to Verified Pickup</button>
+    </div>
+  </div>`;
+}
+function vetGateDialog(l, proceed) { // called when a red-flagged carrier would move the file to Covered
+  const flags = vetOpenFlags(l);
+  dialog({ title: `File ${l.fileNo} cannot move to Covered`, body: `Carrier vetting has ${flags.length} red flag${flags.length === 1 ? '' : 's'}: ${flags.join(' · ')}. Type a reason to override and accept the risk. The override is logged with your name and the time.`, input: 'text', placeholder: 'Reason for override', okLabel: 'Override and accept risk', danger: true })
+    .then(reason => {
+      if (reason === null) return;
+      const stamp = c => { c.vetting = c.vetting || {}; c.vetting.override = { by: S.user.name, at: Date.now(), reason: String(reason || '').trim() }; opsLog(c, 'vet', `Vetting override: ${flags.join('; ')} accepted by ${S.user.name}${reason ? ` (${reason})` : ''}`); };
+      if (S.loads.some(x => x.id === l.id)) updateLoad(l.id, stamp); else stamp(l);
+      proceed();
+    });
+}
+function vpPacket(l) {
+  const c = carrierOf(l), v = vetOf(l) || {};
+  return { fileNo: l.fileNo, carrier: c.name, mc: v.mc || (findCarrier(c.name) || {}).mc || '', dot: v.dot || '', driver: c.driver, driverPhone: c.driverPhone, contactName: v.contactName, contactPhone: v.contactPhone, contactEmail: v.contactEmail, lane: `${(l.pickups[0] || {}).city || ''}, ${(l.pickups[0] || {}).st || ''} to ${finalDrop(l).city || ''}, ${finalDrop(l).st || ''}`, sentAt: Date.now(), sentBy: S.user.name };
+}
+const vpText = p => noDash(['VERIFIED PICKUP HANDOFF', `JTS File #: ${p.fileNo}`, `Carrier: ${p.carrier}`, `MC: ${p.mc}${p.dot ? ` · DOT ${p.dot}` : ''}`, `Driver: ${p.driver || 'TBD'}${p.driverPhone ? ` · ${p.driverPhone}` : ''}`, `Carrier contact: ${[p.contactName, p.contactPhone, p.contactEmail].filter(Boolean).join(' · ') || 'n/a'}`, `Lane: ${p.lane}`, `Sent by ${p.sentBy} · ${fmtLong(p.sentAt)}`].join('\n'));
+
+// ── Feature 2: rate confirmation generator ─────────────────────────────────
+const EQUIPMENT = ['Reefer', 'Dry van', 'Flatbed', 'Step deck', 'Power only', 'Hotshot', 'Box truck'];
+const PAY_TERMS = ['Net 30 days from receipt of invoice and signed POD', 'Net 15 days from receipt of invoice and signed POD', 'Quick pay: 2 business days, 3% fee', 'Quick pay: 7 days, 2% fee'];
+const RC_ACC = [['detention', 'Detention', 'per hour after 2 free hours'], ['layover', 'Layover', 'per day'], ['lumper', 'Lumper', 'reimbursed with receipt'], ['tonu', 'TONU', 'flat, truck ordered not used'], ['extraStop', 'Extra stop', 'per additional stop']];
+const rcAccBlank = () => RC_ACC.map(([key, label, basis]) => ({ key, label, basis, rate: '', pre: '' }));
+const tempSetpoint = l => { const m = String(l.temp || '').match(/-?\d+(\.\d+)?/); return m ? parseFloat(m[0]) : null; };
+function rcDefaults(l) {
+  const sp = tempSetpoint(l);
+  return { equipment: l.temp ? 'Reefer' : 'Dry van', tempSet: sp === null ? '' : String(sp), tempMode: /cycle/i.test(l.temp || '') ? 'Cycle' : 'Continuous', linehaul: String(num(l.linehaul)), fuel: String(num(l.fuel)), other: String(num(l.accessorial)), acc: rcAccBlank(), terms: PAY_TERMS[0], notes: '' };
+}
+function ensureRcDraft(l) { if (!S.rcDraft || S.rcDraft._id !== l.id) S.rcDraft = { _id: l.id, ...clone(l.rateCon ? l.rateCon.form : rcDefaults(l)) }; }
+const rcTotal = f => num(f.linehaul) + num(f.fuel) + num(f.other) + (f.acc || []).reduce((s, a) => s + num(a.pre), 0);
+const rcSafeName = s => String(s || 'Carrier').replace(/[^A-Za-z0-9]+/g, '').slice(0, 40) || 'Carrier';
+const rcFileName = doc => `RateCon_${doc.fileNo}_${rcSafeName(doc.carrier.name)}_${doc.issuedDate}`;
+function rcNextNo() { S.rcSeq = (S.rcSeq || 100000) + 1; return 'RC-' + S.rcSeq; }
+function rcBuildDoc(l, form, no) { // everything the document shows, frozen at issue time so a reprint is identical
+  const c = carrierOf(l), v = vetOf(l) || {}, dir = findCarrier(c.name) || {};
+  const stop = s => ({ name: s.name || '', address: s.address || '', city: s.city || '', st: s.st || '', zip: s.zip || '', date: s.date || '', time: s.time || '', contact: s.contact || '', phone: s.phone || '', notes: s.notes || '' });
+  const lines = []; l.pickups.forEach(p => p.lines.forEach(ln => { if (ln.commodity || ln.pallets || ln.weight || ln.no) lines.push({ commodity: ln.commodity || 'Freight', pallets: num(ln.pallets), pieces: num(ln.cases), weight: num(ln.weight) }); }));
+  const t = loadTotals(l), now = new Date();
+  return {
+    no, fileNo: l.fileNo, issuedAt: now.getTime(), issuedDate: localISO(now), issuedBy: S.user ? S.user.name : '', office: l.office || '', customerRef: '',
+    carrier: { name: c.name, mc: v.mc || dir.mc || '', dot: v.dot || dir.dot || '', email: c.email, driver: c.driver, driverPhone: c.driverPhone, coDriver: c.coDriver, tractor: c.tractor, trailer: c.trailer },
+    pickups: l.pickups.map(p => ({ ...stop(p), refs: refsOf(p).filter(r => r.no).map(refLabel) })),
+    drops: l.drops.map(d => ({ ...stop(d), ref: d.ref || '' })),
+    commodity: [...new Set(lines.map(x => x.commodity))].join(', ') || 'Freight', pallets: t.plt, pieces: t.cs, weight: t.wt, lines,
+    form: clone(form), total: rcTotal(form)
+  };
+}
+function rcDocHtml(doc) {
+  return noDash(rcDocBody(doc));
+}
+function rcDocBody(doc) {
+  const f = doc.form, addr = s => [s.address, `${s.city}, ${s.st} ${s.zip}`.trim()].filter(Boolean);
+  const win = s => `${s.date ? fmtDate(s.date) : 'TBD'}${s.time ? ' at ' + s.time : ''}`;
+  const stopBlock = (title, s, refLine) => `<div class="rc-stop"><div class="rc-stop-h">${title}</div><div class="rc-stop-n">${esc(s.name || 'TBD')}</div>${addr(s).map(x => `<div>${esc(x)}</div>`).join('')}<div class="rc-kv"><span>Window</span>${esc(win(s))}</div><div class="rc-kv"><span>${refLine[0]}</span>${esc(refLine[1] || 'TBD')}</div>${s.contact || s.phone ? `<div class="rc-kv"><span>Contact</span>${esc([s.contact, s.phone].filter(Boolean).join(' · '))}</div>` : ''}${s.notes ? `<div class="rc-kv"><span>Notes</span>${esc(s.notes)}</div>` : ''}</div>`;
+  const accRows = (f.acc || []).filter(a => a.rate || a.pre).map(a => `<tr><td>${esc(a.label)} <span class="rc-basis">${esc(a.basis)}</span></td><td class="r">${a.rate ? money(a.rate) : ''}</td><td class="r">${a.pre ? money(a.pre) : 'On approval'}</td></tr>`).join('');
+  const temp = f.equipment === 'Reefer' && f.tempSet !== '' ? `${esc(f.tempSet)}°F ${esc(f.tempMode || 'Continuous').toLowerCase()}` : 'Not applicable';
+  return `<div class="rc-doc">
+    <div class="rc-head">
+      <div class="rc-brand"><div class="rc-mark">JTS</div><div><div class="rc-co">${esc(COMPANY.name)}</div><div class="rc-addr">${esc(COMPANY.address)} · ${esc(COMPANY.cityLine)}<br>${esc(COMPANY.phone)} · ${esc(COMPANY.email)}</div></div></div>
+      <div class="rc-title-blk"><div class="rc-title">Rate Confirmation</div><div class="rc-no">${esc(doc.no)}</div><div class="rc-meta">Date ${esc(fmtDate(doc.issuedDate))}<br>JTS File # ${esc(doc.fileNo)}</div></div>
+    </div>
+    <div class="rc-rule"></div>
+    <div class="rc-two">
+      <div class="rc-box"><div class="rc-box-h">Carrier</div><div class="rc-big">${esc(doc.carrier.name || 'TBD')}</div><div class="rc-kv"><span>MC</span>${esc(doc.carrier.mc || 'TBD')}</div><div class="rc-kv"><span>DOT</span>${esc(doc.carrier.dot || 'TBD')}</div><div class="rc-kv"><span>Driver</span>${esc(doc.carrier.driver || 'TBD')}${doc.carrier.driverPhone ? ' · ' + esc(doc.carrier.driverPhone) : ''}</div>${doc.carrier.tractor || doc.carrier.trailer ? `<div class="rc-kv"><span>Unit</span>${esc([doc.carrier.tractor ? 'Tractor ' + doc.carrier.tractor : '', doc.carrier.trailer ? 'Trailer ' + doc.carrier.trailer : ''].filter(Boolean).join(' · '))}</div>` : ''}</div>
+      <div class="rc-box"><div class="rc-box-h">Load</div><div class="rc-kv"><span>Equipment</span>${esc(f.equipment)}</div><div class="rc-kv"><span>Temperature</span>${temp}</div><div class="rc-kv"><span>Commodity</span>${esc(doc.commodity)}</div><div class="rc-kv"><span>Weight</span>${fmt(doc.weight)} lbs</div><div class="rc-kv"><span>Count</span>${fmt(doc.pallets)} pallets · ${fmt(doc.pieces)} pieces</div>${doc.issuedBy ? `<div class="rc-kv"><span>JTS rep</span>${esc(doc.issuedBy)}</div>` : ''}</div>
+    </div>
+    <div class="rc-stops">${doc.pickups.map((p, i) => stopBlock(`Shipper${doc.pickups.length > 1 ? ' ' + (i + 1) : ''}`, p, ['Pickup #', p.refs.join(' / ')])).join('')}${doc.drops.map((d, i) => stopBlock(`Consignee${doc.drops.length > 1 ? ' ' + (i + 1) : ''}`, d, ['Delivery #', d.ref])).join('')}</div>
+    <table class="rc-rates"><thead><tr><th>Charges</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead><tbody>
+      <tr><td>Linehaul</td><td class="r"></td><td class="r">${money(f.linehaul)}</td></tr>
+      <tr><td>Fuel surcharge</td><td class="r"></td><td class="r">${money(f.fuel)}</td></tr>
+      ${num(f.other) ? `<tr><td>Other accessorial (per tender)</td><td class="r"></td><td class="r">${money(f.other)}</td></tr>` : ''}
+      ${accRows ? `<tr class="rc-sub"><td colspan="3">Accessorials · pre-approved amounts are included in the total; anything else needs written approval from JTS before it is billed</td></tr>${accRows}` : ''}
+      <tr class="rc-total"><td>Total rate</td><td class="r"></td><td class="r">${money(doc.total)}</td></tr>
+    </tbody></table>
+    <div class="rc-kv rc-terms-line"><span>Payment terms</span>${esc(f.terms)}</div>
+    ${f.notes ? `<div class="rc-kv"><span>Notes</span>${esc(f.notes)}</div>` : ''}
+    <div class="rc-terms"><div class="rc-box-h">Terms and conditions</div><ol>
+      <li>This rate confirmation is part of the Broker-Carrier Agreement between ${esc(COMPANY.name)} (JTS) and the carrier named above. The total rate is the full and complete payment for this shipment, including fuel and any accessorial listed here as pre-approved.</li>
+      <li>Carrier must hold active operating authority and maintain the insurance required by the agreement for the life of this load. Notify JTS immediately of any change in authority, insurance, driver, or equipment.</li>
+      <li>Double brokering, co-brokering, or interlining of this load is prohibited. Any such action voids payment and may be reported to the FMCSA.</li>
+      <li>Driver must check in with JTS dispatch at pickup, at delivery, and at least every 4 hours in transit, or on the cadence JTS specifies for this load. Reefer loads: set the unit to the temperature and mode shown above before loading and keep a download available on request.</li>
+      <li>Detention, layover, lumper, TONU, and extra-stop charges are paid only at the rates listed above and only with the required proof (check-in and check-out times signed by the facility, receipts). Charges not listed require written approval from JTS before invoicing.</li>
+      <li>Carrier is responsible for count, condition, and temperature at pickup. Note all exceptions on the bill of lading before leaving the shipper and call JTS before accepting any refused or damaged freight.</li>
+      <li>Payment is issued on the terms above after JTS receives the carrier invoice, this signed rate confirmation, and a clean signed proof of delivery. Late or missing paperwork delays payment.</li>
+      <li>Any claim for loss or damage will be handled under the Carmack Amendment (49 U.S.C. 14706) and the Broker-Carrier Agreement.</li>
+    </ol></div>
+    <div class="rc-sign">
+      <div><div class="rc-line"></div><div class="rc-sig-l">Carrier authorized signature and date</div></div>
+      <div><div class="rc-line"></div><div class="rc-sig-l">Driver name and phone</div></div>
+      <div><div class="rc-line">${esc(doc.issuedBy)}</div><div class="rc-sig-l">JTS representative</div></div>
+    </div>
+    <div class="rc-foot">${esc(doc.no)} · JTS File # ${esc(doc.fileNo)} · ${esc(COMPANY.name)} · ${esc(COMPANY.phone)}</div>
+  </div>`;
+}
+function rcPrint(doc) {
+  let host = document.getElementById('rc-print'); if (!host) { host = document.createElement('div'); host.id = 'rc-print'; document.body.appendChild(host); }
+  host.innerHTML = rcDocHtml(doc);
+  const title = document.title; document.title = rcFileName(doc); document.body.classList.add('rc-printing');
+  const done = () => { document.body.classList.remove('rc-printing'); document.title = title; window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  setTimeout(() => { try { window.print(); } catch (e) {} setTimeout(done, 1500); }, 30);
+}
+function rcIssue(l, form) { // assigns the next number, freezes the document on the load, returns it
+  const doc = rcBuildDoc(l, form, rcNextNo());
+  updateLoad(l.id, c => { if (c.rateCon) { c.rateConHistory = c.rateConHistory || []; c.rateConHistory.push(c.rateCon); } c.rateCon = doc; opsLog(c, 'ratecon', `Rate confirmation ${doc.no} issued to ${doc.carrier.name || 'carrier'} for ${money(doc.total)}`); });
+  return doc;
+}
+function renderRateConTab(l) {
+  ensureRcDraft(l);
+  const f = S.rcDraft, issued = l.rateCon, covered = COVERED.includes(l.status) && !!l.carrierName;
+  const inp = (k, span, label, extra = '') => `<div class="field${span <= 2 ? ' half' : ''}" style="grid-column:span ${span}"><label>${label}</label><input class="input" ${extra} value="${esc(f[k] ?? '')}" data-bind="rcDraft.${k}"></div>`;
+  const sel = (k, span, label, opts) => `<div class="field${span <= 2 ? ' half' : ''}" style="grid-column:span ${span}"><label>${label}</label><select class="input" data-act="rcSel" data-k="${k}">${opts.map(o => `<option${f[k] === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></div>`;
+  const preview = rcDocHtml(rcBuildDoc(l, f, issued ? issued.no : 'RC-(next number on issue)'));
+  return `<div class="card blueprint" style="margin-bottom:var(--space-4)">${CORNERS}
+    <div class="card-kicker" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">Rate confirmation · File ${esc(l.fileNo)}<span class="spacer"></span>${issued ? `<span class="tag vet-ok">${esc(issued.no)} issued ${fmtLong(issued.issuedAt)}</span>` : '<span class="tag tag-neutral">Not issued</span>'}</div>
+    ${covered ? '' : `<div class="vet-flags"><span class="vet-flag">${l.carrierName ? 'File must be Booked or later to issue a rate con' : 'Save a carrier on this file first'}</span></div>`}
+    <div class="grid6">
+      ${sel('equipment', 2, 'Equipment', EQUIPMENT)}
+      ${inp('tempSet', 1, 'Setpoint °F', 'inputmode="numeric" placeholder="34"')}
+      ${sel('tempMode', 1, 'Reefer mode', ['Continuous', 'Cycle'])}
+      ${sel('terms', 2, 'Payment terms', PAY_TERMS)}
+      ${inp('linehaul', 2, 'Linehaul $', 'type="number" step="0.01" inputmode="decimal"')}
+      ${inp('fuel', 2, 'Fuel surcharge $', 'type="number" step="0.01" inputmode="decimal"')}
+      ${inp('other', 2, 'Other accessorial $ (from tender)', 'type="number" step="0.01" inputmode="decimal"')}
+    </div>
+    <table class="table rc-acc-tbl"><thead><tr><th>Accessorial</th><th>Basis</th><th class="r">Rate $</th><th class="r">Pre-approved $</th></tr></thead><tbody>
+      ${(f.acc || []).map((a, i) => `<tr><td>${esc(a.label)}</td><td class="text-muted" style="font-size:12px">${esc(a.basis)}</td><td class="r"><input class="input" type="number" step="0.01" inputmode="decimal" value="${esc(a.rate)}" data-bind="rcDraft.acc.${i}.rate"></td><td class="r"><input class="input" type="number" step="0.01" inputmode="decimal" value="${esc(a.pre)}" data-bind="rcDraft.acc.${i}.pre" placeholder="0"></td></tr>`).join('')}
+    </tbody></table>
+    <div class="field"><label>Notes to carrier (optional)</label><input class="input" placeholder="e.g. Driver must have TWIC. Call dispatch 1 hour before delivery." value="${esc(f.notes)}" data-bind="rcDraft.notes"></div>
+    <div class="ctl-row" style="margin-top:var(--space-2)">
+      <div class="allin" style="font-size:20px">Total ${money(rcTotal(f))}</div>
+      <div class="spacer"></div>
+      ${issued ? `<button class="btn btn-secondary" data-act="rcReprint" title="Prints the stored ${esc(issued.no)} exactly as issued">${I.print}Reprint ${esc(issued.no)}</button><button class="btn btn-primary blueprint" data-act="rcIssue"${covered ? '' : ' disabled'}>${CORNERS}Reissue with changes</button>` : `<button class="btn btn-primary blueprint" data-act="rcIssue"${covered ? '' : ' disabled'}>${CORNERS}${I.print}Generate and print PDF</button>`}
+    </div>
+    <div class="text-muted" style="font-size:12px">Prints through the browser's Save as PDF. Suggested filename: <strong>${esc(rcFileName(rcBuildDoc(l, f, issued ? issued.no : 'RC')))}.pdf</strong>${issued ? ' · Reissuing assigns a new number and keeps the old document on the file.' : ''}</div>
+  </div>
+  <div class="card-kicker" style="margin:0 0 6px">${issued ? 'Issued document (what reprints)' : 'Preview'}</div>
+  <div class="rc-preview">${issued ? rcDocHtml(issued) : preview}</div>`;
+}
+
+// ── Feature 3: check-call timeline ─────────────────────────────────────────
+const CC_TYPES = ['Dispatched', 'At Shipper', 'Loaded', 'In Transit', 'Temp Reading', 'At Consignee', 'Delivered', 'Exception'];
+const CC_CADENCES = [[0, 'Off'], [1, 'Every hour'], [2, 'Every 2 hours'], [3, 'Every 3 hours'], [4, 'Every 4 hours'], [6, 'Every 6 hours'], [8, 'Every 8 hours']];
+const CC_SOON_MIN = 30;
+const ccList = l => l.checkCalls || [];
+const ccCadence = l => (l.ccCadence === undefined || l.ccCadence === null) ? 4 : num(l.ccCadence);
+const tempTol = l => (l.tempTol === undefined || l.tempTol === null || l.tempTol === '') ? 3 : num(l.tempTol);
+function ccActive(l) { // the cadence clock runs while the truck is moving
+  if (!['Dispatched', 'In Transit'].includes(l.status)) return false;
+  const last = ccList(l)[ccList(l).length - 1];
+  return !(last && last.type === 'Delivered') && ccCadence(l) > 0;
+}
+function ccLastAt(l) {
+  const calls = ccList(l); if (calls.length) return Math.max(...calls.map(c => c.at));
+  const t = l.tracking || {}; if (t.updatedAt) return t.updatedAt;
+  const p = l.pickups[0] || {}; const out = parseLocal(p.outAt); return out ? out.getTime() : 0; // no real event yet: the clock waits for the first check call
+}
+function ccStatus(l) { // null when the clock is off; otherwise ok / soon / overdue with the minutes involved
+  if (!ccActive(l)) return null;
+  const last = ccLastAt(l); if (!last) return null;
+  const now = Date.now(), due = last + ccCadence(l) * 36e5, toDue = (due - now) / 60000, since = (now - last) / 60000;
+  const state = toDue < 0 ? 'overdue' : toDue <= CC_SOON_MIN ? 'soon' : 'ok';
+  return { state, lastAt: last, dueAt: due, minsToDue: toDue, overdueMins: -toDue, sinceMins: since };
+}
+const ccOverdue = l => { const c = ccStatus(l); return !!c && c.state === 'overdue'; };
+const ccOverdueCount = () => S.loads.filter(ccOverdue).length;
+const ccRowClass = l => { const c = ccStatus(l); return c && c.state === 'overdue' ? ' cc-over' : c && c.state === 'soon' ? ' cc-soon' : ''; };
+function ccRowTag(l) { const c = ccStatus(l); if (!c || c.state === 'ok') return ''; return c.state === 'overdue' ? `<div class="cc-tag over">Check call overdue ${fmtDur(c.overdueMins)}</div>` : `<div class="cc-tag soon">Check call due in ${fmtDur(c.minsToDue)}</div>`; }
+function ccTempCheck(l, reading) { const sp = tempSetpoint(l); if (sp === null || reading === '' || reading === null || isNaN(parseFloat(reading))) return null; return Math.abs(parseFloat(reading) - sp) <= tempTol(l); }
+function ccPush(l, e) { // append a timeline entry to a load (inside updateLoad) and mirror it to the tracking history
+  l.checkCalls = l.checkCalls || [];
+  const entry = { id: uid(), at: e.at || Date.now(), type: e.type, by: e.by || (S.user ? S.user.name : ''), note: e.note || '', location: e.location || '', temp: e.temp === undefined ? '' : e.temp, tempOk: e.tempOk === undefined ? null : e.tempOk };
+  l.checkCalls.push(entry);
+  if (!e.silent) opsLog(l, 'cc', `${entry.type}${entry.location ? ' · ' + entry.location : ''}${entry.temp !== '' ? ` · ${entry.temp}°F${entry.tempOk === false ? ' OUT OF RANGE' : ''}` : ''}${entry.note ? ' · ' + entry.note : ''}`);
+  if (entry.type === 'Dispatched' && l.status === 'Booked') l.status = 'Dispatched';
+  if (['Loaded', 'In Transit'].includes(entry.type) && ['Booked', 'Dispatched'].includes(l.status)) l.status = 'In Transit';
+  if (entry.type === 'Delivered' && !['Invoiced', 'Cancelled'].includes(l.status)) l.status = 'Delivered';
+  return entry;
+}
+function ensureCcDraft(l) { if (!S.ccDraft || S.ccDraft._id !== l.id) S.ccDraft = { _id: l.id, type: ccList(l).length ? 'In Transit' : 'Dispatched', location: '', geo: null, temp: '', note: '' }; }
+function ccExportText(l) {
+  const c = carrierOf(l), p = l.pickups[0] || {}, d = finalDrop(l), cad = ccCadence(l);
+  const s = [`CHECK-CALL TIMELINE · JTS File ${l.fileNo}`, `Lane: ${p.city || '?'}, ${p.st || ''} to ${d.city || '?'}, ${d.st || ''}`, `Customer: ${l.customer || 'n/a'} · Status: ${l.status}`, `Carrier: ${c.name || 'uncovered'}${c.driver ? ` · Driver ${c.driver}${c.driverPhone ? ' ' + c.driverPhone : ''}` : ''}`, `Cadence: ${cad ? `every ${cad} hour${cad === 1 ? '' : 's'} in transit` : 'off'}${tempSetpoint(l) !== null ? ` · Setpoint ${tempSetpoint(l)}°F (tolerance ${tempTol(l)}°F)` : ''}`, ''];
+  ccList(l).slice().sort((a, b) => a.at - b.at).forEach(e => s.push(`${fmtLong(e.at)}  ${e.type.toUpperCase()}${e.location ? `  @ ${e.location}` : ''}${e.temp !== '' && e.temp !== undefined ? `  ${e.temp}°F${e.tempOk === false ? ' (OUT OF RANGE)' : ''}` : ''}${e.note ? `  ${e.note}` : ''}  [${e.by}]`));
+  if (!ccList(l).length) s.push('No check calls logged.');
+  s.push('', `Exported ${fmtLong(Date.now())} by ${S.user ? S.user.name : ''}`);
+  return noDash(s.join('\n'));
+}
+function renderCheckCallsTab(l) {
+  ensureCcDraft(l);
+  const d = S.ccDraft, st = ccStatus(l), calls = ccList(l).slice().sort((a, b) => b.at - a.at), sp = tempSetpoint(l), reefer = sp !== null;
+  const statusLine = st ? (st.state === 'overdue' ? `<span class="cc-pill over">OVERDUE ${fmtDur(st.overdueMins)}</span>` : st.state === 'soon' ? `<span class="cc-pill soon">Due in ${fmtDur(st.minsToDue)}</span>` : `<span class="cc-pill ok">On schedule · next due ${fmtLong(st.dueAt)}</span>`) + ` <span class="text-muted">Last check call ${fmtDur(st.sinceMins)} ago (${fmtLong(st.lastAt)})</span>`
+    : `<span class="text-muted">${ccCadence(l) === 0 ? 'Cadence is off for this load.' : ['Dispatched', 'In Transit'].includes(l.status) ? 'No timestamp to count from yet. Log the first check call.' : `Clock runs while the file is Dispatched or In Transit (now ${esc(l.status)}).`}</span>`;
+  const item = e => { const ex = e.type === 'Exception', bad = e.tempOk === false; return `<div class="tl-it${ex ? ' ex' : ''}${bad ? ' bad' : ''}"><div class="tl-dot"></div><div class="tl-body"><div class="tl-h"><span class="tl-type">${esc(e.type)}</span>${e.temp !== '' && e.temp !== undefined ? `<span class="tl-temp${bad ? ' bad' : ''}">${esc(e.temp)}°F${bad ? ' OUT OF RANGE' : e.tempOk ? ' ok' : ''}</span>` : ''}<span class="spacer"></span><time>${fmtLong(e.at)}</time></div>${e.location ? `<div class="tl-loc">${I.pin18}${esc(e.location)}</div>` : ''}${e.note ? `<div class="tl-note">${esc(e.note)}</div>` : ''}<div class="tl-by">Logged by ${esc(e.by)}</div></div></div>`; };
+  return `<div class="card blueprint" style="margin-bottom:var(--space-4)">${CORNERS}
+    <div class="card-kicker">Check-call cadence · File ${esc(l.fileNo)}</div>
+    <div class="grid6">
+      <div class="field half" style="grid-column:span 2"><label>Cadence in transit</label><select class="input" data-act="ccCadence">${CC_CADENCES.map(([h, lbl]) => `<option value="${h}"${ccCadence(l) === h ? ' selected' : ''}>${lbl}${h === 4 ? ' (default)' : ''}</option>`).join('')}</select></div>
+      ${reefer ? `<div class="field half" style="grid-column:span 2"><label>Setpoint / tolerance</label><div style="display:flex;gap:6px;align-items:center"><div class="input vet-calc" style="flex:1">${sp}°F</div><span class="text-muted">±</span><input class="input" type="number" step="0.5" min="0" style="width:72px" value="${esc(tempTol(l))}" data-act="ccTol" title="Readings outside setpoint ± tolerance are flagged"></div></div>` : ''}
+      <div class="field" style="grid-column:span ${reefer ? 2 : 4}"><label>Status</label><div style="font-size:13px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;min-height:36px">${statusLine}</div></div>
+    </div>
+  </div>
+  <div class="card blueprint" style="margin-bottom:var(--space-4);border-color:var(--color-accent)">${CORNERS}
+    <div class="card-kicker">Log a check call</div>
+    <div class="grid6">
+      <div class="field half" style="grid-column:span 2"><label>Event</label><select class="input" data-act="ccType">${CC_TYPES.map(t => `<option${d.type === t ? ' selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="field ac" style="grid-column:span ${d.type === 'Temp Reading' || reefer ? 3 : 4}"><label>Location (optional)</label><input class="input" autocomplete="off" placeholder="City or ZIP, or a landmark" value="${esc(d.location)}" data-bind="ccDraft.location" data-ac="cc"></div>
+      ${d.type === 'Temp Reading' || reefer ? `<div class="field half" style="grid-column:span 1"><label>Temp °F</label><input class="input" type="number" step="0.5" inputmode="decimal" placeholder="${sp === null ? '' : sp}" value="${esc(d.temp)}" data-bind="ccDraft.temp" data-enter="cc-log"></div>` : ''}
+      <div class="field" style="grid-column:span 6"><label>Note</label><input class="input" placeholder="${d.type === 'Exception' ? 'What happened, who was told, what happens next' : 'Driver said..., ETA..., anything to document'}" value="${esc(d.note)}" data-bind="ccDraft.note" data-enter="cc-log"></div>
+    </div>
+    <div class="ctl-row" style="margin-top:var(--space-2)"><button class="btn ${d.type === 'Exception' ? 'btn-danger' : 'btn-primary blueprint'}" id="cc-log" data-act="ccLog">${d.type === 'Exception' ? '' : CORNERS}Log ${esc(d.type)}</button></div>
+  </div>
+  <div class="card blueprint">${CORNERS}
+    <div class="card-kicker" style="display:flex;align-items:center;gap:8px">Timeline · ${calls.length} entr${calls.length === 1 ? 'y' : 'ies'} · newest first<span class="spacer"></span><button class="btn btn-secondary btn-sm" data-act="ccExport" title="Copies a plain-text, oldest-first summary to the clipboard">Export timeline</button></div>
+    <div class="tl">${calls.length ? calls.map(item).join('') : '<div class="text-muted" style="font-size:13px;padding:6px 0">No check calls yet. Tracking check calls saved on the Tracking tab also land here.</div>'}</div>
+  </div>`;
+}
+
+// ── Demo seed (once per browser) ───────────────────────────────────────────
+function opsDemoSeed() {
+  let done = false; try { done = localStorage.getItem('jts_ops_demo') === '1'; } catch (e) {}
+  if (done) return;
+  const now = Date.now(), h = 36e5;
+  const transit = S.loads.filter(l => l.status === 'In Transit' && !String(l.id).startsWith('H'));
+  const seed = (l, calls) => { l.checkCalls = calls.map((c, i) => ({ id: uid(), at: c.at, type: c.type, by: 'Drew Ganske', note: c.note || '', location: c.location || '', temp: c.temp === undefined ? '' : c.temp, tempOk: c.tempOk === undefined ? null : c.tempOk })); l.ccCadence = 4; };
+  if (transit[0]) seed(transit[0], [{ at: now - 14 * h, type: 'Dispatched', location: 'Fresno, CA', note: 'Driver confirmed 06:00 pickup' }, { at: now - 11 * h, type: 'At Shipper', location: 'Fresno, CA 93727' }, { at: now - 9.5 * h, type: 'Loaded', location: 'Fresno, CA 93727', note: 'Loaded 26 pallets, seal intact' }, { at: now - 5.2 * h, type: 'In Transit', location: 'Barstow, CA', note: 'On I-40, no delays' }]);
+  if (transit[1]) seed(transit[1], [{ at: now - 8 * h, type: 'Loaded', location: 'Fresno, CA 93727' }, { at: now - 6 * h, type: 'Exception', location: 'Kingman, AZ', note: 'Reefer alarm. Driver reset the unit and temp is holding. Customer notified.' }, { at: now - 3.6 * h, type: 'In Transit', location: 'Flagstaff, AZ', temp: 34, tempOk: true }]);
+  if (transit[2]) seed(transit[2], [{ at: now - 2 * h, type: 'Loaded', location: 'Fresno, CA 93727' }, { at: now - 1 * h, type: 'In Transit', location: 'Bakersfield, CA' }]);
+  S.vetProfiles = S.vetProfiles || {};
+  if (!Object.keys(S.vetProfiles).length) {
+    const mk = (mc, dot, name, authority, months, insDays, phone, email, contact, ins) => { const a = new Date(); a.setMonth(a.getMonth() - months); const e = new Date(); e.setDate(e.getDate() + insDays); S.vetProfiles[mcKey(mc)] = { mc, dot, name, authority, authorityDate: localISO(a), insCarrier: ins, insExpiry: localISO(e), contactName: contact, contactPhone: phone, contactEmail: email, updatedAt: now - 20 * 864e5, createdAt: now - 200 * 864e5, history: [{ loadId: 'seed', fileNo: '2439912', at: now - 20 * 864e5, phone, email, name: contact }] }; };
+    mk('MC-884210', '3312077', 'Ganske Truck', 'Active', 62, 210, '(559) 555-0181', 'dispatch@gansketruck.com', 'Rosa Delgado', 'Great West Casualty');
+    mk('MC-702118', '2450912', 'Sierra Reefer Lines', 'Active', 38, 12, '(559) 555-0245', 'ops@sierrareefer.example', 'Tom Nakamura', 'Progressive Commercial');
+    mk('MC-991044', '4102266', 'Valley Star Express', 'Active', 4, 160, '(559) 555-0311', 'valleystar@example.com', 'Dispatch', 'Sentry Insurance');
+  }
+  try { localStorage.setItem('jts_ops_demo', '1'); } catch (e) {}
+}
+
+// ── Actions for the three features ─────────────────────────────────────────
+const OPS_ACT = {
+  vetAuthority: el => { S.vetDraft.authority = el.value; const l = fileLoad(); const p = document.getElementById('vet-panel'); if (p && l) p.outerHTML = renderVetPanel(l); },
+  vetLookup: () => {
+    const l = fileLoad(), d = S.vetDraft, p = vetProfile(d.mc);
+    if (!mcKey(d.mc)) { notify('MC number needed', 'Type the carrier MC number first.'); return; }
+    if (p) { vetFill(d, p); notify('Known carrier', `${p.name || 'This MC'} has a saved profile. Fields filled from it; check them against today's paperwork before saving.`); }
+    else notify('New carrier', 'No profile for this MC yet. Fill in the details and save; the profile is created for next time.');
+    const panel = document.getElementById('vet-panel'); if (panel && l) panel.outerHTML = renderVetPanel(l);
+  },
+  vetSave: () => {
+    const d = S.vetDraft, id = d._id;
+    if (!mcKey(d.mc)) { notify('MC number needed', 'The vetting record is keyed by MC number.'); return; }
+    let flags = [];
+    updateLoad(id, l => {
+      const prev = vetPrevContact(d.mc, l.id), v = { ...blankVet(), ...d, vettedAt: Date.now(), vettedBy: S.user.name, override: null }; delete v._id;
+      flags = vetFlags(v, prev); v.flags = flags; v.sentToVP = (l.vetting || {}).sentToVP || null;
+      l.vetting = v; vetUpsertProfile(l, v);
+      opsLog(l, 'vet', `Carrier vetted (MC ${d.mc}): ${flags.length ? flags.join('; ') : 'no red flags'}`);
+    });
+    persist(); S.vetDraft = null; render();
+    if (flags.length) notify(`${flags.length} red flag${flags.length === 1 ? '' : 's'}`, flags.join(' · ') + '. The file cannot move to Covered until someone overrides and accepts the risk.');
+  },
+  vetOverride: () => { const l = fileLoad(); if (!l) return; vetGateDialog(l, () => { S.vetDraft = null; render(); }); },
+  vpSend: el => {
+    const l = fileLoad(); if (!l || el.disabled) return;
+    const p = vpPacket(l), text = vpText(p);
+    try { const q = JSON.parse(localStorage.getItem('jts_verified_pickup_queue') || '[]'); q.push(p); localStorage.setItem('jts_verified_pickup_queue', JSON.stringify(q.slice(-200))); } catch (e) {}
+    updateLoad(l.id, c => { c.vetting = c.vetting || {}; c.vetting.sentToVP = { at: p.sentAt, by: p.sentBy }; opsLog(c, 'vet', `Sent to Verified Pickup: ${p.carrier} · MC ${p.mc} · driver ${p.driver || 'TBD'} ${p.driverPhone || ''}`); });
+    copyText(text).then(ok => { render(); notify('Sent to Verified Pickup', `${p.carrier} · MC ${p.mc} · File ${p.fileNo} queued for Verified Pickup${ok ? ' and the handoff packet is on your clipboard.' : '.'}`); });
+  },
+  // rate con
+  rcSel: el => { S.rcDraft[el.dataset.k] = el.value; if (el.dataset.k === 'equipment') { const l = fileLoad(); if (l) { const v = $('#view'); v.innerHTML = renderFile(l); } } else { const l = fileLoad(); if (l) { const pv = document.querySelector('.rc-preview'); if (pv && !l.rateCon) pv.innerHTML = rcDocHtml(rcBuildDoc(l, S.rcDraft, 'RC-(next number on issue)')); } } },
+  rcTab: el => { S.fileTab = 'ratecon'; set({ tenderId: el.dataset.id || S.tenderId, view: 'tender' }); window.scrollTo(0, 0); },
+  rcIssue: el => {
+    const l = fileLoad(); if (!l || el.disabled) return;
+    const form = clone(S.rcDraft); delete form._id;
+    const doc = rcIssue(l, form); S.rcDraft = null; render(); rcPrint(doc);
+  },
+  rcReprint: () => { const l = fileLoad(); if (l && l.rateCon) rcPrint(l.rateCon); },
+  rcQuick: el => { // one click from the board or file toolbar: reprint if issued, otherwise issue from the load as it stands
+    const l = S.loads.find(x => x.id === el.dataset.id); if (!l) return;
+    if (l.rateCon) { rcPrint(l.rateCon); return; }
+    if (!COVERED.includes(l.status) || !l.carrierName) { notify('Cover the load first', 'A rate confirmation needs a carrier saved on the file and a Booked or later status.'); return; }
+    const doc = rcIssue(l, rcDefaults(l)); if (S.view === 'board') renderBoardBody(); else render(); rcPrint(doc);
+  },
+  // check calls
+  ccCadence: el => { updateLoad(S.tenderId, l => { l.ccCadence = num(el.value); }); render(); },
+  ccTol: el => { updateLoad(S.tenderId, l => { l.tempTol = el.value === '' ? '' : num(el.value); l.checkCalls = (l.checkCalls || []).map(c => c.temp !== '' && c.temp !== undefined ? { ...c, tempOk: ccTempCheck(l, c.temp) } : c); }); },
+  ccType: el => { S.ccDraft.type = el.value; const l = fileLoad(); if (l) { const v = $('#view'); v.innerHTML = renderFile(l); const n = document.querySelector('[data-bind="ccDraft.note"]'); if (n) n.focus(); } },
+  ccLog: () => {
+    const d = S.ccDraft, l0 = fileLoad(); if (!l0) return;
+    if (d.type === 'Temp Reading' && (d.temp === '' || isNaN(parseFloat(d.temp)))) { notify('Reading needed', 'Enter the temperature reading in °F.'); return; }
+    if (d.type === 'Exception' && !d.note.trim()) { notify('Note needed', 'An exception needs a note: what happened and what is being done.'); return; }
+    const temp = d.temp === '' ? '' : parseFloat(d.temp);
+    updateLoad(l0.id, l => ccPush(l, { type: d.type, location: d.location.trim(), note: d.note.trim(), temp, tempOk: temp === '' ? null : ccTempCheck(l, temp) }));
+    const bad = temp !== '' && ccTempCheck(l0, temp) === false;
+    S.ccDraft = null; render();
+    if (bad) notify('Temperature out of range', `${temp}°F is outside ${tempSetpoint(l0)}°F ± ${tempTol(l0)}°F. Flagged on the timeline; call the driver and log an Exception if it does not recover.`);
+  },
+  ccExport: el => { const l = fileLoad(); if (!l) return; copyText(ccExportText(l)).then(ok => { el.textContent = ok ? 'Copied' : 'Copy failed'; setTimeout(() => { el.textContent = 'Export timeline'; }, 1800); if (!ok) notify('Clipboard blocked', 'Your browser blocked the copy. The summary is in the timeline below; select and copy it manually.'); }); },
+  chipOverdueCC: () => { S.onlyOverdueCC = !S.onlyOverdueCC; if (S.view !== 'board') { S.dateScope = 'all'; S.onlyOverdueCC = true; set({ view: 'board', openMenu: null }); window.scrollTo(0, 0); } else renderBoardBody(); }
+};
+const OPS_CHANGE = ['vetAuthority', 'rcSel', 'ccCadence', 'ccType', 'ccTol'];
+
 // ── Places gazetteer (US cities & ZIPs, embedded below) ────────────────────
 let PLACES = null, ZIPIDX = null, ZIPS = null;
 function places() {
@@ -31804,6 +32334,8 @@ function acPick(i) {
   if (input.dataset.ac === 'track') {
     const label = placeLabel(p, zip); input.value = label; S.trackDraft.location = label; S.trackDraft.geo = { lat: p.lat, lon: p.lon };
     refreshDistances();
+  } else if (input.dataset.ac === 'cc') {
+    const label = placeLabel(p, zip); input.value = label; if (S.ccDraft) { S.ccDraft.location = label; S.ccDraft.geo = { lat: p.lat, lon: p.lon }; }
   } else if (input.dataset.ac === 'rtO' || input.dataset.ac === 'rtD') {
     const k = input.dataset.ac === 'rtO' ? 'o' : 'd'; const label = placeLabel(p, zip); input.value = label; rtSet({ [k]: label, [k + 'Geo']: rtGeoOf(p), [k + 'Bad']: false, focus: null });
   } else if (input.dataset.ac === 'calcO' || input.dataset.ac === 'calcD') {
@@ -31850,11 +32382,12 @@ function ensureDrafts(l) {
 }
 function renderFile(l) {
   ensureDrafts(l);
-  const tabs = [['tender', 'Load tender', 'Print / email to carrier', I.doc], ['carrier', 'Add carrier', l.carrierName ? esc(l.carrierName) : 'No carrier yet', I.truck18], ['tracking', 'Tracking & tracing', trackOf(l).condition || 'No check calls', I.pin18]];
+  const ccSt = ccStatus(l), ccSub = ccSt ? (ccSt.state === 'overdue' ? `<span class="over">Overdue ${fmtDur(ccSt.overdueMins)}</span>` : ccSt.state === 'soon' ? `Due in ${fmtDur(ccSt.minsToDue)}` : `${ccList(l).length} logged · on schedule`) : `${ccList(l).length} logged`;
+  const tabs = [['tender', 'Load tender', 'Print / email to carrier', I.doc], ['carrier', 'Add carrier', l.carrierName ? esc(l.carrierName) + (vetBlocked(l) ? ' · red flags' : vetOf(l) ? ' · vetted' : '') : 'No carrier yet', I.truck18], ['tracking', 'Tracking & tracing', trackOf(l).condition || 'No check calls', I.pin18], ['ratecon', 'Rate con', l.rateCon ? esc(l.rateCon.no) : 'Not issued', I.shield18], ['calls', 'Check calls', ccSub, I.clock18]];
   const col = S.railCollapsed && !isMobile();
   const rail = `<div class="rail no-print${col ? ' collapsed' : ''}">${tabs.map(([k, label, sub, ic]) => `<button class="${S.fileTab === k ? 'on' : ''}" data-act="fileTab" data-tab="${k}" title="${label} — ${sub}"><span class="ic">${ic}</span><span class="txt">${label}<span class="sub">${sub}</span></span></button>`).join('')}
     <button class="rail-toggle" data-act="railToggle" title="${col ? 'Expand the side tabs' : 'Collapse the side tabs to give the file more room'}">${col ? I.chevsR : I.chevsL}<span class="txt">Collapse</span></button></div>`;
-  const body = S.fileTab === 'carrier' ? renderCarrierTab(l) : S.fileTab === 'tracking' ? renderTrackingTab(l) : renderTender(l);
+  const body = S.fileTab === 'carrier' ? renderCarrierTab(l) : S.fileTab === 'tracking' ? renderTrackingTab(l) : S.fileTab === 'ratecon' ? renderRateConTab(l) : S.fileTab === 'calls' ? renderCheckCallsTab(l) : renderTender(l);
   const dl = delayAt(l);
   const banner = dl ? `<div class="dwell-banner no-print">⚠ Detention alert · ${esc(dl.label)} — ${esc(dl.stop.name || dl.stop.city || 'stop')}: ${dl.onSite ? 'on site' : 'was on site'} ${fmtMins(dl.mins)}${dl.stop.inAt ? ` · checked in ${fmtLocal(dl.stop.inAt)}` : ''}${dl.stop.outAt ? ` · out ${fmtLocal(dl.stop.outAt)}` : ''}<span class="spacer"></span><span class="dwell-tag">${delayText(dl)}</span></div>` : '';
   return `<main id="tender-wrap"><div class="file-layout${col ? ' collapsed' : ''}">${rail}<div class="file-body">${banner}
@@ -31864,6 +32397,7 @@ function renderFile(l) {
       <span class="tag ${tagFor(l.status)}" style="font-size:12px">FILE ${esc(l.fileNo)} · ${esc(l.status)}</span>
       <div class="spacer"></div>
       <button class="btn btn-secondary" data-act="laneRates" data-id="${esc(l.id)}" title="Rate history for this lane">${I.chart18}Lane rates</button>
+      ${COVERED.includes(l.status) && l.carrierName && S.fileTab !== 'ratecon' ? `<button class="btn btn-secondary" data-act="rcQuick" data-id="${esc(l.id)}" title="${l.rateCon ? 'Reprint ' + esc(l.rateCon.no) : 'Issue and print the rate confirmation'}">${I.print}${l.rateCon ? 'Rate con ' + esc(l.rateCon.no) : 'Rate con PDF'}</button>` : ''}
       ${S.fileTab === 'tender' ? `<a class="btn btn-secondary" href="${tenderEmail(l)}">${I.mail}Email to carrier</a>
       <button class="btn btn-primary blueprint" data-act="print">${CORNERS}${I.print}Print / PDF</button>` : ''}
     </div>
@@ -31895,7 +32429,7 @@ function renderCarrierTab(l) {
       <div class="spacer"></div>
       ${l.carrierName ? `<button class="btn btn-ghost" style="color:#c40000" data-act="clearCarrier">Remove carrier (back to Open)</button>` : ''}
     </div>
-  </div>`;
+  </div>${renderVetPanel(l)}`;
 }
 function renderTrackingTab(l) {
   const d = S.trackDraft, t = trackOf(l), stops = stopList(l);
@@ -31956,6 +32490,7 @@ function setStopTime(kind, i, f, value, rerender = true) {
     const t = trackOf(l); t.log.push({ at: Date.now(), by: S.user.name, kind: 'time', text: value ? `${f === 'inAt' ? 'Checked in at' : 'Checked out of'} ${label} · ${fmtLocal(value)}` : `Cleared ${f === 'inAt' ? 'check-in' : 'check-out'} time at ${label}` }); l.tracking = t;
     if (!value) return;
     const early = ['Open', 'Quoted', 'Tendered', 'Booked', 'Dispatched'];
+    if (vetBlocked(l) && HOT.includes(l.status)) return;
     if (kind === 'pickups' && f === 'inAt' && ['Open', 'Quoted', 'Tendered', 'Booked'].includes(l.status)) l.status = 'Dispatched';
     if (kind === 'pickups' && f === 'outAt' && early.includes(l.status)) l.status = 'In Transit';
     if (kind === 'drops' && f === 'outAt' && i === l.drops.length - 1 && !['Invoiced', 'Cancelled'].includes(l.status)) l.status = 'Delivered';
@@ -32107,7 +32642,7 @@ const ACT = {
   scope: el => set({ dateScope: el.dataset.scope }),
   refresh: () => reloadFromStore(),
   chip: el => { const st = el.dataset.st; S.statusFilter = S.statusFilter.includes(st) ? S.statusFilter.filter(x => x !== st) : [...S.statusFilter, st]; renderBoardBody(); },
-  chipAll: () => { S.statusFilter = []; S.onlyDelayed = false; renderBoardBody(); },
+  chipAll: () => { S.statusFilter = []; S.onlyDelayed = false; S.onlyOverdueCC = false; renderBoardBody(); },
   chipUnc: () => { const on = HOT.every(h => S.statusFilter.includes(h)) && S.statusFilter.length === HOT.length; S.statusFilter = on ? [] : [...HOT]; renderBoardBody(); },
   chipDelayed: () => { S.onlyDelayed = !S.onlyDelayed; renderBoardBody(); },
   sort: el => { const k = el.dataset.key; S.sortDir = S.sortKey === k ? -S.sortDir : 1; S.sortKey = k; renderBoardBody(); },
@@ -32145,6 +32680,8 @@ const ACT = {
   railToggle: () => { S.railCollapsed = !S.railCollapsed; try { localStorage.setItem(RAIL_KEY, S.railCollapsed ? '1' : '0'); } catch (e) {} render(); },
   saveCarrier: () => {
     const d = S.carrierDraft, id = d._id;
+    const cur = S.loads.find(x => x.id === id);
+    if (cur && d.name.trim() && HOT.includes(cur.status) && vetBlocked(cur)) { vetGateDialog(cur, () => ACT.saveCarrier()); return; }
     updateLoad(id, l => {
       l.carrier = { ...blankCarrier(), ...d }; delete l.carrier._id;
       l.carrierName = d.name.trim(); l.carrierEmail = d.email.trim();
@@ -32193,6 +32730,7 @@ const ACT = {
       t.log.push({ at: Date.now(), by: S.user.name, kind: 'check', text: `Check call: ${d.location || 'location not given'}${d.miles ? ` · ${fmt(num(d.miles))} mi from ${stop ? stop.label : 'next stop'}` : ''}${d.eta ? ` · ETA ${new Date(d.eta).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''} · ${d.condition}${d.notes ? ` — ${d.notes}` : ''}` });
       l.tracking = t;
       if (['Booked', 'Dispatched'].includes(l.status) && d.location) l.status = 'In Transit';
+      ccPush(l, { type: d.condition === 'Breakdown' ? 'Exception' : 'In Transit', location: d.location, note: [d.condition, d.notes].filter(Boolean).join(': '), silent: true });
     });
     render();
   },
@@ -32205,7 +32743,7 @@ const ACT = {
       const t = trackOf(c);
       t.log.push({ at: Date.now(), by: S.user.name, kind: 'email', text: `Customer update: ${ev[1]}${stop ? ` — ${stop.label}` : ''}${d.evNote ? ` — ${d.evNote}` : ''}` });
       c.tracking = t;
-      if (ev[0] === 'checkout_shipper' && !['Delivered', 'Invoiced', 'Cancelled'].includes(c.status)) c.status = 'In Transit';
+      if (ev[0] === 'checkout_shipper' && !['Delivered', 'Invoiced', 'Cancelled'].includes(c.status) && !(vetBlocked(c) && HOT.includes(c.status))) c.status = 'In Transit';
       if (ev[0] === 'checkin_shipper' && ['Booked'].includes(c.status)) c.status = 'Dispatched';
       if (ev[0] === 'unloaded' && c.drops.length === 1) c.status = 'Delivered';
       if (ev[0] === 'unloaded' && c.drops.length > 1 && stop && stop.key === 'd' + (c.drops.length - 1)) c.status = 'Delivered';
@@ -32268,7 +32806,8 @@ const ACT = {
   },
   carDelete: () => { const c = S.carriers.find(x => x.id === S.carrierId); if (!c) return; confirmUI('Remove ' + c.name + ' from the directory?', 'Load history stays on the files; only the directory record and its notes are removed.', 'Remove').then(ok => { if (!ok) return; S.carriers = S.carriers.filter(x => x.id !== c.id); S.carrierId = null; S.carDraft = null; persist(); set({ view: 'carriers' }); }); },
   carNote: () => { const inp = document.getElementById('carnote-text'); const text = (inp.value || '').trim(); if (!text) { inp.focus(); return; } const c = S.carriers.find(x => x.id === S.carrierId); if (!c) return; c.notes = c.notes || []; c.notes.push({ at: Date.now(), by: S.user.name, text }); persist(); render(); },
-  carPick: el => { const c = S.carriers.find(x => x.id === el.value); if (!c) return; const d = S.carrierDraft; d.name = c.name; d.email = c.email || d.email; const g = document.querySelector('[data-bind="carrierDraft.name"]'); if (g) g.value = d.name; const e = document.querySelector('[data-bind="carrierDraft.email"]'); if (e) e.value = d.email; },
+  carPick: el => { const c = S.carriers.find(x => x.id === el.value); if (!c) return; const d = S.carrierDraft; d.name = c.name; d.email = c.email || d.email; const g = document.querySelector('[data-bind="carrierDraft.name"]'); if (g) g.value = d.name; const e = document.querySelector('[data-bind="carrierDraft.email"]'); if (e) e.value = d.email;
+    const l = fileLoad(); if (l && S.vetDraft && !mcKey(S.vetDraft.mc) && (c.mc || c.dot)) { S.vetDraft.mc = c.mc || ''; S.vetDraft.dot = c.dot || S.vetDraft.dot; vetFill(S.vetDraft, vetProfile(c.mc)); const p = document.getElementById('vet-panel'); if (p) p.outerHTML = renderVetPanel(l); } },
   // auth + users
   goUsers: () => { set({ view: 'users', openMenu: null }); window.scrollTo(0, 0); },
   signOut: () => { clearSession(); S.user = null; S.draft = null; S.view = 'board'; S.openMenu = null; render(); },
@@ -32296,6 +32835,10 @@ const ACT = {
   rmFac: el => { const k = el.dataset.kind; S[k] = S[k].filter(x => x.id !== el.dataset.id); persist(); render(); }
 };
 const CHANGE_ACTS = new Set(['dateSet', 'draftStatus', 'facility', 'dropIdx', 'userRole', 'userOffice', 'carPick', 'carOffice', 'rtCustomer', 'rtDate', 'sortSel', 'evType']);
+Object.assign(ACT, OPS_ACT); OPS_CHANGE.forEach(a => CHANGE_ACTS.add(a));
+I.doc12 = svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8"></path>', 12);
+I.clock18 = svg('<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>', 18);
+I.shield18 = svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path>', 18);
 
 const app = $('#app');
 app.addEventListener('pointermove', e => { const col = e.target.closest && e.target.closest('.rt-col'); const wrap = e.target.closest && e.target.closest('#rt-chart'); if (col && wrap && e.pointerType !== 'touch') rtShowTip(wrap, col); });
@@ -32322,6 +32865,7 @@ app.addEventListener('input', e => {
   else if (path === 'trackDraft.nextStop') refreshDistances();
   else if (path.startsWith('calc.')) { if (path === 'calc.origin') S.calc.oGeo = null; if (path === 'calc.dest') S.calc.dGeo = null; const o = $('#calc-out'); if (o) o.innerHTML = calcOut(); }
   else if (path.startsWith('draft.')) builderDerived();
+  else if (path.startsWith('rcDraft.')) { const l = fileLoad(); const t = document.querySelector('#view .allin'); if (t) t.textContent = 'Total ' + money(rcTotal(S.rcDraft)); if (l && !l.rateCon) { const pv = document.querySelector('.rc-preview'); if (pv) pv.innerHTML = rcDocHtml(rcBuildDoc(l, S.rcDraft, 'RC-(next number on issue)')); } }
 });
 
 app.addEventListener('keydown', e => {
@@ -32366,15 +32910,17 @@ window.addEventListener('resize', () => { measureShell(); if (isMobile() !== was
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(measureShell);
 
 let alertKey = '';
-function alertSignature() { return S.loads.map(l => { const d = delayAt(l); return d ? l.id + ':' + d.kind + ':' + Math.floor(d.mins / 5) : ''; }).filter(Boolean).join('|'); }
+function alertSignature() { return S.loads.map(l => { const d = delayAt(l), c = ccStatus(l); return (d ? l.id + ':' + d.kind + ':' + Math.floor(d.mins / 5) : '') + (c && c.state !== 'ok' ? l.id + ':cc:' + c.state + ':' + Math.floor(c.overdueMins) : ''); }).filter(Boolean).join('|'); }
 setInterval(() => {
   if (!S.user) return;
   const k = alertSignature(); if (k === alertKey) return; alertKey = k;
-  if (S.view === 'board') renderBoardBody();
+  if (S.view === 'board') { renderBoardBody(); renderShell(); }
   else if (S.view === 'tender' && !document.activeElement.matches('input, select, textarea')) render();
+  else renderShell();
 }, 60000);
 applySkin(S.skin);
 (() => { let removed = false; try { removed = localStorage.getItem('jts_rt_hist') === 'removed'; } catch (e) {} if (!removed && !S.loads.some(l => String(l.id).startsWith('H'))) S.loads = [...S.loads, ...demoHistory()]; })();
+opsDemoSeed();
 persist();
 render();
 alertKey = alertSignature();
