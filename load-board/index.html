@@ -32343,21 +32343,21 @@ function intakeCheck(force) { // demo: "polls" the inbox; force always delivers 
   const cfg = intakeCfg(); if (!cfg.demo || !S.user) return;
   const box = document.getElementById('intake-status'); if (box) box.innerHTML = '<span class="intake-dot busy"></span>Checking the inbox...';
   setTimeout(() => {
-    const c = intakeCfg(); const deliver = force || (c.cursor % 2 === 0);
-    let o = null; if (deliver) { o = receiveEmail(SAMPLE_EMAILS[c.cursor % SAMPLE_EMAILS.length]); }
-    saveIntakeCfg({ lastCheck: Date.now(), cursor: c.cursor + 1, received: c.received + (o ? 1 : 0) });
+    const c = intakeCfg(); let o = null;
+    if (force) { o = receiveEmail(SAMPLE_EMAILS[c.cursor % SAMPLE_EMAILS.length]); }
+    saveIntakeCfg({ lastCheck: Date.now(), cursor: c.cursor + (force ? 1 : 0), received: c.received + (o ? 1 : 0) });
     if (S.view === 'orders') { S.orderTab = 'new'; S.orderWho = ''; render(); } else renderShell();
     toast(o ? `${I.mail} New order received at ${esc(intakeCfg().address)}: <strong>${esc(o.subject)}</strong>${o.assignee ? ' · assigned to ' + esc(o.assignee) : ''}` : `${I.mail} Inbox checked · no new orders`);
   }, 1400);
 }
 let intakeTimer = null;
-function intakeSchedule() { clearInterval(intakeTimer); const c = intakeCfg(); if (!c.demo || !c.autoMin) return; intakeTimer = setInterval(() => { if (S.user) intakeCheck(false); }, c.autoMin * 60000); }
+function intakeSchedule() { clearInterval(intakeTimer); } // sample emails arrive only on demand; the timer comes back with the real mailbox
 function renderEmailIntake() {
   const c = intakeCfg(), team = entryTeam();
   return `<div class="card blueprint intake-card">${CORNERS}
     <div class="intake-row">
       <div><div class="card-kicker">Email intake</div><div class="intake-addr"><span class="intake-dot"></span><strong data-act="intakeCopy" title="Copy the address">${esc(c.address)}</strong></div>
-        <div class="text-muted" style="font-size:12px">Forward any customer order email here and it lands in this list${c.autoMin ? `, checked every ${c.autoMin} min` : ''}. Put <strong>assign: ${esc(team[0] || 'Tena')}</strong> or <strong>originator: Customer</strong> in the subject to route it.</div></div>
+        <div class="text-muted" style="font-size:12px">Forward any customer order email here and it lands in this list. Put <strong>assign: ${esc(team[0] || 'Tena')}</strong> or <strong>originator: Customer</strong> in the subject to route it.</div></div>
       <div class="spacer"></div>
       <div class="intake-right"><div id="intake-status" class="text-muted" style="font-size:12px">${c.lastCheck ? `<span class="intake-dot"></span>Connected · last checked ${fmtWhen(c.lastCheck)} · ${c.received} received` : '<span class="intake-dot"></span>Connected · not checked yet'}</div>
         <div class="ctl-row" style="margin-top:4px"><button class="btn btn-secondary btn-sm" data-act="intakeCheck">${I.refresh}Check now</button><button class="btn btn-primary btn-sm" data-act="intakeTest" title="Simulates a forwarded customer email arriving">${I.mail}Send test email</button></div></div>
@@ -33397,8 +33397,8 @@ function renderUsers() {
       <div class="text-muted" style="font-size:12.5px;margin-top:-4px">Orders forwarded to the inbox address show up in the New load browser. Demo mode delivers sample emails so the flow can be shown before the mailbox is connected.</div>
       <div class="grid6">
         <div class="field" style="grid-column:span 3"><label>Inbox address</label><input class="input" id="intake-address" value="${esc(c.address)}"></div>
-        <div class="field half" style="grid-column:span 1"><label>Check every (min)</label><input class="input" id="intake-auto" type="number" min="0" value="${esc(c.autoMin)}"></div>
-        <div class="field" style="grid-column:span 2"><label>Demo mode</label><label class="chk" style="min-height:36px"><input type="checkbox" data-act="intakeDemo"${c.demo ? ' checked' : ''}> Deliver sample emails</label></div>
+        <div class="field half" style="grid-column:span 1"><label>Check every (min)</label><input class="input" id="intake-auto" type="number" min="0" value="${esc(c.autoMin)}" title="Used once the real mailbox is connected"></div>
+        <div class="field" style="grid-column:span 2"><label>Demo mode</label><label class="chk" style="min-height:36px"><input type="checkbox" data-act="intakeDemo"${c.demo ? ' checked' : ''}> Send test email button delivers samples</label></div>
         <div class="field" style="grid-column:span 4"><label>Mailbox endpoint URL (wire up when the web address is ready)</label><input class="input" id="intake-endpoint" placeholder="https://your-site.netlify.app/.netlify/functions/orders" value="${esc(c.endpoint)}"></div>
         <div class="field" style="grid-column:span 2"><label>API key</label><input class="input" id="intake-key" type="password" placeholder="Shared secret" value="${esc(c.apiKey)}"></div>
       </div>
