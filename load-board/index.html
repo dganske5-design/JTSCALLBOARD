@@ -30418,7 +30418,7 @@ function signIn(username, pw) {
 function dialog({ title, body = '', input = null, okLabel = 'OK', cancelLabel = 'Cancel', danger = false, placeholder = '' }) {
   return new Promise(res => {
     const bd = document.createElement('div'); bd.className = 'dialog-backdrop';
-    bd.innerHTML = `<div class="dialog blueprint" role="dialog" aria-modal="true">${CORNERS}<div class="dialog-title">${esc(title)}</div>${body ? `<div class="dialog-body">${esc(body)}</div>` : ''}${input ? `<input class="input" id="dlg-input" type="${input === 'password' ? 'password' : 'text'}" placeholder="${esc(placeholder)}" autocomplete="${input === 'password' ? 'new-password' : 'off'}">` : ''}<div class="dialog-actions">${cancelLabel ? `<button class="btn btn-secondary" data-dlg="cancel">${esc(cancelLabel)}</button>` : ''}<button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-dlg="ok">${esc(okLabel)}</button></div></div>`;
+    bd.innerHTML = `<div class="dialog blueprint" role="dialog" aria-modal="true">${CORNERS}<div class="dialog-title">${esc(title)}</div>${body ? `<div class="dialog-body">${esc(body)}</div>` : ''}${input ? `<input class="input" id="dlg-input" type="${input === 'password' || input === 'pin' ? 'password' : 'text'}" ${input === 'pin' ? 'inputmode="numeric" maxlength="4" pattern="[0-9]*"' : ''} placeholder="${esc(placeholder)}" autocomplete="${input === 'password' ? 'new-password' : input === 'pin' ? 'one-time-code' : 'off'}">` : ''}<div class="dialog-actions">${cancelLabel ? `<button class="btn btn-secondary" data-dlg="cancel">${esc(cancelLabel)}</button>` : ''}<button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-dlg="ok">${esc(okLabel)}</button></div></div>`;
     document.body.appendChild(bd); if (typeof stripDashes === 'function') stripDashes(bd);
     const val = () => input ? bd.querySelector('#dlg-input').value : true;
     const done = v => { bd.remove(); res(v); };
@@ -32013,6 +32013,41 @@ function officeSeedOnce() {
   try { localStorage.setItem('jts_office_seed', '1'); } catch (e) {}
 }
 
+// ── rep PINs: each rep view opens with a 4-digit PIN (default 1971), admins manage them ──
+const PIN_KEY = 'jts_rep_pins_v1', PIN_UNLOCK_KEY = 'jts_rep_unlock', DEFAULT_PIN = '1971';
+function repPins() {
+  let m = null; try { m = JSON.parse(localStorage.getItem(PIN_KEY)); } catch (e) {}
+  m = m && typeof m === 'object' ? m : {}; let changed = false;
+  REPS.forEach(r => { if (!m[r] || !m[r].hash) { const salt = newSalt(); m[r] = { salt, hash: hashPw(salt, DEFAULT_PIN), isDefault: true }; changed = true; } });
+  if (changed) { try { localStorage.setItem(PIN_KEY, JSON.stringify(m)); } catch (e) {} }
+  return m;
+}
+function setRepPin(r, pin) { const m = repPins(); const salt = newSalt(); m[r] = { salt, hash: hashPw(salt, pin), isDefault: pin === DEFAULT_PIN, setAt: Date.now(), setBy: S.user ? S.user.name : '' }; try { localStorage.setItem(PIN_KEY, JSON.stringify(m)); } catch (e) {} repLock(r); }
+const checkRepPin = (r, pin) => { const e = repPins()[r]; return !!e && hashPw(e.salt, String(pin || '').trim()) === e.hash; };
+const repUnlocked = () => { try { return new Set(JSON.parse(sessionStorage.getItem(PIN_UNLOCK_KEY) || '[]')); } catch (e) { return new Set(); } };
+const repUnlock = r => { const u = repUnlocked(); u.add(r); try { sessionStorage.setItem(PIN_UNLOCK_KEY, JSON.stringify([...u])); } catch (e) {} };
+const repLock = r => { const u = repUnlocked(); u.delete(r); try { sessionStorage.setItem(PIN_UNLOCK_KEY, JSON.stringify([...u])); } catch (e) {} };
+const repLockAll = () => { try { sessionStorage.removeItem(PIN_UNLOCK_KEY); } catch (e) {} };
+const repOpen = r => !r || (S.user && S.user.role === 'admin') || repUnlocked().has(r);
+function repGate(r, proceed, cancel) { // ask for the PIN once per browser tab
+  if (repOpen(r)) { proceed(); return; }
+  dialog({ title: `PIN for ${r}`, body: `Enter the 4-digit PIN to open ${repFirst(r)}'s loads. It stays unlocked in this tab until you sign out.`, input: 'pin', placeholder: '4-digit PIN', okLabel: 'Unlock' }).then(pin => {
+    if (pin === null) { if (cancel) cancel(); return; }
+    if (checkRepPin(r, pin)) { repUnlock(r); proceed(); }
+    else notify('Wrong PIN', `That is not the PIN for ${r}. Ask an admin to reset it under Settings if it has been lost.`).then(() => { if (cancel) cancel(); });
+  });
+}
+function renderRepPins() {
+  const m = repPins();
+  return `<div class="card blueprint">${CORNERS}
+    <div class="card-kicker">Sales rep PINs</div>
+    <div class="text-muted" style="font-size:12.5px;margin-top:-4px">Each rep view in the Reps menu opens with a 4-digit PIN. Everyone starts on ${DEFAULT_PIN}. Admins skip the prompt.</div>
+    <div style="display:flex;flex-direction:column">
+      ${REPS.map(r => `<div class="fac"><div style="flex:1"><div style="font-weight:600;font-size:14px">${esc(r)}</div><div class="text-muted" style="font-size:12px">${m[r].isDefault ? 'Default PIN' : `Custom PIN${m[r].setBy ? ' set by ' + esc(m[r].setBy) : ''}${m[r].setAt ? ' · ' + fmtWhen(m[r].setAt) : ''}`}</div></div><button class="btn btn-ghost" style="font-size:12px" data-act="setRepPin" data-r="${esc(r)}">Set PIN</button>${m[r].isDefault ? '' : `<button class="btn btn-ghost" style="font-size:12px" data-act="resetRepPin" data-r="${esc(r)}">Reset to ${DEFAULT_PIN}</button>`}</div>`).join('')}
+    </div>
+  </div>`;
+}
+
 // ── board view: offices in view, rep in view, saved views, hash ────────────
 const BV_KEY = () => 'jts_boardview_' + ((S.user && S.user.username) || 'anon');
 const SV_KEY = () => 'jts_saved_views_' + ((S.user && S.user.username) || 'anon');
@@ -32025,6 +32060,7 @@ function bvLoad() {
   if (v && v.rep && REPS.includes(v.rep)) d.rep = v.rep;
   S.bv = d; S.savedViews = (() => { try { return JSON.parse(localStorage.getItem(SV_KEY())) || []; } catch (e) { return []; } })();
   applyHash();
+  if (S.bv.rep && !repOpen(S.bv.rep)) { const r = S.bv.rep; S.bv.rep = ''; bvSave(); syncHash(); if (S.user) setTimeout(() => repGate(r, () => bvSet({ rep: r })), 80); } // a remembered or linked rep view still needs its PIN
 }
 const bvOffices = () => (S.bv.rep || S.bv.offices === 'all') ? OFFICES.slice() : S.bv.offices;
 const bvIsAll = () => !!S.bv.rep || S.bv.offices === 'all';
@@ -32042,6 +32078,7 @@ function applyHash() { // #office=rocklin,tigard&rep=grayson
   return true;
 }
 function bvSet(patch, opts = {}) {
+  if (patch.rep && patch.rep !== S.bv.rep && !repOpen(patch.rep)) { repGate(patch.rep, () => bvSet(patch, opts), () => { if (S.view === 'board') renderBoardBody(); }); return; }
   Object.assign(S.bv, patch);
   if (S.bv.offices !== 'all' && !S.bv.offices.length) S.bv.offices = [bvHome()];
   bvSave(); syncHash();
@@ -32099,7 +32136,7 @@ function officeMenuItems() {
 }
 function repMenuItems() {
   const items = [{ header: 'Sales rep · shows every office' }, { label: 'All reps', check: true, on: !S.bv.rep, act: menuGo(() => bvSet({ rep: '' })) }];
-  REPS.forEach(r => { const n = S.loads.filter(l => l.salesRep === r && OPENISH.includes(l.status)).length; items.push({ label: r, check: true, on: S.bv.rep === r, badge: String(n), act: menuGo(() => bvSet({ rep: r })) }); });
+  REPS.forEach(r => { const n = S.loads.filter(l => l.salesRep === r && OPENISH.includes(l.status)).length; items.push({ label: r, check: true, on: S.bv.rep === r, badge: (repOpen(r) ? '' : '<span title="PIN needed">&#128274;</span> ') + n, act: menuGo(() => bvSet({ rep: r })) }); });
   items.push({ sep: true }, { label: 'My Loads', blurb: 'Press M', check: true, on: !!S.bv.rep && S.bv.rep === (S.user || {}).name, act: menuGo(() => ACT.myLoads()) });
   return items;
 }
@@ -32148,7 +32185,9 @@ const OFFICE_ACT = {
   clearFilters: () => { S.statusFilter = []; S.onlyDelayed = false; S.onlyOverdueCC = false; S.search = ''; S.officeMenu = false; const i = document.querySelector('[data-bind="search"]'); if (i) i.value = ''; bvSet({ offices: [bvHome()], rep: '' }); },
   viewPick: el => { const v = el.value; el.value = ''; if (v === 'save') saveViewDialog(); else if (v === 'del') deleteViewDialog(); else if (v.startsWith('v:')) { const sv = S.savedViews[+v.slice(2)]; if (sv) applySavedView(sv); } },
   kbdHelp: () => kbdHelpDialog(),
-  draftRep: el => { S.draft.salesRep = el.value; }
+  draftRep: el => { S.draft.salesRep = el.value; },
+  setRepPin: el => { const r = el.dataset.r; if (!S.user || S.user.role !== 'admin') return; dialog({ title: `New PIN for ${r}`, body: 'Four digits. The rep will need it the next time they open their view.', input: 'pin', placeholder: '4-digit PIN', okLabel: 'Set PIN' }).then(pin => { if (pin === null) return; pin = String(pin).trim(); if (!/^\d{4}$/.test(pin)) { notify('PIN must be 4 digits', 'Digits only, exactly four of them.'); return; } setRepPin(r, pin); render(); notify('PIN updated', `${r} now uses the new PIN.`); }); },
+  resetRepPin: el => { const r = el.dataset.r; if (!S.user || S.user.role !== 'admin') return; setRepPin(r, DEFAULT_PIN); render(); }
 };
 const OFFICE_CHANGE = ['offChk', 'offSel', 'repSel', 'viewPick', 'draftRep'];
 function boardKeys(e) {
@@ -32911,7 +32950,7 @@ function renderUsers() {
         ${f('password', 3, 'Password', 'type="password" autocomplete="new-password"')}
         <button class="btn btn-primary blueprint" style="grid-column:span 6" data-act="addUser">${CORNERS}${I.plus}Add user</button>
       </div>
-    </div>` : ''}
+    </div>${renderRepPins()}` : ''}
   </main>`;
 }
 
@@ -33133,7 +33172,7 @@ const ACT = {
     const l = fileLoad(); if (l && S.vetDraft && !mcKey(S.vetDraft.mc) && (c.mc || c.dot)) { S.vetDraft.mc = c.mc || ''; S.vetDraft.dot = c.dot || S.vetDraft.dot; vetFill(S.vetDraft, vetProfile(c.mc)); const p = document.getElementById('vet-panel'); if (p) p.outerHTML = renderVetPanel(l); } },
   // auth + users
   goUsers: () => { set({ view: 'users', openMenu: null }); window.scrollTo(0, 0); },
-  signOut: () => { clearSession(); S.user = null; S.draft = null; S.view = 'board'; S.openMenu = null; render(); },
+  signOut: () => { clearSession(); repLockAll(); S.user = null; S.draft = null; S.view = 'board'; S.openMenu = null; render(); },
   userRole: el => { S.userDraft.role = el.value; },
   userOffice: el => { S.userDraft.office = el.value; },
   addUser: () => {
