@@ -524,6 +524,25 @@ body.m .ord-head { flex-wrap: wrap; }
 body.m .ord-acts { width: 100%; justify-content: flex-end; }
 body.m .ord-body { padding-left: 12px; }
 body.m #tabbar .tab { font-size: 9px; }
+.bld-wrap { display: flex; align-items: flex-start; }
+.bld-wrap > #builder { flex: 1 1 auto; min-width: 0; }
+.src-pane { flex: 0 0 440px; position: sticky; top: var(--shell-h); max-height: calc(100vh - var(--shell-h)); overflow: auto; padding: var(--space-4); border-left: 1px solid var(--color-divider); background: var(--color-surface); display: flex; flex-direction: column; gap: 8px; }
+.src-pane.collapsed { flex-basis: auto; padding: 10px; }
+.src-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.src-subj { font-weight: 700; font-size: 15px; }
+.src-meta { font-size: 12px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+.src-note { font-size: 12.5px; padding: 6px 10px; background: #fff3dd; border-left: 3px solid var(--jts-gold, #D4AF37); }
+.src-img { max-width: 100%; max-height: 320px; cursor: zoom-in; border: 1px solid var(--color-divider); display: block; }
+.src-img.zoom { max-height: none; cursor: zoom-out; }
+.src-pdf { width: 100%; height: 520px; border: 1px solid var(--color-divider); background: #fff; }
+.src-pre { max-height: none; }
+.src-card { gap: 8px; }
+.src-card .src-pdf { height: 720px; }
+body.m .bld-wrap { flex-direction: column; }
+body.m .src-pane { position: static; flex: none; width: 100%; max-height: none; border-left: 0; border-bottom: 1px solid var(--color-divider); padding: 12px 16px; }
+body.m .src-img { max-height: 240px; }
+body.m .src-pdf, body.m .src-card .src-pdf { height: 420px; }
+@media print { .src-pane { display: none !important; } }
 
 /* ── Offices, reps and board views ─────────────────────────────────────── */
 .off-tabs { flex-wrap: wrap; }
@@ -31100,7 +31119,7 @@ function renderBuilder() {
       ${stopFields('drops', i, dr)}
     </div>`;
   }).join('');
-  return `<main id="builder">
+  return wrapSource(d, `<main id="builder">
     <div class="blueprint elev-sm totals no-print">${CORNERS}
       <div><div class="kicker">Pallets</div><div class="n" id="tot-plt">${fmt(t.plt)}</div></div>
       <div><div class="kicker">Pieces</div><div class="n" id="tot-cs">${fmt(t.cs)}</div></div>
@@ -31144,7 +31163,7 @@ function renderBuilder() {
         ${f('carrierEmail', 2, 'Carrier email', 'placeholder="dispatch@carrier.com"')}
       </div>
     </section>
-  </main>`;
+  </main>`);
 }
 // Cheap live update of derived numbers while typing — no full re-render, no lost focus.
 function builderDerived() {
@@ -32395,7 +32414,27 @@ function renderOrders() {
     <div class="ord-list">${list.length ? list.map(card).join('') : `<div class="text-muted empty">${all.length ? 'Nothing matches here.' : 'No orders yet. Drop or paste the first customer email above.'}</div>`}</div>
   </main>`;
 }
+const orderOfLoad = l => (l && l.orderId) ? ordersOf().find(o => o.id === l.orderId) : null;
+function renderOrderSource(o, compact) { // the email, images and PDFs the order came in with, for checking the entry against
+  const fromOf = String(o.from || '').replace(/<[^>]*>/g, '').replace(/"/g, '').trim() || (String(o.from || '').match(/[\w.+-]+@[\w.-]+/) || [''])[0];
+  const imgs = o.attachments.filter(a => a.dataUrl && /^data:image\//.test(a.dataUrl)), pdfs = o.attachments.filter(a => a.dataUrl && /^data:application\/pdf/.test(a.dataUrl)), others = o.attachments.filter(a => !imgs.includes(a) && !pdfs.includes(a));
+  return `<div class="src-head"><div class="card-kicker">Source email · check the entry against this</div>${compact ? '' : '<button class="btn btn-ghost btn-sm" data-act="srcToggle" title="Hide the source panel">Hide</button>'}</div>
+    <div class="src-subj">${esc(o.subject || o.fileName || 'Untitled order')}</div>
+    <div class="src-meta">${fromOf ? `From ${esc(fromOf)}${o.sentAt ? ' · ' + esc(o.sentAt) : ''} · ` : ''}Received ${fmtWhen(o.receivedAt)} by ${esc(o.receivedBy || 'unknown')}${o.status === 'done' ? ` · Entered by ${esc(o.doneBy)} ${fmtWhen(o.doneAt)}` : ''}</div>
+    ${o.notes ? `<div class="src-note">${esc(o.notes)}</div>` : ''}
+    ${imgs.map(a => `<div><img class="src-img" src="${a.dataUrl}" alt="${esc(a.name)}" title="Click to enlarge" data-act="srcZoom"><div class="text-muted" style="font-size:11px">${esc(a.name)}</div></div>`).join('')}
+    ${pdfs.map(a => `<div><object class="src-pdf" data="${a.dataUrl}" type="application/pdf"><div class="text-muted" style="font-size:12px;padding:8px">This browser will not show the PDF inline. <a href="${a.dataUrl}" target="_blank" rel="noopener">Open ${esc(a.name)}</a></div></object><div class="text-muted" style="font-size:11px">${esc(a.name)} · <a href="${a.dataUrl}" target="_blank" rel="noopener">open in a new tab</a></div></div>`).join('')}
+    ${others.length ? `<div class="ord-att">${others.map(a => a.dataUrl ? `<a class="btn btn-secondary btn-sm" href="${a.dataUrl}" download="${esc(a.name)}">${esc(a.name)}</a>` : `<span class="tag tag-neutral">${esc(a.name)} (name only)</span>`).join('')}</div>` : ''}
+    ${o.body ? `<pre class="ord-pre src-pre">${esc(o.body)}</pre>` : (!imgs.length && !pdfs.length ? '<div class="text-muted" style="font-size:12.5px">No email text was saved with this order.</div>' : '')}`;
+}
+function wrapSource(d, html) {
+  const o = orderOfLoad(d); if (!o) return html;
+  const open = S.srcOpen !== false;
+  return `<div class="bld-wrap">${html}<aside class="src-pane${open ? '' : ' collapsed'}">${open ? renderOrderSource(o) : `<button class="btn btn-secondary btn-sm src-show" data-act="srcToggle" title="Show the source email">Show source email</button>`}</aside></div>`;
+}
 const ORDER_ACT = {
+  srcToggle: () => { S.srcOpen = S.srcOpen === false; render(); },
+  srcZoom: el => { el.classList.toggle('zoom'); },
   goOrders: () => { set({ view: 'orders', openMenu: null }); window.scrollTo(0, 0); },
   ordTab: el => { S.orderTab = el.dataset.v; render(); },
   ordOpen: el => { S.orderOpen = S.orderOpen === el.dataset.id ? null : el.dataset.id; render(); },
@@ -32955,11 +32994,11 @@ function ensureDrafts(l) {
 function renderFile(l) {
   ensureDrafts(l);
   const ccSt = ccStatus(l), ccSub = ccSt ? (ccSt.state === 'overdue' ? `<span class="over">Overdue ${fmtDur(ccSt.overdueMins)}</span>` : ccSt.state === 'soon' ? `Due in ${fmtDur(ccSt.minsToDue)}` : `${ccList(l).length} logged · on schedule`) : `${ccList(l).length} logged`;
-  const tabs = [['tender', 'Load tender', 'Print / email to carrier', I.doc], ['carrier', 'Add carrier', l.carrierName ? esc(l.carrierName) + (vetBlocked(l) ? ' · red flags' : vetOf(l) ? ' · vetted' : '') : 'No carrier yet', I.truck18], ['tracking', 'Tracking & tracing', trackOf(l).condition || 'No check calls', I.pin18], ['ratecon', 'Rate con', l.rateCon ? esc(l.rateCon.no) : 'Not issued', I.shield18], ['calls', 'Check calls', ccSub, I.clock18]];
+  const tabs = [['tender', 'Load tender', 'Print / email to carrier', I.doc], ['carrier', 'Add carrier', l.carrierName ? esc(l.carrierName) + (vetBlocked(l) ? ' · red flags' : vetOf(l) ? ' · vetted' : '') : 'No carrier yet', I.truck18], ['tracking', 'Tracking & tracing', trackOf(l).condition || 'No check calls', I.pin18], ['ratecon', 'Rate con', l.rateCon ? esc(l.rateCon.no) : 'Not issued', I.shield18], ['calls', 'Check calls', ccSub, I.clock18], ...(orderOfLoad(l) ? [['source', 'Source email', esc(orderOfLoad(l).subject || orderOfLoad(l).fileName || 'Order'), I.inbox18]] : [])];
   const col = S.railCollapsed && !isMobile();
   const rail = `<div class="rail no-print${col ? ' collapsed' : ''}">${tabs.map(([k, label, sub, ic]) => `<button class="${S.fileTab === k ? 'on' : ''}" data-act="fileTab" data-tab="${k}" title="${label} — ${sub}"><span class="ic">${ic}</span><span class="txt">${label}<span class="sub">${sub}</span></span></button>`).join('')}
     <button class="rail-toggle" data-act="railToggle" title="${col ? 'Expand the side tabs' : 'Collapse the side tabs to give the file more room'}">${col ? I.chevsR : I.chevsL}<span class="txt">Collapse</span></button></div>`;
-  const body = S.fileTab === 'carrier' ? renderCarrierTab(l) : S.fileTab === 'tracking' ? renderTrackingTab(l) : S.fileTab === 'ratecon' ? renderRateConTab(l) : S.fileTab === 'calls' ? renderCheckCallsTab(l) : renderTender(l);
+  const body = S.fileTab === 'carrier' ? renderCarrierTab(l) : S.fileTab === 'tracking' ? renderTrackingTab(l) : S.fileTab === 'ratecon' ? renderRateConTab(l) : S.fileTab === 'calls' ? renderCheckCallsTab(l) : S.fileTab === 'source' && orderOfLoad(l) ? `<div class="card blueprint src-card">${CORNERS}${renderOrderSource(orderOfLoad(l), true)}</div>` : renderTender(l);
   const dl = delayAt(l);
   const banner = dl ? `<div class="dwell-banner no-print">⚠ Detention alert · ${esc(dl.label)} — ${esc(dl.stop.name || dl.stop.city || 'stop')}: ${dl.onSite ? 'on site' : 'was on site'} ${fmtMins(dl.mins)}${dl.stop.inAt ? ` · checked in ${fmtLocal(dl.stop.inAt)}` : ''}${dl.stop.outAt ? ` · out ${fmtLocal(dl.stop.outAt)}` : ''}<span class="spacer"></span><span class="dwell-tag">${delayText(dl)}</span></div>` : '';
   return `<main id="tender-wrap"><div class="file-layout${col ? ' collapsed' : ''}">${rail}<div class="file-body">${banner}
