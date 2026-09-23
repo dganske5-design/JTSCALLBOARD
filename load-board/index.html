@@ -129,6 +129,9 @@ button, input, select { font: inherit; }
 .menu-it.sub { padding-left: 26px; }
 .menu-it .sw { width: 22px; height: 12px; border: 1px solid var(--chrome-line); flex: none; }
 .menu-it .chk { width: 12px; flex: none; text-align: center; }
+.menu-it .menu-n { margin-left: auto; padding-left: 14px; font-size: 11px; font-weight: 700; opacity: 0.8; display: inline-flex; align-items: center; gap: 4px; }
+.menu-it .menu-n .unc { background: #f00000; color: #fff; padding: 0 5px; opacity: 1; }
+.menu-it .off-dot { flex: none; }
 #nav { position: sticky; top: var(--strip-h); z-index: 50; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: 10px var(--space-6); border-bottom: 1px solid var(--color-divider); background: var(--color-bg); }
 #nav .brand { display: flex; align-items: center; gap: 10px; margin-right: var(--space-4); }
 .logo { display: block; height: auto; width: auto; max-width: 100%; }
@@ -30735,9 +30738,12 @@ const MENUS = [
     { label: 'Fuel Surcharge Browser', sub: true, act: R('fuel') },
     { label: 'Monthly Reports - All months', sub: true, act: R('monthly_all') } ] },
   { label: 'Offices', icon: I.mOffice, items: [{ label: 'Office Revenue Share - Review', act: R('office_rev_review') }, { label: 'Broker Volume/On-Time Summary', act: R('broker_volume') }, { label: 'Web User Summary', act: R('web_users') }] },
+  { label: 'Reps', icon: I.mUsers, items: [] },
   { label: 'Help', items: [{ label: 'About this board', act: () => { S.openMenu = null; renderMenubar(); notify('JTS Operations — Load board', 'Load board, load builder, load tender, carrier assignment, tracking & tracing, carrier directory, reports and a shippers/receivers directory. Data lives in this browser. Pick a look under Help › Skins.'); } }] }
 ];
 function menuItems(m) {
+  if (m.label === 'Offices' && S.user && S.bv) return [...officeMenuItems(), { sep: true }, { header: 'Office reports' }, ...m.items];
+  if (m.label === 'Reps' && S.user && S.bv) return repMenuItems();
   if (m.label !== 'Help') return m.items;
   return [...m.items, { header: 'Skins' }, ...SKINS.map(sk => ({ label: sk.name + (sk.id === 'industry' ? ' (default)' : ''), blurb: sk.blurb, swatch: sk.swatch, on: S.skin === sk.id, act: () => { setSkin(sk.id); S.openMenu = null; renderMenubar(); } }))];
 }
@@ -30747,7 +30753,7 @@ function renderMenubar() {
     const open = S.openMenu === m.label, hot = open || S.hoverMenu === m.label;
     return `<div class="menu${hot ? ' hot' : ''}${open ? ' open' : ''}" data-menu="${esc(m.label)}">
       ${m.icon ? `<span style="display:inline-flex">${m.icon}</span>` : ''}<span>${esc(m.label)}</span>
-      ${open ? `<div class="menu-dd">${menuItems(m).map((it, ii) => it.sep ? '<div class="menu-sep"></div>' : it.header ? `<div class="menu-hd">${esc(it.header)}</div>` : `<div class="menu-it${it.sub ? ' sub' : ''}" data-act="menu" data-mi="${mi}" data-ii="${ii}" title="${esc(it.blurb || '')}">${it.swatch ? `<span class="chk">${it.on ? '✓' : ''}</span><span class="sw" style="background:linear-gradient(90deg,${it.swatch[0]} 50%,${it.swatch[1]} 50%)"></span>` : ''}${esc(it.label)}</div>`).join('')}</div>` : ''}
+      ${open ? `<div class="menu-dd">${menuItems(m).map((it, ii) => it.sep ? '<div class="menu-sep"></div>' : it.header ? `<div class="menu-hd">${esc(it.header)}</div>` : `<div class="menu-it${it.sub ? ' sub' : ''}" data-act="menu" data-mi="${mi}" data-ii="${ii}" title="${esc(it.blurb || '')}">${it.swatch ? `<span class="chk">${it.on ? '✓' : ''}</span><span class="sw" style="background:linear-gradient(90deg,${it.swatch[0]} 50%,${it.swatch[1]} 50%)"></span>` : it.check ? `<span class="chk">${it.on ? '✓' : ''}</span>` : ''}${it.dot ? `<i class="off-dot" style="background:${it.dot}"></i>` : ''}${esc(it.label)}${it.badge ? `<span class="menu-n">${it.badge}</span>` : ''}</div>`).join('')}</div>` : ''}
     </div>`;
   }).join('');
   stripDashes($('#menubar'));
@@ -30917,7 +30923,7 @@ function renderBoardBody() {
   const transit = viewLoads.filter(l => l.status === 'In Transit').length;
   const delivered = viewLoads.filter(l => l.status === 'Delivered').length;
   const revenue = money(viewLoads.filter(l => l.status !== 'Cancelled').reduce((s, l) => s + rateTotal(l), 0));
-  const vc = $('#view-ctl'); if (vc) vc.innerHTML = renderViewControls();
+  const vc = $('#view-ctl'); if (vc) { vc.innerHTML = isMobile() ? renderViewControls() : ''; vc.style.display = isMobile() ? '' : 'none'; }
   const vl = $('#view-line'); if (vl) vl.innerHTML = esc(viewLineText(shown)) + renderLegend();
   const head = boardCols().map(c => `<th class="${c.align}${S.sortKey === c.key && c.key ? ' on' : ''}${c.key ? '' : ' nosort'}" style="${c.w ? `width:${c.w}px` : ''}" ${c.key ? `title="Sort" data-act="sort" data-key="${c.key}"` : ''}>${c.label}${S.sortKey === c.key && c.key ? (S.sortDir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('');
   const body = rows.map(r => {
@@ -32039,7 +32045,7 @@ function bvSet(patch, opts = {}) {
   Object.assign(S.bv, patch);
   if (S.bv.offices !== 'all' && !S.bv.offices.length) S.bv.offices = [bvHome()];
   bvSave(); syncHash();
-  if (S.view !== 'board') { set({ view: 'board', openMenu: null }); window.scrollTo(0, 0); } else renderBoardBody();
+  if (S.view !== 'board') { set({ view: 'board', openMenu: null }); window.scrollTo(0, 0); } else { renderBoardBody(); renderMenubar(); }
   if (opts.focusSearch) { const i = document.querySelector('[data-bind="search"]'); if (i) i.focus(); }
 }
 const bvOfficeLabel = () => S.bv.rep || S.bv.offices === 'all' ? 'All offices' : S.bv.offices.length === OFFICES.length ? 'All offices' : S.bv.offices.map(shortOffice).join(' + ');
@@ -32070,6 +32076,32 @@ function renderViewControls() { // office tabs, offices dropdown, rep select, My
     <select class="input sv-sel" data-act="viewPick" title="Saved views"><option value="">Saved views</option>${S.savedViews.map((v, i) => `<option value="v:${i}">${esc(v.name)}</option>`).join('')}<option value="save">Save current view...</option>${S.savedViews.length ? '<option value="del">Delete a saved view...</option>' : ''}</select>
     <button class="btn btn-secondary btn-sm" data-act="clearFilters" title="Back to your home office, all reps, all statuses">Clear filters</button>
     ${isMobile() ? '' : '<button class="btn btn-ghost btn-sm kbd-hint" data-act="kbdHelp" title="Keyboard shortcuts">?</button>'}`;
+}
+function viewCounts() { // loads per office in the board's date scope, with the uncovered share
+  const counts = {}; OFFICES.forEach(o => { counts[o] = { n: 0, unc: 0 }; });
+  const scoped = S.loads.filter(l => inScope((l.pickups[0] || {}).date));
+  scoped.forEach(l => { const c = counts[l.office]; if (c) { c.n++; if (HOT.includes(l.status)) c.unc++; } });
+  return { counts, allN: scoped.length, allU: scoped.filter(l => HOT.includes(l.status)).length };
+}
+const badgeOf = (n, unc) => `${n}${unc ? `<span class="unc">${unc}</span>` : ''}`;
+const menuGo = fn => e => { S.openMenu = null; fn(e); renderMenubar(); };
+function officeMenuItems() {
+  const { counts, allN, allU } = viewCounts(), all = bvIsAll(), sel = S.bv.offices === 'all' ? OFFICES : S.bv.offices;
+  const items = [{ header: 'View office · shift-click to add one' }];
+  OFFICES.forEach((o, i) => items.push({ label: `${o}`, blurb: `Press ${i + 1}`, check: true, on: !all && sel.includes(o), dot: officeColor(o), badge: badgeOf(counts[o].n, counts[o].unc), act: menuGo(e => { const add = e && (e.shiftKey || e.ctrlKey || e.metaKey); let offices = [o]; if (add && S.bv.offices !== 'all' && !S.bv.rep) offices = S.bv.offices.includes(o) ? S.bv.offices.filter(x => x !== o) : [...S.bv.offices, o]; bvSet({ offices, rep: '' }); }) }));
+  items.push({ label: 'All offices', blurb: 'Press 0', check: true, on: all, badge: badgeOf(allN, allU), act: menuGo(() => bvSet({ offices: 'all', rep: '' })) });
+  items.push({ sep: true }, { header: 'Saved views' });
+  S.savedViews.forEach(v => items.push({ label: v.name, sub: true, act: menuGo(() => applySavedView(v)) }));
+  items.push({ label: 'Save current view...', sub: true, act: menuGo(() => saveViewDialog()) });
+  if (S.savedViews.length) items.push({ label: 'Delete a saved view...', sub: true, act: menuGo(() => deleteViewDialog()) });
+  items.push({ sep: true }, { label: 'Clear filters', blurb: 'Back to your home office, all reps, all statuses', act: menuGo(() => ACT.clearFilters()) }, { label: 'Keyboard shortcuts', act: menuGo(() => kbdHelpDialog()) });
+  return items;
+}
+function repMenuItems() {
+  const items = [{ header: 'Sales rep · shows every office' }, { label: 'All reps', check: true, on: !S.bv.rep, act: menuGo(() => bvSet({ rep: '' })) }];
+  REPS.forEach(r => { const n = S.loads.filter(l => l.salesRep === r && OPENISH.includes(l.status)).length; items.push({ label: r, check: true, on: S.bv.rep === r, badge: String(n), act: menuGo(() => bvSet({ rep: r })) }); });
+  items.push({ sep: true }, { label: 'My Loads', blurb: 'Press M', check: true, on: !!S.bv.rep && S.bv.rep === (S.user || {}).name, act: menuGo(() => ACT.myLoads()) });
+  return items;
 }
 function renderLegend() {
   if (!bvMulti()) return '';
@@ -32924,7 +32956,7 @@ const ACT = {
   goBoard: () => { set({ view: 'board', openMenu: null }); window.scrollTo(0, 0); },
   goDirectory: () => { set({ view: 'directory', openMenu: null }); window.scrollTo(0, 0); },
   newLoad: () => { set({ draft: blankDraft(), view: 'builder', openMenu: null }); window.scrollTo(0, 0); },
-  menu: el => { const it = menuItems(MENUS[+el.dataset.mi])[+el.dataset.ii]; if (it && it.act) it.act(); },
+  menu: (el, e) => { const it = menuItems(MENUS[+el.dataset.mi])[+el.dataset.ii]; if (it && it.act) it.act(e); },
   datePrev: () => set({ boardDate: shift(S.boardDate, S.dateScope === 'week' ? -7 : -1), dateScope: S.dateScope === 'all' ? 'day' : S.dateScope }),
   dateNext: () => set({ boardDate: shift(S.boardDate, S.dateScope === 'week' ? 7 : 1), dateScope: S.dateScope === 'all' ? 'day' : S.dateScope }),
   dateToday: () => set({ boardDate: todayISO(), dateScope: 'day' }),
