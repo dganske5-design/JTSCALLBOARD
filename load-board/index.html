@@ -502,7 +502,7 @@ body.m #users .fac { flex-wrap: wrap; }
 .off-pick { position: relative; }
 .off-menu { position: absolute; top: 100%; left: 0; z-index: 80; background: var(--chrome); border: 1px solid var(--chrome-line); box-shadow: 2px 3px 7px rgba(0,0,0,0.18); padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; min-width: 230px; font-size: 13px; }
 .off-menu label { display: flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
-.rep-sel, .sv-sel { min-height: 0; height: 30px; padding: 2px 8px; font-size: 12.5px; width: auto; max-width: 220px; }
+.rep-sel, .sv-sel, .off-sel { min-height: 0; height: 30px; padding: 2px 8px; font-size: 12.5px; width: auto; max-width: 220px; }
 .off-legend { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; font-weight: 400; margin-left: 12px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
 .off-legend span { display: inline-flex; align-items: center; gap: 5px; }
 #view-line { font-size: 12.5px; font-weight: 600; margin: 0 0 6px; display: flex; flex-wrap: wrap; align-items: center; }
@@ -514,7 +514,7 @@ body.m #users .fac { flex-wrap: wrap; }
 .kbd-hint { min-width: 28px; font-weight: 700; }
 .empty .link { color: var(--color-accent-700); text-decoration: underline; cursor: pointer; background: none; border: 0; font: inherit; padding: 0; }
 body.m .off-tabs button { padding: 4px 6px; font-size: 11.5px; gap: 4px; }
-body.m .rep-sel, body.m .sv-sel { flex: 1 1 45%; max-width: none; }
+body.m .rep-sel, body.m .sv-sel, body.m .off-sel { flex: 1 1 45%; max-width: none; }
 body.m #view-ctl > .btn { flex: 1 1 auto; }
 body.m #view-line { font-size: 12px; }
 
@@ -32063,6 +32063,7 @@ function renderViewControls() { // office tabs, offices dropdown, rep select, My
   const tab = (o, i) => `<button class="${!all && sel.length === 1 && sel[0] === o ? 'on' : (!all && sel.includes(o) ? 'on part' : '')}" data-act="offTab" data-o="${esc(o)}" title="${esc(o)} · ${counts[o].n} loads, ${counts[o].unc} uncovered · press ${i + 1}"><i class="off-dot" style="background:${officeColor(o)}"></i>${esc(shortOffice(o))} <span class="n">${counts[o].n}</span>${counts[o].unc ? `<span class="n unc">${counts[o].unc}</span>` : ''}</button>`;
   const allN = scoped.length, allU = scoped.filter(l => HOT.includes(l.status)).length;
   return `<div class="seg off-tabs">${OFFICES.map(tab).join('')}<button class="${all ? 'on' : ''}" data-act="offAll" title="All offices · press 0">All <span class="n">${allN}</span>${allU ? `<span class="n unc">${allU}</span>` : ''}</button></div>
+    <select class="input off-sel" data-act="offSel" title="Office"${S.bv.rep ? ' disabled' : ''}><option value="*"${all ? ' selected' : ''}>All offices (${allN})</option>${OFFICES.map(o => `<option value="${esc(o)}"${!all && sel.length === 1 && sel[0] === o ? ' selected' : ''}>${esc(shortOffice(o))} (${counts[o].n}${counts[o].unc ? `, ${counts[o].unc} uncovered` : ''})</option>`).join('')}${!all && sel.length > 1 ? `<option value="__multi" selected>${esc(sel.map(shortOffice).join(' + '))}</option>` : ''}<option value="__pick">Pick several offices...</option></select>
     <div class="off-pick"><button class="btn btn-secondary btn-sm" data-act="offMenu" title="Pick several offices">Offices ▾</button>${S.officeMenu ? `<div class="off-menu">${OFFICES.map(o => `<label class="chk"><input type="checkbox" data-act="offChk" data-o="${esc(o)}"${!all && sel.includes(o) ? ' checked' : ''}${S.bv.rep ? ' disabled' : ''}> <i class="off-dot" style="background:${officeColor(o)}"></i>${esc(o)}</label>`).join('')}<label class="chk"><input type="checkbox" data-act="offChk" data-o="*"${all ? ' checked' : ''}${S.bv.rep ? ' disabled' : ''}> All offices</label>${S.bv.rep ? '<div class="text-muted" style="font-size:11px;padding:4px 2px">Showing all offices while a rep is selected</div>' : ''}</div>` : ''}</div>
     <select class="input rep-sel" data-act="repSel" title="Sales rep"><option value="">All reps</option>${REPS.map(r => `<option value="${esc(r)}"${S.bv.rep === r ? ' selected' : ''}>${esc(r)} (${repN[r]})</option>`).join('')}</select>
     <button class="btn btn-secondary btn-sm${S.bv.rep && S.bv.rep === (S.user || {}).name ? ' on' : ''}" data-act="myLoads" title="Your loads across every office · press M">My Loads</button>
@@ -32108,6 +32109,7 @@ const OFFICE_ACT = {
   offTab: (el, e) => { const o = el.dataset.o; const add = e && (e.shiftKey || e.ctrlKey || e.metaKey); let offices; if (add && S.bv.offices !== 'all') { offices = S.bv.offices.includes(o) ? S.bv.offices.filter(x => x !== o) : [...S.bv.offices, o]; } else offices = [o]; bvSet({ offices, rep: '' }); },
   offAll: () => bvSet({ offices: 'all', rep: '' }),
   offMenu: () => { S.officeMenu = !S.officeMenu; renderBoardBody(); },
+  offSel: el => { const v = el.value; if (v === '__multi') return; if (v === '__pick') { S.officeMenu = true; renderBoardBody(); return; } bvSet({ offices: v === '*' ? 'all' : [v], rep: '' }); },
   offChk: el => { const o = el.dataset.o; if (o === '*') { bvSet({ offices: el.checked ? 'all' : [bvHome()] }); return; } let arr = S.bv.offices === 'all' ? OFFICES.slice() : S.bv.offices.slice(); arr = el.checked ? [...new Set([...arr, o])] : arr.filter(x => x !== o); S.officeMenu = true; bvSet({ offices: arr.length === OFFICES.length ? 'all' : arr }); },
   repSel: el => bvSet({ rep: el.value }),
   myLoads: () => { if (!repIsUser()) { notify('Not on the rep list', `${S.user.name} is not one of the sales reps, so there are no loads to show. Pick a rep from the dropdown instead.`); return; } bvSet({ rep: S.bv.rep === S.user.name ? '' : S.user.name }); },
@@ -32116,7 +32118,7 @@ const OFFICE_ACT = {
   kbdHelp: () => kbdHelpDialog(),
   draftRep: el => { S.draft.salesRep = el.value; }
 };
-const OFFICE_CHANGE = ['offChk', 'repSel', 'viewPick', 'draftRep'];
+const OFFICE_CHANGE = ['offChk', 'offSel', 'repSel', 'viewPick', 'draftRep'];
 function boardKeys(e) {
   if (!S.user || S.view !== 'board' || isMobile() || e.metaKey || e.ctrlKey || e.altKey) return;
   const t = e.target; if (t && (t.matches('input, select, textarea') || t.isContentEditable)) { if (e.key === 'Escape' && t.dataset && t.dataset.bind === 'search') { t.value = ''; S.search = ''; renderBoardBody(); } return; }
