@@ -501,6 +501,13 @@ body.m #users .fac { flex-wrap: wrap; }
 .vp-btn:not([disabled]) { background: var(--jts-navy); color: #fff; border-color: var(--jts-navy); }
 .vp-btn:not([disabled]):hover { background: #142e52; }
 .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+a.tel { color: inherit; text-decoration: underline dotted; text-underline-offset: 2px; white-space: nowrap; }
+a.tel.tel-field { display: none; font-size: 12px; margin-top: 3px; }
+body.m a.tel.tel-field { display: inline-block; }
+a.tel:hover { color: var(--color-accent-700); }
+body.m a.tel { color: var(--color-accent-700); font-weight: 600; text-decoration: none; padding: 2px 0; }
+body.m a.tel::before { content: '\260E\00a0'; font-size: 0.9em; }
+@media print { a.tel { text-decoration: none; color: inherit; } a.tel::before { content: none; } }
 /* rate con document (fixed brand colors: it prints) */
 .rc-preview { background: #fff; color: #111; border: 1px solid var(--color-divider); padding: 28px 32px; max-width: 900px; box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
 .rc-acc-tbl .input { min-height: 30px; padding: 3px 6px; font-size: 13px; text-align: right; width: 110px; max-width: 100%; }
@@ -30923,6 +30930,7 @@ function renderBoardBody() {
       ${shown === 0 ? '<div class="text-muted empty">No files match. Step the date, widen to Week or All dates, clear the status chips, or create a new load.</div>' : ''}
     </div>
     <div class="cards">${cards}${shown === 0 ? '<div class="text-muted empty">No files ship on this date. Step the date, widen to Week or All dates, or create a new load.</div>' : ''}</div>`;
+  linkifyPhones($('#board-body'));
   const ra = $('#refreshed-at');
   if (ra) ra.textContent = 'Updated ' + new Date(S.refreshedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' });
   const dl = $('#date-label'); if (dl) dl.textContent = dateLabel();
@@ -31887,6 +31895,22 @@ const fmtLong = ts => new Date(ts).toLocaleString('en-US', { month: 'short', day
 const fmtDur = m => { m = Math.max(0, Math.round(m)); const d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60; return d ? `${d}d ${h}h` : h ? `${h}h ${String(mm).padStart(2, '0')}m` : `${mm}m`; };
 const fileLoad = () => S.loads.find(x => x.id === S.tenderId);
 const noDash = t => String(t).replace(/\s*[\u2014\u2013]\s*/g, ' - ');
+// Tap-to-call: any phone number shown as text becomes a tel: link (inputs, buttons and existing links are left alone)
+const PHONE_RE = /(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}(?!\d)/g;
+const telHref = m => { const d = m.replace(/\D/g, ''); return 'tel:' + (d.length === 10 ? '+1' + d : '+' + d); };
+function linkifyPhones(root) {
+  if (!root) return;
+  const test = new RegExp(PHONE_RE.source);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n => { const p = n.parentElement; if (!p || p.closest('a, button, input, select, textarea, option, script, style, .no-tel')) return NodeFilter.FILTER_REJECT; return test.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; } });
+  const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(n => {
+    const t = n.nodeValue, frag = document.createDocumentFragment(); let last = 0;
+    t.replace(PHONE_RE, (m, off) => { frag.appendChild(document.createTextNode(t.slice(last, off))); const a = document.createElement('a'); a.className = 'tel'; a.href = telHref(m); a.textContent = m; a.title = 'Call ' + m; frag.appendChild(a); last = off + m.length; return m; });
+    frag.appendChild(document.createTextNode(t.slice(last))); n.parentNode.replaceChild(frag, n);
+  });
+  // phone fields on edit forms get a Call link under them (shown on mobile)
+  root.querySelectorAll('input[type="tel"]').forEach(inp => { const v = (inp.value || '').trim(); const m = v.match(new RegExp(PHONE_RE.source)); const nx = inp.nextElementSibling; if (nx && nx.classList.contains('tel-field')) nx.remove(); if (!m) return; const a = document.createElement('a'); a.className = 'tel tel-field'; a.href = telHref(m[0]); a.textContent = 'Call ' + v; inp.insertAdjacentElement('afterend', a); });
+}
 const opsLog = (l, kind, text) => { const t = trackOf(l); t.log.push({ at: Date.now(), by: S.user ? S.user.name : '', kind, text }); l.tracking = t; };
 function copyText(text) { // clipboard with a selection fallback for hosts that block the async API
   return new Promise(res => {
@@ -32074,7 +32098,7 @@ function rcDocBody(doc) {
 }
 function rcPrint(doc) {
   let host = document.getElementById('rc-print'); if (!host) { host = document.createElement('div'); host.id = 'rc-print'; document.body.appendChild(host); }
-  host.innerHTML = rcDocHtml(doc);
+  host.innerHTML = rcDocHtml(doc); linkifyPhones(host);
   const title = document.title; document.title = rcFileName(doc); document.body.classList.add('rc-printing');
   const done = () => { document.body.classList.remove('rc-printing'); document.title = title; window.removeEventListener('afterprint', done); };
   window.addEventListener('afterprint', done);
@@ -32218,13 +32242,13 @@ function opsDemoSeed() {
 
 // ── Actions for the three features ─────────────────────────────────────────
 const OPS_ACT = {
-  vetAuthority: el => { S.vetDraft.authority = el.value; const l = fileLoad(); const p = document.getElementById('vet-panel'); if (p && l) p.outerHTML = renderVetPanel(l); },
+  vetAuthority: el => { S.vetDraft.authority = el.value; const l = fileLoad(); const p = document.getElementById('vet-panel'); if (p && l) { p.outerHTML = renderVetPanel(l); linkifyPhones(document.getElementById('vet-panel')); } },
   vetLookup: () => {
     const l = fileLoad(), d = S.vetDraft, p = vetProfile(d.mc);
     if (!mcKey(d.mc)) { notify('MC number needed', 'Type the carrier MC number first.'); return; }
     if (p) { vetFill(d, p); notify('Known carrier', `${p.name || 'This MC'} has a saved profile. Fields filled from it; check them against today's paperwork before saving.`); }
     else notify('New carrier', 'No profile for this MC yet. Fill in the details and save; the profile is created for next time.');
-    const panel = document.getElementById('vet-panel'); if (panel && l) panel.outerHTML = renderVetPanel(l);
+    const panel = document.getElementById('vet-panel'); if (panel && l) { panel.outerHTML = renderVetPanel(l); linkifyPhones(document.getElementById('vet-panel')); }
   },
   vetSave: () => {
     const d = S.vetDraft, id = d._id;
@@ -32637,6 +32661,7 @@ function render() {
   else if (S.view === 'carrier') v.innerHTML = renderCarrierDetail();
   else if (S.view === 'report') v.innerHTML = renderReport();
   else if (S.view === 'rates') { v.innerHTML = renderRates(); rtRefresh(); }
+  linkifyPhones(v);
   measureShell();
 }
 function measureShell() {
@@ -32861,6 +32886,7 @@ app.addEventListener('pointermove', e => { const col = e.target.closest && e.tar
 app.addEventListener('pointerdown', e => { RT_LAST_TOUCH = e.pointerType === 'touch'; const col = e.target.closest && e.target.closest('.rt-col'); const wrap = e.target.closest && e.target.closest('#rt-chart'); if (col && wrap) rtShowTip(wrap, col); });
 app.addEventListener('pointerout', e => { if (e.pointerType === 'touch') return; const wrap = e.target.closest && e.target.closest('#rt-chart'); if (wrap && !(e.relatedTarget && wrap.contains(e.relatedTarget))) rtHideTip(); });
 app.addEventListener('click', e => {
+  if (e.target.closest && e.target.closest('a.tel')) return;
   const colHit = e.target.closest && e.target.closest('.rt-col'); if (colHit && S.rt && !S.rt.present) { rtSet({ focus: S.rt.focus === colHit.dataset.k ? null : colHit.dataset.k }); return; }
   const el = e.target.closest('[data-act]');
   if (!el || CHANGE_ACTS.has(el.dataset.act)) return;
