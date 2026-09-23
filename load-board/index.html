@@ -532,8 +532,24 @@ body.m #tabbar .tab { font-size: 9px; }
 .src-subj { font-weight: 700; font-size: 15px; }
 .src-meta { font-size: 12px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
 .src-note { font-size: 12.5px; padding: 6px 10px; background: #fff3dd; border-left: 3px solid var(--jts-gold, #D4AF37); }
-.src-img { max-width: 100%; max-height: 320px; cursor: zoom-in; border: 1px solid var(--color-divider); display: block; }
-.src-img.zoom { max-height: none; cursor: zoom-out; }
+.src-tools { display: flex; gap: 2px; flex: none; }
+.src-tools .btn, .src-zoom .btn { min-height: 0; height: 26px; padding: 0 8px; font-size: 12px; }
+.src-zoom { display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 4px; }
+.src-zoom .src-pct { min-width: 46px; }
+.src-imgwrap { max-height: 70vh; overflow: auto; border: 1px solid var(--color-divider); background: #fff; }
+.src-img { max-width: 100%; display: block; cursor: zoom-in; }
+.src-pane.wide { flex-basis: 680px; }
+.src-card .src-imgwrap { max-height: none; }
+.lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(8, 12, 20, 0.94); display: flex; flex-direction: column; }
+.lb-bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: #1b1f26; color: #fff; flex: none; }
+.lb-bar .btn { min-height: 0; height: 30px; }
+.lb-bar .btn-secondary { color: #fff; border-color: #555; }
+.lb-name { font-size: 13px; opacity: 0.85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-pct { min-width: 60px; }
+.lb-stage { flex: 1; overflow: hidden; display: flex; align-items: center; justify-content: center; touch-action: none; cursor: grab; }
+.lb-stage:active { cursor: grabbing; }
+.lb-stage img { max-width: none; transform-origin: center center; user-select: none; -webkit-user-drag: none; background: #fff; }
+body.lb-open { overflow: hidden; }
 .src-pdf { width: 100%; height: 520px; border: 1px solid var(--color-divider); background: #fff; }
 .src-pre { max-height: none; }
 .src-card { gap: 8px; }
@@ -32418,23 +32434,57 @@ const orderOfLoad = l => (l && l.orderId) ? ordersOf().find(o => o.id === l.orde
 function renderOrderSource(o, compact) { // the email, images and PDFs the order came in with, for checking the entry against
   const fromOf = String(o.from || '').replace(/<[^>]*>/g, '').replace(/"/g, '').trim() || (String(o.from || '').match(/[\w.+-]+@[\w.-]+/) || [''])[0];
   const imgs = o.attachments.filter(a => a.dataUrl && /^data:image\//.test(a.dataUrl)), pdfs = o.attachments.filter(a => a.dataUrl && /^data:application\/pdf/.test(a.dataUrl)), others = o.attachments.filter(a => !imgs.includes(a) && !pdfs.includes(a));
-  return `<div class="src-head"><div class="card-kicker">Source email · check the entry against this</div>${compact ? '' : '<button class="btn btn-ghost btn-sm" data-act="srcToggle" title="Hide the source panel">Hide</button>'}</div>
+  const zoomBar = i => `<div class="src-zoom no-print"><button class="btn btn-secondary btn-sm" data-act="srcScale" data-i="${i}" data-d="-1" title="Zoom out">&minus;</button><button class="btn btn-secondary btn-sm src-pct" data-act="srcScale" data-i="${i}" data-d="0" title="Fit to panel">Fit</button><button class="btn btn-secondary btn-sm" data-act="srcScale" data-i="${i}" data-d="1" title="Zoom in">+</button><button class="btn btn-secondary btn-sm" data-act="srcScale" data-i="${i}" data-d="100" title="Actual size">1:1</button><button class="btn btn-primary btn-sm" data-act="srcFull" data-i="${i}" title="Open full screen with pinch, wheel and drag zoom">Full screen</button></div>`;
+  return `<div class="src-head"><div class="card-kicker">Source email · check the entry against this</div><div class="src-tools no-print"><button class="btn btn-ghost btn-sm" data-act="srcFont" data-d="-1" title="Smaller text">A&minus;</button><button class="btn btn-ghost btn-sm" data-act="srcFont" data-d="1" title="Larger text">A+</button>${compact ? '' : `<button class="btn btn-ghost btn-sm" data-act="srcWide" title="Give the panel more room">${S.srcWide ? 'Narrower' : 'Wider'}</button><button class="btn btn-ghost btn-sm" data-act="srcToggle" title="Hide the source panel">Hide</button>`}</div></div>
     <div class="src-subj">${esc(o.subject || o.fileName || 'Untitled order')}</div>
     <div class="src-meta">${fromOf ? `From ${esc(fromOf)}${o.sentAt ? ' · ' + esc(o.sentAt) : ''} · ` : ''}Received ${fmtWhen(o.receivedAt)} by ${esc(o.receivedBy || 'unknown')}${o.status === 'done' ? ` · Entered by ${esc(o.doneBy)} ${fmtWhen(o.doneAt)}` : ''}</div>
     ${o.notes ? `<div class="src-note">${esc(o.notes)}</div>` : ''}
-    ${imgs.map(a => `<div><img class="src-img" src="${a.dataUrl}" alt="${esc(a.name)}" title="Click to enlarge" data-act="srcZoom"><div class="text-muted" style="font-size:11px">${esc(a.name)}</div></div>`).join('')}
+    ${imgs.map((a, i) => `<div class="src-imgblk">${zoomBar(i)}<div class="src-imgwrap" id="src-imgwrap-${i}"><img class="src-img" id="src-img-${i}" src="${a.dataUrl}" alt="${esc(a.name)}" title="Click to open full screen" data-act="srcFull" data-i="${i}"></div><div class="text-muted" style="font-size:11px">${esc(a.name)} · scroll inside the box when zoomed in</div></div>`).join('')}
     ${pdfs.map(a => `<div><object class="src-pdf" data="${a.dataUrl}" type="application/pdf"><div class="text-muted" style="font-size:12px;padding:8px">This browser will not show the PDF inline. <a href="${a.dataUrl}" target="_blank" rel="noopener">Open ${esc(a.name)}</a></div></object><div class="text-muted" style="font-size:11px">${esc(a.name)} · <a href="${a.dataUrl}" target="_blank" rel="noopener">open in a new tab</a></div></div>`).join('')}
     ${others.length ? `<div class="ord-att">${others.map(a => a.dataUrl ? `<a class="btn btn-secondary btn-sm" href="${a.dataUrl}" download="${esc(a.name)}">${esc(a.name)}</a>` : `<span class="tag tag-neutral">${esc(a.name)} (name only)</span>`).join('')}</div>` : ''}
-    ${o.body ? `<pre class="ord-pre src-pre">${esc(o.body)}</pre>` : (!imgs.length && !pdfs.length ? '<div class="text-muted" style="font-size:12.5px">No email text was saved with this order.</div>' : '')}`;
+    ${o.body ? `<pre class="ord-pre src-pre" style="font-size:${S.srcFont || 13}px">${esc(o.body)}</pre>` : (!imgs.length && !pdfs.length ? '<div class="text-muted" style="font-size:12.5px">No email text was saved with this order.</div>' : '')}`;
+}
+function srcApplyScale(i) { // scale an in-panel image; 0 = fit the panel width
+  const img = document.getElementById('src-img-' + i), wrap = document.getElementById('src-imgwrap-' + i); if (!img || !wrap) return;
+  S.srcScales = S.srcScales || {}; const sc = S.srcScales[i] || 0;
+  const apply = () => { if (!sc) { img.style.width = ''; img.style.maxWidth = '100%'; } else { img.style.maxWidth = 'none'; img.style.width = Math.round(img.naturalWidth * sc) + 'px'; } const b = wrap.parentElement.querySelector('.src-pct'); if (b) b.textContent = sc ? Math.round(sc * 100) + '%' : 'Fit'; };
+  if (img.complete && img.naturalWidth) apply(); else img.onload = apply;
+}
+function srcRestoreScales() { Object.keys(S.srcScales || {}).forEach(i => srcApplyScale(i)); }
+function openLightbox(src, name) { // full-screen viewer: wheel zoom at the cursor, drag to pan, pinch on touch, double-click toggles 1:1 and fit
+  const lb = document.createElement('div'); lb.className = 'lightbox'; lb.innerHTML = `<div class="lb-bar"><span class="lb-name">${esc(name || '')}</span><span class="spacer"></span><button class="btn btn-secondary btn-sm" data-lb="out">&minus;</button><button class="btn btn-secondary btn-sm lb-pct" data-lb="fit">Fit</button><button class="btn btn-secondary btn-sm" data-lb="in">+</button><button class="btn btn-secondary btn-sm" data-lb="one">1:1</button><button class="btn btn-secondary btn-sm" data-lb="rot" title="Rotate">&#8635;</button><button class="btn btn-primary btn-sm" data-lb="close">Close (Esc)</button></div><div class="lb-stage"><img src="${src}" alt="${esc(name || '')}" draggable="false"></div>`;
+  document.body.appendChild(lb); document.body.classList.add('lb-open');
+  const stage = lb.querySelector('.lb-stage'), img = lb.querySelector('img'), pct = lb.querySelector('.lb-pct');
+  let scale = 1, fitScale = 1, tx = 0, ty = 0, rot = 0, drag = null, pinch = null;
+  const paint = () => { img.style.transform = `translate(${tx}px, ${ty}px) scale(${scale}) rotate(${rot}deg)`; pct.textContent = Math.round(scale * 100) + '%'; };
+  const fit = () => { const r = stage.getBoundingClientRect(); const w = rot % 180 ? img.naturalHeight : img.naturalWidth, h = rot % 180 ? img.naturalWidth : img.naturalHeight; fitScale = Math.min(r.width / w, r.height / h, 1) || 1; scale = fitScale; tx = 0; ty = 0; paint(); };
+  const zoomAt = (f, cx, cy) => { const r = stage.getBoundingClientRect(); const px = cx - r.left - r.width / 2 - tx, py = cy - r.top - r.height / 2 - ty; const ns = Math.min(12, Math.max(0.1, scale * f)); const k = ns / scale; tx -= px * (k - 1); ty -= py * (k - 1); scale = ns; paint(); };
+  const center = () => { const r = stage.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+  const close = () => { lb.remove(); document.body.classList.remove('lb-open'); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') { e.preventDefault(); close(); } else if (e.key === '+' || e.key === '=') zoomAt(1.25, ...center()); else if (e.key === '-') zoomAt(0.8, ...center()); else if (e.key === '0') fit(); };
+  document.addEventListener('keydown', onKey);
+  lb.addEventListener('click', e => { const b = e.target.closest('[data-lb]'); if (!b) return; const k = b.dataset.lb; if (k === 'close') close(); else if (k === 'in') zoomAt(1.25, ...center()); else if (k === 'out') zoomAt(0.8, ...center()); else if (k === 'fit') fit(); else if (k === 'one') { scale = 1; tx = 0; ty = 0; paint(); } else if (k === 'rot') { rot = (rot + 90) % 360; fit(); } });
+  stage.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY); }, { passive: false });
+  stage.addEventListener('dblclick', e => { if (scale > fitScale * 1.05) fit(); else zoomAt(2 / scale, e.clientX, e.clientY); });
+  const pts = new Map();
+  stage.addEventListener('pointerdown', e => { stage.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); if (pts.size === 1) drag = { x: e.clientX, y: e.clientY, tx, ty }; else if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), scale }; drag = null; } });
+  stage.addEventListener('pointermove', e => { if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, [e.clientX, e.clientY]); if (pinch && pts.size === 2) { const [a, b] = [...pts.values()]; const d = Math.hypot(a[0] - b[0], a[1] - b[1]); const ns = Math.min(12, Math.max(0.1, pinch.scale * d / pinch.d)); zoomAt(ns / scale, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2); } else if (drag) { tx = drag.tx + (e.clientX - drag.x); ty = drag.ty + (e.clientY - drag.y); paint(); } });
+  const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; if (!pts.size) drag = null; };
+  stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
+  if (img.complete && img.naturalWidth) fit(); else img.onload = fit;
+  window.addEventListener('resize', fit, { once: false });
 }
 function wrapSource(d, html) {
   const o = orderOfLoad(d); if (!o) return html;
   const open = S.srcOpen !== false;
-  return `<div class="bld-wrap">${html}<aside class="src-pane${open ? '' : ' collapsed'}">${open ? renderOrderSource(o) : `<button class="btn btn-secondary btn-sm src-show" data-act="srcToggle" title="Show the source email">Show source email</button>`}</aside></div>`;
+  return `<div class="bld-wrap">${html}<aside class="src-pane${open ? '' : ' collapsed'}${S.srcWide ? ' wide' : ''}">${open ? renderOrderSource(o) : `<button class="btn btn-secondary btn-sm src-show" data-act="srcToggle" title="Show the source email">Show source email</button>`}</aside></div>`;
 }
 const ORDER_ACT = {
   srcToggle: () => { S.srcOpen = S.srcOpen === false; render(); },
-  srcZoom: el => { el.classList.toggle('zoom'); },
+  srcWide: () => { S.srcWide = !S.srcWide; render(); },
+  srcFont: el => { S.srcFont = Math.min(24, Math.max(10, (S.srcFont || 13) + (+el.dataset.d) * 2)); document.querySelectorAll('.src-pre').forEach(p => { p.style.fontSize = S.srcFont + 'px'; }); },
+  srcScale: el => { const i = el.dataset.i, d = +el.dataset.d; S.srcScales = S.srcScales || {}; const img = document.getElementById('src-img-' + i); const wrap = document.getElementById('src-imgwrap-' + i); const cur = S.srcScales[i] || (img && wrap ? Math.min(1, wrap.clientWidth / (img.naturalWidth || 1)) : 1); S.srcScales[i] = d === 0 ? 0 : d === 100 ? 1 : Math.min(8, Math.max(0.1, cur * (d > 0 ? 1.25 : 0.8))); srcApplyScale(i); },
+  srcFull: el => { const img = document.getElementById('src-img-' + el.dataset.i); if (img) openLightbox(img.src, img.alt); },
   goOrders: () => { set({ view: 'orders', openMenu: null }); window.scrollTo(0, 0); },
   ordTab: el => { S.orderTab = el.dataset.v; render(); },
   ordOpen: el => { S.orderOpen = S.orderOpen === el.dataset.id ? null : el.dataset.id; render(); },
@@ -33232,7 +33282,7 @@ function render() {
   else if (S.view === 'carrier') v.innerHTML = renderCarrierDetail();
   else if (S.view === 'report') v.innerHTML = renderReport();
   else if (S.view === 'rates') { v.innerHTML = renderRates(); rtRefresh(); }
-  linkifyPhones(v); stripDashes(app);
+  linkifyPhones(v); stripDashes(app); srcRestoreScales();
   measureShell();
 }
 function measureShell() {
