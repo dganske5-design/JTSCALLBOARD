@@ -511,6 +511,21 @@ body.m #users .fac { flex-wrap: wrap; }
 .ord-meta { font-size: 12px; color: color-mix(in srgb, var(--color-text) 70%, transparent); margin-top: 2px; }
 .ord-done { font-size: 12.5px; color: #1f6b2a; font-weight: 600; margin-top: 3px; }
 .ord-link { color: var(--color-accent-700); text-decoration: underline; cursor: pointer; }
+.intake-card { margin-bottom: 10px; border-color: var(--color-accent); }
+.intake-row { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+.intake-addr { font-size: 16px; display: flex; align-items: center; gap: 8px; margin: 2px 0; }
+.intake-addr strong { cursor: copy; }
+.intake-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #2e7d32; box-shadow: 0 0 0 3px rgba(46,125,50,0.2); margin-right: 6px; vertical-align: middle; }
+.intake-dot.busy { background: #c47a00; box-shadow: 0 0 0 3px rgba(196,122,0,0.25); animation: intake-pulse 0.8s infinite alternate; }
+@keyframes intake-pulse { from { opacity: 0.4; } to { opacity: 1; } }
+.intake-right { text-align: right; }
+.intake-right .ctl-row { justify-content: flex-end; }
+#toast { position: fixed; right: 16px; bottom: 16px; z-index: 300; opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .2s; pointer-events: none; max-width: min(420px, calc(100vw - 32px)); }
+#toast.on { opacity: 1; transform: none; }
+.toast-in { background: var(--jts-navy, #0B1F3A); color: #fff; padding: 10px 14px; font-size: 13px; display: flex; gap: 8px; align-items: center; border-left: 4px solid var(--jts-gold, #D4AF37); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+.toast-in svg { flex: none; }
+body.m #toast { bottom: 76px; }
+body.m .intake-right { text-align: left; } body.m .intake-right .ctl-row { justify-content: flex-start; }
 .ord-intake { display: grid; grid-template-columns: auto 1fr auto 180px; gap: 4px 8px; align-items: center; margin-top: 6px; padding: 6px 8px; background: color-mix(in srgb, var(--jts-gold, #D4AF37) 14%, transparent); border-left: 3px solid var(--jts-gold, #D4AF37); cursor: default; }
 .ord-intake label { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-accent-700); white-space: nowrap; }
 .ord-intake .input { min-height: 30px; padding: 3px 8px; font-size: 13px; }
@@ -32296,7 +32311,59 @@ const ENTRY_TEAM_KEY = 'jts_entry_team', ENTRY_TEAM_DEFAULT = ['Tena', 'Ryann', 
 function entryTeam() { try { const t = JSON.parse(localStorage.getItem(ENTRY_TEAM_KEY)); if (Array.isArray(t) && t.length) return t; } catch (e) {} return ENTRY_TEAM_DEFAULT.slice(); }
 function saveEntryTeam(t) { try { localStorage.setItem(ENTRY_TEAM_KEY, JSON.stringify(t)); } catch (e) {} }
 const customerNames = () => [...new Set([...S.loads.map(l => l.customer), ...ordersOf().map(o => o.originator)].map(x => String(x || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-const ORDER_MAX_ATTACH = 1500000; // bytes kept inline per attachment; bigger files keep their name only
+const ORDER_MAX_ATTACH = 1500000;
+// ── email intake (demo): forwarded emails appear in the browser as if pulled from the inbox ──
+const INTAKE_KEY = 'jts_email_intake';
+function intakeCfg() { let c = null; try { c = JSON.parse(localStorage.getItem(INTAKE_KEY)); } catch (e) {} return { address: 'orders@johansontransportation.com', demo: true, autoMin: 3, lastCheck: 0, endpoint: '', apiKey: '', received: 0, cursor: 0, ...(c || {}) }; }
+function saveIntakeCfg(patch) { const c = { ...intakeCfg(), ...patch }; try { localStorage.setItem(INTAKE_KEY, JSON.stringify(c)); } catch (e) {} return c; }
+const SAMPLE_EMAILS = [
+  { fwd: 'dganske@johansontransportation.com', from: '"Maria Lopez" <maria.lopez@mosqueda.example>', subject: 'FW: New order - Fresno to Philly, PU 9/26 - assign: Kat', body: 'Hi team,\n\nPlease set up a new order:\nPickup: Fresno Cold Storage, Fresno, CA 93727 on 9/26 at 08:00, PU# 55821\nDeliver: Liberty Cold Storage, Philadelphia, PA 19135 on 9/30, PO# 77410\n22 pallets, 39,600 lbs frozen vegetables, keep at -10°F continuous.\n\nThanks,\nMaria' },
+  { fwd: 'jmosqueda@johansontransportation.com', from: '"Tom Nakamura" <tom@sierrapacifichomes.example>', subject: 'FW: Flatbed lumber Rocklin to Reno 9/25 - originator: Sierra Pacific Homes - assign: Tena', body: 'Need 2 flatbeds of dimensional lumber.\nShip from: Delta Lumber Yard, Rocklin, CA 95765, pickup 9/25 07:00, PO# RL-2201\nDeliver: Reno Building Supply, Reno, NV 89506, 9/26 by 10:00\n46,000 lbs each, tarped.\n\nTom' },
+  { fwd: 'ably@johansontransportation.com', from: '"Dana Whitfield" <dana@badgerstatedairy.example>', subject: 'FW: Cheese load Madison to Chicago Friday - assign: Ryann', body: 'Dana here. One reefer Friday 9/26:\nBadger State Dairy, Madison, WI 53718 pickup 9/26 13:00, PU# BSD-30187\nDeliver Chicago Cold Chain DC, Chicago, IL 60632 on 9/27 06:00, PO# 448812\n22 plts, 42,000 lbs cheese at 38°F continuous. Seal required.\n\nDana' },
+  { fwd: 'ggrimes@johansontransportation.com', from: '"Luis Cantu" <lcantu@columbiaseafood.example>', subject: 'FW: Frozen seafood Portland to Boise - assign: Laisha', body: 'Please book:\nColumbia Seafood Co., Portland, OR 97218, ready 9/29 08:00, PU# CS-91120\nBoise Foodservice DC, Boise, ID 83716, deliver 9/30 07:00, PO# 2210-BF\n18 pallets, 34,000 lbs frozen at 0°F continuous.\n\nLuis' },
+  { fwd: 'rrattazzi@johansontransportation.com', from: '"Priya Shah" <pshah@centralvalleypacking.example>', subject: 'FW: PO 88213 dry grocery Fresno to Dallas - originator: Central Valley Packing', body: 'PO 88213\nShip from Central Valley Packing, Fresno, CA 93725 on 9/29 at 10:00, PU# 88213\nShip to Dallas Grocery DC, Dallas, TX 75236 on 10/02 06:00\n24 pallets 42,000 lbs dry grocery, dry van.\nRate $5,400 all in.\n\nPriya' },
+  { fwd: 'dganske@johansontransportation.com', from: '"Kim Jarrett" <kim@foxriverpaper.example>', subject: 'FW: Paper rolls Green Bay to Indianapolis 9/30 - assign: Kat', body: 'Two loads of kraft paper rolls.\nFox River Paper, Green Bay, WI 54304, pickup 9/30 08:00, PU# FRP-2291 and FRP-2292\nDeliver Indianapolis Packaging, Indianapolis, IN 46241, 10/01 by 14:00, PO# IP-5561\n20 rolls, 42,000 lbs per load. Dry van, no tarps.\n\nKim' }
+];
+function parseSubjectDirectives(subject) { // "assign: Kat", "originator: Sierra Pacific Homes" in the forwarded subject route the order
+  let s = String(subject || ''), assign = '', originator = '';
+  s = s.replace(/\s*[-·|]?\s*assign(?:ed)?(?: to)?\s*:\s*([^-|·]+)/i, (m, v) => { assign = v.trim(); return ''; });
+  s = s.replace(/\s*[-·|]?\s*(?:originator|customer|for)\s*:\s*([^-|·]+)/i, (m, v) => { originator = v.trim(); return ''; });
+  return { subject: s.replace(/\s+[-·|]\s*$/, '').trim(), assign, originator };
+}
+function receiveEmail(sample) { // one forwarded email becomes an order, exactly as the drop zone would make it
+  const d = parseSubjectDirectives(sample.subject), team = entryTeam();
+  const assignee = d.assign ? (team.find(n => n.toLowerCase() === d.assign.toLowerCase()) || '') : '';
+  const o = addOrder({ source: 'email', from: sample.from, subject: d.subject, sentAt: new Date().toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }), body: sample.body, forwardedBy: sample.fwd || '', receivedBy: 'Email intake', originator: d.originator || '', assignee, assignedAt: assignee ? Date.now() : 0, assignedBy: assignee ? 'Subject line' : '' });
+  if (assignee) orderLog(o, `Assigned to ${assignee} from the subject line`);
+  if (d.originator) orderLog(o, `Originator ${d.originator} from the subject line`);
+  return o;
+}
+function toast(msg, ms = 4000) { let t = document.getElementById('toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); } t.innerHTML = `<div class="toast-in">${msg}</div>`; t.classList.add('on'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('on'), ms); }
+function intakeCheck(force) { // demo: "polls" the inbox; force always delivers the next sample, a plain check delivers one every other time
+  const cfg = intakeCfg(); if (!cfg.demo || !S.user) return;
+  const box = document.getElementById('intake-status'); if (box) box.innerHTML = '<span class="intake-dot busy"></span>Checking the inbox...';
+  setTimeout(() => {
+    const c = intakeCfg(); const deliver = force || (c.cursor % 2 === 0);
+    let o = null; if (deliver) { o = receiveEmail(SAMPLE_EMAILS[c.cursor % SAMPLE_EMAILS.length]); }
+    saveIntakeCfg({ lastCheck: Date.now(), cursor: c.cursor + 1, received: c.received + (o ? 1 : 0) });
+    if (S.view === 'orders') { S.orderTab = 'new'; S.orderWho = ''; render(); } else renderShell();
+    toast(o ? `${I.mail} New order received at ${esc(intakeCfg().address)}: <strong>${esc(o.subject)}</strong>${o.assignee ? ' · assigned to ' + esc(o.assignee) : ''}` : `${I.mail} Inbox checked · no new orders`);
+  }, 1400);
+}
+let intakeTimer = null;
+function intakeSchedule() { clearInterval(intakeTimer); const c = intakeCfg(); if (!c.demo || !c.autoMin) return; intakeTimer = setInterval(() => { if (S.user) intakeCheck(false); }, c.autoMin * 60000); }
+function renderEmailIntake() {
+  const c = intakeCfg(), team = entryTeam();
+  return `<div class="card blueprint intake-card">${CORNERS}
+    <div class="intake-row">
+      <div><div class="card-kicker">Email intake</div><div class="intake-addr"><span class="intake-dot"></span><strong data-act="intakeCopy" title="Copy the address">${esc(c.address)}</strong></div>
+        <div class="text-muted" style="font-size:12px">Forward any customer order email here and it lands in this list${c.autoMin ? `, checked every ${c.autoMin} min` : ''}. Put <strong>assign: ${esc(team[0] || 'Tena')}</strong> or <strong>originator: Customer</strong> in the subject to route it.</div></div>
+      <div class="spacer"></div>
+      <div class="intake-right"><div id="intake-status" class="text-muted" style="font-size:12px">${c.lastCheck ? `<span class="intake-dot"></span>Connected · last checked ${fmtWhen(c.lastCheck)} · ${c.received} received` : '<span class="intake-dot"></span>Connected · not checked yet'}</div>
+        <div class="ctl-row" style="margin-top:4px"><button class="btn btn-secondary btn-sm" data-act="intakeCheck">${I.refresh}Check now</button><button class="btn btn-primary btn-sm" data-act="intakeTest" title="Simulates a forwarded customer email arriving">${I.mail}Send test email</button></div></div>
+    </div>
+  </div>`;
+} // bytes kept inline per attachment; bigger files keep their name only
 const ordersOf = () => S.orders || [];
 const ordersOpen = () => ordersOf().filter(o => o.status !== 'done').length;
 function orderLog(o, text) { o.history = o.history || []; o.history.push({ at: Date.now(), by: S.user ? S.user.name : '', text }); }
@@ -32419,8 +32486,8 @@ function renderOrders() {
     <div class="ord-head">
       <label class="ord-chk" title="${done ? 'Entered. Click to reopen.' : 'Check when the order is entered'}"><input type="checkbox" data-act="ordToggle" data-id="${esc(o.id)}"${done ? ' checked' : ''}></label>
       <div class="ord-main" data-act="ordOpen" data-id="${esc(o.id)}">
-        <div class="ord-subj">${esc(o.subject || o.fileName || 'Untitled order')}${o.attachments.length ? ` <span class="tag tag-outline" style="font-size:10px">${o.attachments.length} file${o.attachments.length === 1 ? '' : 's'}</span>` : ''}</div>
-        <div class="ord-meta">${fromOf(o) ? `From ${esc(fromOf(o))}${o.sentAt ? ' · ' + esc(o.sentAt) : ''} · ` : ''}Received ${fmtWhen(o.receivedAt)} by <strong>${esc(o.receivedBy || 'unknown')}</strong>${o.assignee ? ` · <span class="ord-asg">Assigned to ${esc(o.assignee)}</span>${o.assignedBy ? ` by ${esc(o.assignedBy)} ${fmtWhen(o.assignedAt)}` : ''}` : (done ? '' : ' · <span class="ord-unasg">Not assigned yet</span>')}</div>
+        <div class="ord-subj">${esc(o.subject || o.fileName || 'Untitled order')}${o.source === 'email' ? ' <span class="tag tag-accent" style="font-size:10px">via email</span>' : ''}${o.attachments.length ? ` <span class="tag tag-outline" style="font-size:10px">${o.attachments.length} file${o.attachments.length === 1 ? '' : 's'}</span>` : ''}</div>
+        <div class="ord-meta">${fromOf(o) ? `From ${esc(fromOf(o))}${o.sentAt ? ' · ' + esc(o.sentAt) : ''} · ` : ''}Received ${fmtWhen(o.receivedAt)} ${o.source === 'email' ? `at <strong>${esc(intakeCfg().address)}</strong>${o.forwardedBy ? `, forwarded by ${esc(o.forwardedBy)}` : ''}` : `by <strong>${esc(o.receivedBy || 'unknown')}</strong>`}${o.assignee ? ` · <span class="ord-asg">Assigned to ${esc(o.assignee)}</span>${o.assignedBy ? ` by ${esc(o.assignedBy)} ${fmtWhen(o.assignedAt)}` : ''}` : (done ? '' : ' · <span class="ord-unasg">Not assigned yet</span>')}</div>
         ${done ? '' : `<div class="ord-intake" data-stop="1"><label>Originator</label><input class="input" list="cust-list" placeholder="Customer this order is for" value="${esc(o.originator || '')}" data-act="ordOrig" data-id="${esc(o.id)}"><label>Assign to</label><select class="input" data-act="ordAssign" data-id="${esc(o.id)}"><option value="">Pick who enters it</option>${team.map(n => `<option${o.assignee === n ? ' selected' : ''}>${esc(n)}</option>`).join('')}${o.assignee && !team.includes(o.assignee) ? `<option selected>${esc(o.assignee)}</option>` : ''}</select></div>`}
         ${done && o.originator ? `<div class="ord-meta">Originator <strong>${esc(o.originator)}</strong></div>` : ''}
         ${done ? `<div class="ord-done">Entered by <strong>${esc(o.doneBy)}</strong> · ${fmtLong(o.doneAt)}${o.fileNo ? ` · <a class="ord-link" data-act="view" data-id="${esc(o.loadId)}">File ${esc(o.fileNo)}</a>` : ''}${load && load.status ? ` · ${esc(load.status)}` : ''}</div>` : ''}
@@ -32445,6 +32512,7 @@ function renderOrders() {
       <h1 style="font-size:28px">New load browser</h1>
       <span class="text-muted" style="font-size:13px">Drop customer emails here. Ops creates the load from the email and checks it off, and the board records who entered it and when.</span>
     </div>
+    ${renderEmailIntake()}
     <div class="dropzone${S.dropHot ? ' hot' : ''}" id="order-drop" data-act="ordBrowse">
       ${I.mail}<div><strong>Drop an email or file here</strong>, paste with Ctrl+V / Cmd+V, or click to browse.<div class="text-muted" style="font-size:12px;margin-top:2px">Works with .eml emails, PDFs, images and highlighted email text. From Outlook: copy the email, then paste here.</div></div>
       <input type="file" id="order-file" multiple accept=".eml,.msg,.txt,.pdf,.png,.jpg,.jpeg,.gif,.webp,message/rfc822,text/plain,application/pdf,image/*" style="display:none">
@@ -32555,6 +32623,11 @@ const ORDER_ACT = {
   ordOrig: el => { const v = el.value.trim(); S.orders = ordersOf().map(o => { if (o.id !== el.dataset.id || o.originator === v) return o; const c = clone(o); c.originator = v; orderLog(c, `Originator set to ${v || '(blank)'} by ${S.user.name}`); return c; }); persist(); },
   ordAssign: el => { const v = el.value; S.orders = ordersOf().map(o => { if (o.id !== el.dataset.id) return o; const c = clone(o); c.assignee = v; c.assignedAt = v ? Date.now() : 0; c.assignedBy = v ? S.user.name : ''; orderLog(c, v ? `Assigned to ${v} by ${S.user.name}` : `Unassigned by ${S.user.name}`); return c; }); persist(); render(); },
   ordWho: el => { S.orderWho = el.value; render(); },
+  intakeCheck: () => intakeCheck(false),
+  intakeTest: () => intakeCheck(true),
+  intakeCopy: () => { copyText(intakeCfg().address).then(ok => toast(ok ? 'Address copied' : 'Could not copy')); },
+  intakeSave: () => { const g = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; }; saveIntakeCfg({ address: g('intake-address') || intakeCfg().address, autoMin: Math.max(0, parseInt(g('intake-auto')) || 0), endpoint: g('intake-endpoint'), apiKey: g('intake-key') }); intakeSchedule(); render(); toast('Email intake settings saved'); },
+  intakeDemo: el => { saveIntakeCfg({ demo: el.checked }); intakeSchedule(); render(); },
   teamAdd: () => { const inp = document.getElementById('team-name'); const n = (inp ? inp.value : '').trim(); if (!n) return; const t = entryTeam(); if (!t.includes(n)) t.push(n); saveEntryTeam(t); render(); },
   teamRm: el => { const t = entryTeam().filter(x => x !== el.dataset.n); saveEntryTeam(t.length ? t : ENTRY_TEAM_DEFAULT.slice()); render(); },
   ordBrowse: (el, e) => { if (e && e.target.closest && e.target.closest('input')) return; const inp = document.getElementById('order-file'); if (inp) inp.click(); },
@@ -33319,7 +33392,18 @@ function renderUsers() {
         ${f('password', 3, 'Password', 'type="password" autocomplete="new-password"')}
         <button class="btn btn-primary blueprint" style="grid-column:span 6" data-act="addUser">${CORNERS}${I.plus}Add user</button>
       </div>
-    </div>${renderRepPins()}<div class="card blueprint">${CORNERS}
+    </div>${renderRepPins()}${(() => { const c = intakeCfg(); return `<div class="card blueprint">${CORNERS}
+      <div class="card-kicker">Email intake</div>
+      <div class="text-muted" style="font-size:12.5px;margin-top:-4px">Orders forwarded to the inbox address show up in the New load browser. Demo mode delivers sample emails so the flow can be shown before the mailbox is connected.</div>
+      <div class="grid6">
+        <div class="field" style="grid-column:span 3"><label>Inbox address</label><input class="input" id="intake-address" value="${esc(c.address)}"></div>
+        <div class="field half" style="grid-column:span 1"><label>Check every (min)</label><input class="input" id="intake-auto" type="number" min="0" value="${esc(c.autoMin)}"></div>
+        <div class="field" style="grid-column:span 2"><label>Demo mode</label><label class="chk" style="min-height:36px"><input type="checkbox" data-act="intakeDemo"${c.demo ? ' checked' : ''}> Deliver sample emails</label></div>
+        <div class="field" style="grid-column:span 4"><label>Mailbox endpoint URL (wire up when the web address is ready)</label><input class="input" id="intake-endpoint" placeholder="https://your-site.netlify.app/.netlify/functions/orders" value="${esc(c.endpoint)}"></div>
+        <div class="field" style="grid-column:span 2"><label>API key</label><input class="input" id="intake-key" type="password" placeholder="Shared secret" value="${esc(c.apiKey)}"></div>
+      </div>
+      <div class="ctl-row"><button class="btn btn-primary blueprint" data-act="intakeSave">${CORNERS}Save</button><span class="text-muted" style="font-size:12px">${c.received} received so far · ${c.lastCheck ? 'last checked ' + fmtWhen(c.lastCheck) : 'not checked yet'}</span></div>
+    </div>`; })()}<div class="card blueprint">${CORNERS}
       <div class="card-kicker">Order entry team</div>
       <div class="text-muted" style="font-size:12.5px;margin-top:-4px">Names in the Assign to dropdown on the New load browser.</div>
       <div style="display:flex;flex-direction:column">${entryTeam().map(n => `<div class="fac"><div style="flex:1;font-weight:600;font-size:14px">${esc(n)}</div><button class="btn btn-icon btn-ghost" title="Remove" data-act="teamRm" data-n="${esc(n)}">${I.trash}</button></div>`).join('')}</div>
@@ -33571,7 +33655,7 @@ const ACT = {
   addFac: el => { const k = el.dataset.kind, cur = S.dirDraft[k]; if (!cur.name.trim()) return; S[k] = [...S[k], { id: uid(), ...cur }]; S.dirDraft[k] = blankFac(); persist(); render(); },
   rmFac: el => { const k = el.dataset.kind; S[k] = S[k].filter(x => x.id !== el.dataset.id); persist(); render(); }
 };
-const CHANGE_ACTS = new Set(['dateSet', 'draftStatus', 'draftOffice', 'ordOrig', 'ordAssign', 'ordWho', 'facility', 'dropIdx', 'userRole', 'userOffice', 'carPick', 'carOffice', 'rtCustomer', 'rtDate', 'sortSel', 'evType']);
+const CHANGE_ACTS = new Set(['dateSet', 'draftStatus', 'draftOffice', 'ordOrig', 'ordAssign', 'ordWho', 'intakeDemo', 'facility', 'dropIdx', 'userRole', 'userOffice', 'carPick', 'carOffice', 'rtCustomer', 'rtDate', 'sortSel', 'evType']);
 Object.assign(ACT, OPS_ACT); OPS_CHANGE.forEach(a => CHANGE_ACTS.add(a));
 Object.assign(ACT, OFFICE_ACT); OFFICE_CHANGE.forEach(a => CHANGE_ACTS.add(a));
 document.addEventListener('keydown', boardKeys);
@@ -33635,7 +33719,7 @@ app.addEventListener('submit', e => {
   const u = signIn(form.username.value, form.password.value);
   if (!u) { S.loginErr = 'Wrong username or password.'; $('#login-err').textContent = S.loginErr; form.password.value = ''; form.password.focus(); return; }
   writeSession(u.username, form.remember.checked);
-  S.user = u; S.users = loadUsers(); S.loginErr = ''; migrateOffices(); bvLoad(); render();
+  S.user = u; S.users = loadUsers(); S.loginErr = ''; migrateOffices(); bvLoad(); render(); intakeSchedule();
 });
 
 // menubar: click toggles, hover switches once one is open, outside click / Escape closes
@@ -33676,6 +33760,7 @@ opsDemoSeed();
 persist();
 bvLoad();
 render();
+intakeSchedule();
 alertKey = alertSignature();
 </script>
 
