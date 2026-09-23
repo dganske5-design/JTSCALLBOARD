@@ -490,6 +490,34 @@ body.m #users .fac { flex-wrap: wrap; }
   #tender-sheet .corner { display: none !important; }
   .grid-wrap { border-color: #000; }
 }
+/* ── Offices, reps and board views ─────────────────────────────────────── */
+.off-tabs { flex-wrap: wrap; }
+.off-tabs button { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; white-space: nowrap; }
+.off-tabs button .n { font-size: 10.5px; font-weight: 700; opacity: 0.85; padding: 0 5px; background: color-mix(in srgb, var(--ink) 10%, transparent); line-height: 1.5; }
+.off-tabs button .n.unc { background: #f00000; color: #fff; opacity: 1; }
+.off-tabs button.on .n { background: rgba(255,255,255,0.28); color: inherit; }
+.off-tabs button.on .n.unc { background: #f00000; color: #fff; }
+.off-tabs button.part { background: var(--color-accent-100); color: var(--color-accent-800); font-weight: 600; }
+.off-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.off-pick { position: relative; }
+.off-menu { position: absolute; top: 100%; left: 0; z-index: 80; background: var(--chrome); border: 1px solid var(--chrome-line); box-shadow: 2px 3px 7px rgba(0,0,0,0.18); padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; min-width: 230px; font-size: 13px; }
+.off-menu label { display: flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
+.rep-sel, .sv-sel { min-height: 0; height: 30px; padding: 2px 8px; font-size: 12.5px; width: auto; max-width: 220px; }
+.off-legend { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; font-weight: 400; margin-left: 12px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+.off-legend span { display: inline-flex; align-items: center; gap: 5px; }
+#view-line { font-size: 12.5px; font-weight: 600; margin: 0 0 6px; display: flex; flex-wrap: wrap; align-items: center; }
+.grid td.off-cell { white-space: nowrap; font-size: 11px; }
+.grid td.off-cell .off-dot { margin-right: 4px; vertical-align: middle; }
+.grid td.rep { white-space: nowrap; font-size: 11.5px; }
+.stats .off-stat { display: inline-flex; align-items: center; gap: 4px; }
+.btn.btn-sm.on { background: var(--color-accent); color: var(--on-accent); border-color: var(--color-accent); }
+.kbd-hint { min-width: 28px; font-weight: 700; }
+.empty .link { color: var(--color-accent-700); text-decoration: underline; cursor: pointer; background: none; border: 0; font: inherit; padding: 0; }
+body.m .off-tabs button { padding: 4px 6px; font-size: 11.5px; gap: 4px; }
+body.m .rep-sel, body.m .sv-sel { flex: 1 1 45%; max-width: none; }
+body.m #view-ctl > .btn { flex: 1 1 auto; }
+body.m #view-line { font-size: 12px; }
+
 /* ── Carrier vetting · rate con · check calls ───────────────────────────── */
 :root { --jts-navy: #0B1F3A; --jts-gold: #D4AF37; }
 .vet .vet-calc { display: flex; align-items: center; min-height: 36px; font-size: 13px; font-weight: 600; background: color-mix(in srgb, var(--color-surface) 70%, transparent); }
@@ -30247,7 +30275,21 @@ const COMPANY = {
   address: '5588 N Palm Ave',
   cityLine: 'Fresno, CA 93704'
 };
-const OFFICES = ['Fresno', 'Dallas', 'Chicago', 'Atlanta']; // branch offices — first one is the default
+// full name · short label · URL slug · row stripe color
+const OFFICE_META = [
+  ['Fresno Temp Controlled', 'Fresno TC', 'fresno-tc', '#2a78d6'],
+  ['Fresno Dry', 'Fresno Dry', 'fresno-dry', '#eda100'],
+  ['Rocklin, CA', 'Rocklin', 'rocklin', '#1baf7a'],
+  ['Tigard, OR', 'Tigard', 'tigard', '#eb6834'],
+  ['Madison, WI', 'Madison', 'madison', '#8b5cf6']
+];
+const OFFICES = OFFICE_META.map(o => o[0]); // first one is the default
+const shortOffice = o => { const m = OFFICE_META.find(x => x[0] === o); return m ? m[1] : (o || ''); };
+const officeSlug = o => { const m = OFFICE_META.find(x => x[0] === o); return m ? m[2] : ''; };
+const officeColor = o => { const m = OFFICE_META.find(x => x[0] === o); return m ? m[3] : '#9aa3ad'; };
+const OFFICE_MIGRATE = { Fresno: 'Fresno Temp Controlled', Dallas: 'Fresno Dry', Chicago: 'Madison, WI', Atlanta: 'Tigard, OR' }; // old placeholder offices
+const REPS = ['Drew Ganske', 'Jeff Mosqueda', 'Alicia Bly', 'Grayson Grimes', 'Rick Rattazzi', 'Bruce Negri', 'Jon Schaub', 'Mike Bell'];
+const repSlug = n => String(n || '').split(/\s+/)[0].toLowerCase();
 const STORE_KEY = 'jts_loadboard_v9';
 const LAYOUT_KEY = 'jts_loadboard_layout';
 const SKIN_KEY = 'jts_loadboard_skin';
@@ -30347,12 +30389,12 @@ function sha256(str) {
 }
 const hashPw = (salt, pw) => sha256(salt + ':' + pw);
 const newSalt = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join('');
-const SEED_ADMIN = { id: 'u-dganske', name: 'Drew Ganske', initials: 'DG', username: 'dganske', role: 'admin', office: 'Fresno', salt: '98db597830b13e72d84e6d4b', hash: '1557bc9b621ac3ac8e3a02a9e7d0a743f4cffbb414e30013c2cbab2c8cc58737' };
+const SEED_ADMIN = { id: 'u-dganske', name: 'Drew Ganske', initials: 'DG', username: 'dganske', role: 'admin', office: 'Fresno Temp Controlled', salt: '98db597830b13e72d84e6d4b', hash: '1557bc9b621ac3ac8e3a02a9e7d0a743f4cffbb414e30013c2cbab2c8cc58737' };
 function loadUsers() {
   let u = null; try { u = JSON.parse(localStorage.getItem(USERS_KEY)); } catch (e) {}
   if (!Array.isArray(u) || !u.length) u = [SEED_ADMIN];
   if (!u.some(x => x.role === 'admin')) u.unshift(SEED_ADMIN);
-  u.forEach(x => { if (!x.office) x.office = OFFICES[0]; });
+  u.forEach(x => { if (!x.office) x.office = OFFICES[0]; if (!OFFICES.includes(x.office)) x.office = OFFICE_MIGRATE[x.office] || OFFICES[0]; });
   return u;
 }
 function saveUsers(u) { try { localStorage.setItem(USERS_KEY, JSON.stringify(u)); } catch (e) {} }
@@ -30374,7 +30416,7 @@ function dialog({ title, body = '', input = null, okLabel = 'OK', cancelLabel = 
   return new Promise(res => {
     const bd = document.createElement('div'); bd.className = 'dialog-backdrop';
     bd.innerHTML = `<div class="dialog blueprint" role="dialog" aria-modal="true">${CORNERS}<div class="dialog-title">${esc(title)}</div>${body ? `<div class="dialog-body">${esc(body)}</div>` : ''}${input ? `<input class="input" id="dlg-input" type="${input === 'password' ? 'password' : 'text'}" placeholder="${esc(placeholder)}" autocomplete="${input === 'password' ? 'new-password' : 'off'}">` : ''}<div class="dialog-actions">${cancelLabel ? `<button class="btn btn-secondary" data-dlg="cancel">${esc(cancelLabel)}</button>` : ''}<button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-dlg="ok">${esc(okLabel)}</button></div></div>`;
-    document.body.appendChild(bd);
+    document.body.appendChild(bd); if (typeof stripDashes === 'function') stripDashes(bd);
     const val = () => input ? bd.querySelector('#dlg-input').value : true;
     const done = v => { bd.remove(); res(v); };
     bd.addEventListener('click', e => { const b = e.target.closest('[data-dlg]'); if (b) done(b.dataset.dlg === 'ok' ? val() : null); else if (e.target === bd) done(null); });
@@ -30466,7 +30508,9 @@ function nextFileNo() {
 }
 function blankDraft() {
   const ini = (S.user && S.user.initials) || '';
-  return { id: null, fileNo: nextFileNo(), customer: '', customerEmail: '', status: 'Open', temp: '', fileIn: ini, trIn: ini, office: (S.user && S.user.office) || OFFICES[0],
+  const bv = S.bv || { offices: 'all', rep: '' }, seen = bv.offices !== 'all' && bv.offices.length === 1 ? bv.offices[0] : '';
+  const rep = bv.rep || ((S.user && REPS.includes(S.user.name)) ? S.user.name : '');
+  return { id: null, fileNo: nextFileNo(), customer: '', customerEmail: '', status: 'Open', temp: '', fileIn: ini, trIn: ini, office: seen || (S.user && OFFICES.includes(S.user.office) ? S.user.office : OFFICES[0]), salesRep: rep,
     carrier: blankCarrier(), tracking: blankTracking(),
     pickups: [{ ...blankStop(), lines: [blankLine()] }], drops: [blankStop()],
     linehaul: '', fuel: '', accessorial: '', carrierName: '', carrierEmail: '', createdAt: Date.now() };
@@ -30527,7 +30571,7 @@ function demoData() {
       linehaul: '1210', fuel: '140', accessorial: '0', ...CARRIER,
       pickups: [{ ...stop(shippers[1], 'test 1234', demoPickupDate(3), '07:00', ''), lines: [line('Frozen vegetables — mixed', 22, 1760, 39600, 0)] }],
       drops: [stop(receivers[0], 'test 1234', demoDeliveryDate(demoPickupDate(3)), '06:30', '')] }];
-  loads.forEach((l, i) => { l.office = OFFICES[i % 2]; });
+  loads.forEach((l, i) => { l.office = OFFICES[0]; l.salesRep = REPS[i % REPS.length]; });
   const carriers = [
     { id: 'c1', name: 'Ganske Truck', mc: 'MC-884210', dot: '3312077', address: '2210 E Jensen Ave', city: 'Fresno', st: 'CA', zip: '93706', phone: '(559) 555-0180', email: 'dispatch@gansketruck.com', dispatchName: 'Rosa Delgado', dispatchPhone: '(559) 555-0181', ownerName: 'Mike Ganske', ownerPhone: '(559) 555-0189', powerUnits: '42', trailerUnits: '68', equipment: 'Reefer, dry van', offices: ['Fresno', 'Dallas'], salesRep: 'Drew Ganske', status: 'Active', createdAt: Date.now() - 400 * 864e5,
       notes: [{ at: Date.now() - 12 * 864e5, by: 'Drew Ganske', text: 'Owner wants more Fresno → Texas produce lanes. Can take 5/week starting October.' }, { at: Date.now() - 40 * 864e5, by: 'Drew Ganske', text: 'Rosa is the go-to for same-day coverage. Don\'t call after 6pm PT.' }] },
@@ -30564,7 +30608,7 @@ function demoExtra() {
     out.push({ id: 'X' + fileNo, fileNo, fileIn: 'DG', trIn: 'DG', customer: orig, status, temp: /34°F/.test(c[0]) ? '34°F continuous' : '',
       linehaul: String(Math.round(rate * 0.86)), fuel: String(rate - Math.round(rate * 0.86)), accessorial: '0',
       carrierName: COVERED.includes(status) ? CARR[rnd(CARR.length)] : '', carrierEmail: COVERED.includes(status) ? 'dispatch@gansketruck.com' : '',
-      office: OFFICES[rnd(OFFICES.length)],
+      office: (rnd(4), OFFICES[0]), salesRep: REPS[i % REPS.length],
       pickups: [pu], drops: [dl], createdAt: Date.now() - (1 + rnd(72)) * 36e5 });
     const last = out[out.length - 1];
     if (['Delivered', 'Invoiced'].includes(status)) { // record arrival at the receiver: mostly on time, sometimes late
@@ -30591,6 +30635,7 @@ const S = (() => {
     dirDraft: { shippers: blankFac(), receivers: blankFac() },
     loads: p && p.loads ? p.loads : d.loads,
     carriers: p && p.carriers ? p.carriers : d.carriers, rt: null,
+    bv: { offices: 'all', rep: '' }, savedViews: [], officeMenu: false,
     vetProfiles: p && p.vetProfiles ? p.vetProfiles : {}, rcSeq: p && p.rcSeq ? p.rcSeq : 100000, vetDraft: null, rcDraft: null, ccDraft: null, onlyOverdueCC: false, carTab: 'branch', carSearch: '', carrierId: null, carrierTab: 'profile', carDraft: null, reportKey: null, calc: { origin: '', dest: '', oGeo: null, dGeo: null, rate: '', fuel: '' },
     shippers: p && p.shippers ? p.shippers : d.shippers,
     receivers: p && p.receivers ? p.receivers : d.receivers
@@ -30705,6 +30750,7 @@ function renderMenubar() {
       ${open ? `<div class="menu-dd">${menuItems(m).map((it, ii) => it.sep ? '<div class="menu-sep"></div>' : it.header ? `<div class="menu-hd">${esc(it.header)}</div>` : `<div class="menu-it${it.sub ? ' sub' : ''}" data-act="menu" data-mi="${mi}" data-ii="${ii}" title="${esc(it.blurb || '')}">${it.swatch ? `<span class="chk">${it.on ? '✓' : ''}</span><span class="sw" style="background:linear-gradient(90deg,${it.swatch[0]} 50%,${it.swatch[1]} 50%)"></span>` : ''}${esc(it.label)}</div>`).join('')}</div>` : ''}
     </div>`;
   }).join('');
+  stripDashes($('#menubar'));
 }
 
 // ── Shell ──────────────────────────────────────────────────────────────────
@@ -30775,7 +30821,7 @@ function inScope(iso) {
 function baseRows() { // date scope + search, ignoring status chips — feeds the chip counts
   const q = S.search.trim().toLowerCase();
   return S.loads.filter(l => {
-    if (!inScope((l.pickups[0] || {}).date)) return false;
+    if (!inView(l) || !inScope((l.pickups[0] || {}).date)) return false;
     if (!q) return true;
     const hay = [l.fileNo, l.customer, l.carrierName, ...l.pickups.map(p => `${p.name} ${p.city} ${refText(p)}`), ...l.drops.map(d => `${d.name} ${d.city} ${d.ref}`)].join(' ').toLowerCase();
     return hay.includes(q);
@@ -30784,7 +30830,7 @@ function baseRows() { // date scope + search, ignoring status chips — feeds th
 function boardRows() {
   const q = S.search.trim().toLowerCase();
   const match = l => {
-    if (!inScope((l.pickups[0] || {}).date)) return false;
+    if (!inView(l) || !inScope((l.pickups[0] || {}).date)) return false;
     if (S.statusFilter.length && !S.statusFilter.includes(l.status)) return false;
     if (S.onlyDelayed && !delayAt(l)) return false;
     if (S.onlyOverdueCC && !ccOverdue(l)) return false;
@@ -30796,7 +30842,7 @@ function boardRows() {
   };
   const vm = l => {
     const p = l.pickups[0] || {}, d = l.drops[l.drops.length - 1] || {};
-    return { l, fileNo: l.fileNo, fileIn: l.fileIn || '', trIn: l.trIn || '', shipDate: p.date || '',
+    return { l, fileNo: l.fileNo, fileIn: l.fileIn || '', trIn: l.trIn || '', shipDate: p.date || '', office: shortOffice(l.office), rep: l.salesRep || '',
       originator: (l.customer || '—').toUpperCase(), puCity: (p.city || '—').toUpperCase(), puSt: (p.st || '').toUpperCase(),
       delCity: (d.city || '—').toUpperCase(), delSt: (d.st || '').toUpperCase(), status: l.status, rate: rateTotal(l), carrier: l.carrierName || '' };
   };
@@ -30831,13 +30877,15 @@ function renderBoard() {
       <button class="btn btn-secondary btn-sm" title="Reload the board so carrier bookings made by others show up" data-act="refresh">${I.refresh}Refresh</button>
       <div class="text-muted" style="font-size:11.5px" id="refreshed-at"></div>
     </div>
+    <div class="ctl-row no-print" id="view-ctl" style="margin-bottom:8px"></div>
     <div class="ctl-row no-print" style="margin-bottom:var(--space-3);flex-wrap:nowrap">
       <div class="search-wrap">${I.search}<input class="input" placeholder="Search file #, originator, city, carrier or PU / DEL number…" value="${esc(S.search)}" data-bind="search"></div>
     </div>
+    <div id="view-line" class="no-print"></div>
     <div class="chips no-print" id="status-chips"></div>
     ${isMobile() ? `<div class="ctl-row no-print" style="margin-bottom:var(--space-3);flex-wrap:nowrap">
       <span class="text-muted" style="font-size:12px;flex:none">Sort</span>
-      <select class="input" data-act="sortSel">${COLS.filter(c => c.key).map(c => `<option value="${c.key}"${S.sortKey === c.key ? ' selected' : ''}>${c.label === 'ST' ? (c.key === 'puSt' ? 'Pickup ST' : 'Dest ST') : c.label}</option>`).join('')}</select>
+      <select class="input" data-act="sortSel">${boardCols().filter(c => c.key).map(c => `<option value="${c.key}"${S.sortKey === c.key ? ' selected' : ''}>${c.label === 'ST' ? (c.key === 'puSt' ? 'Pickup ST' : 'Dest ST') : c.label}</option>`).join('')}</select>
       <button class="btn btn-secondary btn-sm" style="flex:none" data-act="sortDir">${S.sortDir > 0 ? '▲ Asc' : '▼ Desc'}</button>
     </div>` : ''}
     <div id="board-body"></div>
@@ -30863,24 +30911,28 @@ function delayAt(l) {
 const delayText = d => d ? `Delayed at ${d.kind}` : '';
 const condMark = l => { const c = (l.tracking || {}).condition; return c === 'Running late' ? ' <span class="late">LATE</span>' : c === 'Breakdown' ? ' <span class="down">BRKDN</span>' : ''; };
 function renderBoardBody() {
-  const rows = boardRows();
-  const shown = rows.length, all = S.loads.length;
-  const unc = S.loads.filter(l => HOT.includes(l.status)).length;
-  const transit = S.loads.filter(l => l.status === 'In Transit').length;
-  const delivered = S.loads.filter(l => l.status === 'Delivered').length;
-  const revenue = money(S.loads.filter(l => l.status !== 'Cancelled').reduce((s, l) => s + rateTotal(l), 0));
-  const head = COLS.map(c => `<th class="${c.align}${S.sortKey === c.key && c.key ? ' on' : ''}${c.key ? '' : ' nosort'}" style="${c.w ? `width:${c.w}px` : ''}" ${c.key ? `title="Sort" data-act="sort" data-key="${c.key}"` : ''}>${c.label}${S.sortKey === c.key && c.key ? (S.sortDir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('');
+  const rows = boardRows(), multi = bvMulti(), viewLoads = S.loads.filter(inView);
+  const shown = rows.length, all = viewLoads.length;
+  const unc = viewLoads.filter(l => HOT.includes(l.status)).length;
+  const transit = viewLoads.filter(l => l.status === 'In Transit').length;
+  const delivered = viewLoads.filter(l => l.status === 'Delivered').length;
+  const revenue = money(viewLoads.filter(l => l.status !== 'Cancelled').reduce((s, l) => s + rateTotal(l), 0));
+  const vc = $('#view-ctl'); if (vc) vc.innerHTML = renderViewControls();
+  const vl = $('#view-line'); if (vl) vl.innerHTML = esc(viewLineText(shown)) + renderLegend();
+  const head = boardCols().map(c => `<th class="${c.align}${S.sortKey === c.key && c.key ? ' on' : ''}${c.key ? '' : ' nosort'}" style="${c.w ? `width:${c.w}px` : ''}" ${c.key ? `title="Sort" data-act="sort" data-key="${c.key}"` : ''}>${c.label}${S.sortKey === c.key && c.key ? (S.sortDir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('');
   const body = rows.map(r => {
     const l = r.l, hot = HOT.includes(l.status);
     const dt = r.shipDate ? r.shipDate.slice(5).replace('-', '/') + '/' + r.shipDate.slice(2, 4) : '—';
     const driven = /DRIVEN/.test(r.originator);
     const H = hot ? ' hot' : '';
     return `<tr class="${ccRowClass(l).trim()}">
-      <td class="c pale file${H}" title="Open load tender" data-act="view" data-id="${esc(l.id)}">${esc(r.fileNo)}</td>
+      <td class="c pale file${H}" style="border-left:4px solid ${officeColor(l.office)}" title="Open load tender · ${esc(l.office || '')}" data-act="view" data-id="${esc(l.id)}">${esc(r.fileNo)}</td>
       <td class="c pale${H}">${esc(r.fileIn)}</td>
       <td class="c trin">${esc(r.trIn)}</td>
       <td class="c pale${H}">${dt}</td>
+      ${multi ? `<td class="l off-cell" title="${esc(l.office || '')}"><i class="off-dot" style="background:${officeColor(l.office)}"></i>${esc(r.office)}</td>` : ''}
       <td class="l ${driven ? 'driven' : 'pale orig'}">${esc(r.originator)}</td>
+      <td class="l rep" title="${esc(l.salesRep || '')}">${esc(repShort(l.salesRep))}</td>
       <td class="r pale">${esc(r.puCity)}</td>
       <td class="c pale">${esc(r.puSt)}</td>
       <td class="r green">${esc(r.delCity)}</td>
@@ -30900,8 +30952,8 @@ function renderBoardBody() {
     const l = r.l, hot = HOT.includes(l.status);
     const dt = r.shipDate ? r.shipDate.slice(5).replace('-', '/') + '/' + r.shipDate.slice(2, 4) : '—';
     const driven = /DRIVEN/.test(r.originator);
-    return `<div class="lc${hot ? ' hot' : ''}${ccRowClass(l)}" data-act="view" data-id="${esc(l.id)}">
-      <div class="row"><span class="file">${esc(r.fileNo)}</span><span class="text-muted" style="font-weight:600">${dt}</span>${(() => { const dl = delayAt(l); return dl ? `<span class="st delayed">${delayText(dl)} · ${fmtMins(dl.mins)}</span>` : `<span class="st">${esc(l.status)}${condMark(l)}</span>`; })()}</div>
+    return `<div class="lc${hot ? ' hot' : ''}${ccRowClass(l)}" style="border-left-color:${officeColor(l.office)}" data-act="view" data-id="${esc(l.id)}">
+      <div class="row"><span class="file">${esc(r.fileNo)}</span><span class="text-muted" style="font-weight:600">${dt}</span>${multi ? `<span class="text-muted" style="font-size:11px">${esc(r.office)}</span>` : ''}<span class="text-muted" style="font-size:11px">${esc(repShort(l.salesRep))}</span>${(() => { const dl = delayAt(l); return dl ? `<span class="st delayed">${delayText(dl)} · ${fmtMins(dl.mins)}</span>` : `<span class="st">${esc(l.status)}${condMark(l)}</span>`; })()}</div>
       <div class="row"><span class="orig${driven ? ' driven' : ''}">${esc(r.originator)}</span><span class="lane">${esc(r.puCity)}, ${esc(r.puSt)} → ${esc(r.delCity)}, ${esc(r.delSt)}</span></div>
       <div class="row"><span class="${r.carrier ? '' : 'unc'}">${r.carrier ? esc(r.carrier) : 'UNCOVERED'}</span><span class="rate">${money(r.rate)}</span><span class="acts"><button class="btn btn-ghost" data-act="view" data-id="${esc(l.id)}">Tender</button><button class="btn btn-icon btn-ghost" title="Edit" data-act="edit" data-id="${esc(l.id)}">${I.pencil12}</button><button class="btn btn-icon btn-ghost" title="Delete" style="color:#c40000" data-act="delete" data-id="${esc(l.id)}">${I.trash12}</button></span></div>
       ${ccRowTag(l)}
@@ -30926,16 +30978,17 @@ function renderBoardBody() {
       <div><span class="text-muted">Uncovered</span> <strong style="color:#c40000">${unc}</strong></div>
       ${(() => { const n = S.loads.filter(l => delayAt(l)).length; return n ? `<div><span class="text-muted">Delayed</span> <strong class="delayed-n">${n}</strong></div>` : ''; })()}
       ${(() => { const n = ccOverdueCount(); return n ? `<div><span class="text-muted">Check calls overdue</span> <strong class="cc-n">${n}</strong></div>` : ''; })()}
+      ${multi ? bvOffices().map(o => { const n = rows.filter(r => r.l.office === o).length; return n ? `<div class="off-stat"><i class="off-dot" style="background:${officeColor(o)}"></i>${esc(shortOffice(o))} <strong>${n}</strong></div>` : ''; }).join('') : ''}
       <div><span class="text-muted">In transit</span> <strong>${transit}</strong></div>
       <div><span class="text-muted">Delivered</span> <strong>${delivered}</strong></div>
       <div><span class="text-muted">Booked revenue</span> <strong>${revenue}</strong></div>
     </div>
     <div class="grid-wrap">
       <table class="grid"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
-      ${shown === 0 ? '<div class="text-muted empty">No files match. Step the date, widen to Week or All dates, clear the status chips, or create a new load.</div>' : ''}
+      ${shown === 0 ? `<div class="text-muted empty">${esc(emptyStateText())} <button class="link" data-act="clearFilters">Clear filters</button>${S.dateScope !== 'all' ? ' or <button class="link" data-act="scope" data-scope="all">show all dates</button>' : ''}.</div>` : ''}
     </div>
-    <div class="cards">${cards}${shown === 0 ? '<div class="text-muted empty">No files ship on this date. Step the date, widen to Week or All dates, or create a new load.</div>' : ''}</div>`;
-  linkifyPhones($('#board-body'));
+    <div class="cards">${cards}${shown === 0 ? `<div class="text-muted empty">${esc(emptyStateText())} <button class="link" data-act="clearFilters">Clear filters</button>${S.dateScope !== 'all' ? ' or <button class="link" data-act="scope" data-scope="all">show all dates</button>' : ''}.</div>` : ''}</div>`;
+  linkifyPhones($('#board-body')); stripDashes($('#board'));
   const ra = $('#refreshed-at');
   if (ra) ra.textContent = 'Updated ' + new Date(S.refreshedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' });
   const dl = $('#date-label'); if (dl) dl.textContent = dateLabel();
@@ -31023,6 +31076,8 @@ function renderBuilder() {
         ${f('fileIn', 1, 'File IN', 'placeholder="Initials"')}
         ${f('trIn', 1, 'Tr… IN', 'placeholder="Initials"')}
         <div class="field" style="grid-column:span 2"><label>Status</label><select class="input" data-act="draftStatus">${STATUSES.map(s => `<option${d.status === s ? ' selected' : ''}>${s}</option>`).join('')}</select></div>
+        <div class="field" style="grid-column:span 2"><label>Sales rep</label><select class="input" data-act="draftRep"><option value="">Unassigned</option>${REPS.map(r => `<option${d.salesRep === r ? ' selected' : ''}>${r}</option>`).join('')}</select></div>
+        <div class="field" style="grid-column:span 2"><label>Office</label><select class="input" data-act="draftOffice">${OFFICES.map(o => `<option${d.office === o ? ' selected' : ''}>${o}</option>`).join('')}</select></div>
         ${f('temp', 2, 'Temperature requirement', 'placeholder="e.g. 34°F continuous"')}
         ${f('customerEmail', 2, 'Customer email (for load updates)', 'type="email" placeholder="ops@customer.com"')}
       </div>
@@ -31174,7 +31229,7 @@ function renderTender(l) {
           <div style="font-size:15px;font-weight:600">${esc(l.carrierName || '________________')}</div>
           <div class="text-muted" style="font-size:12px">${esc(l.carrierEmail || '—')}</div>
           ${rig.map(r => `<div style="font-size:12px">${esc(r)}</div>`).join('')}
-          <div class="text-muted" style="font-size:12px;margin-top:6px">Customer: ${esc(l.customer || '—')}${l.office ? ` · ${esc(l.office)} office` : ''}</div>
+          <div class="text-muted" style="font-size:12px;margin-top:6px">Customer: ${esc(l.customer || '—')}${l.office ? ` · ${esc(l.office)} office` : ''}${l.salesRep ? ` · Rep ${esc(l.salesRep)}` : ''}</div>
           ${l.temp ? `<div style="font-size:12px;margin-top:6px"><strong>Temperature:</strong> ${esc(l.temp)}</div>` : ''}
         </div>
         <div style="font-size:13px">
@@ -31228,8 +31283,8 @@ function tbl(cols, rows) {
   return `<div class="grid-wrap"><table class="grid rep"><thead><tr>${cols.map(c => `<th class="${c.a || 'l'} nosort">${c.h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((v, i) => `<td class="${cols[i].a || 'l'}">${v == null ? '' : v}</td>`).join('')}</tr>`).join('')}</tbody></table>${rows.length ? '' : '<div class="text-muted empty">Nothing to show for this report right now.</div>'}</div>`;
 }
 const grouped = (title, rows) => `<div class="rep-group"><div class="rep-group-h">${title}</div>${rows}</div>`;
-const loadRowCols = [{ h: 'File #', a: 'c' }, { h: 'Ship', a: 'c' }, { h: 'Office' }, { h: 'Route' }, { h: 'Carrier' }, { h: 'Status', a: 'c' }, { h: 'Last check call' }, { h: 'Cond.', a: 'c' }, { h: '', a: 'r' }];
-const loadRow = l => [fileLink(l), dts(shipDate(l)), esc(l.office || '—'), esc(laneOf(l)), l.carrierName ? esc(l.carrierName) : '<span class="unc" style="color:#c40000">UNCOVERED</span>', esc(l.status), lastCheck(l), condCell(l), trackLink(l)];
+const loadRowCols = [{ h: 'File #', a: 'c' }, { h: 'Ship', a: 'c' }, { h: 'Office' }, { h: 'Rep' }, { h: 'Route' }, { h: 'Carrier' }, { h: 'Status', a: 'c' }, { h: 'Last check call' }, { h: 'Cond.', a: 'c' }, { h: '', a: 'r' }];
+const loadRow = l => [fileLink(l), dts(shipDate(l)), esc(shortOffice(l.office) || '-'), esc(repShort(l.salesRep) || '-'), esc(laneOf(l)), l.carrierName ? esc(l.carrierName) : '<span class="unc" style="color:#c40000">UNCOVERED</span>', esc(l.status), lastCheck(l), condCell(l), trackLink(l)];
 const stopsOf = (arr) => { const out = []; arr.forEach(l => { l.pickups.forEach((p, i) => out.push({ l, s: p, kind: 'Pickup', i })); l.drops.forEach((d, i) => out.push({ l, s: d, kind: 'Delivery', i })); }); return out; };
 const stopKey = x => (x.s.date || '9999') + 'T' + (x.s.time || '23:59');
 const inOut = st => `${st.inAt ? fmtLocal(st.inAt) : '—'} / ${st.outAt ? fmtLocal(st.outAt) : '—'}`;
@@ -31257,13 +31312,13 @@ const REPORTS = {
   edi_missing: { title: 'EDI Missing Status Browser', sub: 'Moving loads with no check call in the last 4 hours', body: () => tbl([{ h: 'File #', a: 'c' }, { h: 'Carrier · driver' }, { h: 'Route' }, { h: 'Status', a: 'c' }, { h: 'Last check call' }, { h: 'Hours since', a: 'r' }, { h: '', a: 'r' }], S.loads.filter(l => ACTIVE.includes(l.status)).map(l => ({ l, age: hoursSince((l.tracking || {}).updatedAt) })).filter(x => x.age == null || x.age >= 4).sort((a, b) => (b.age == null ? 9999 : b.age) - (a.age == null ? 9999 : a.age)).map(({ l, age }) => { const cr = carrierOf(l); return [fileLink(l), `${esc(l.carrierName || '—')}${cr.driverPhone ? `<div class="text-muted" style="font-weight:400;font-size:11px">${esc(cr.driver || '')} · ${esc(cr.driverPhone)}</div>` : ''}`, esc(laneOf(l)), esc(l.status), lastCheck(l), age == null ? '<span class="down">never</span>' : `<span class="late">${age}h</span>`, trackLink(l)]; })) },
   edi_loads: { title: 'EDI Load Browser', sub: 'Every file, newest first', body: () => tbl([{ h: 'File #', a: 'c' }, { h: 'Ship', a: 'c' }, { h: 'Office' }, { h: 'Customer' }, { h: 'Route' }, { h: 'Carrier' }, { h: 'Status', a: 'c' }, { h: 'Rate', a: 'r' }], S.loads.slice().sort((a, b) => shipDate(b).localeCompare(shipDate(a))).map(l => [fileLink(l), dts(shipDate(l)), esc(l.office || '—'), esc(l.customer || ''), esc(laneOf(l)), esc(l.carrierName || '—'), esc(l.status), money(rateTotal(l))])) },
   load_log: { title: 'Load Log', sub: 'Files in the order they were created', body: () => tbl([{ h: 'Created' }, { h: 'File #', a: 'c' }, { h: 'By', a: 'c' }, { h: 'Office' }, { h: 'Customer' }, { h: 'Route' }, { h: 'Carrier' }, { h: 'Status', a: 'c' }, { h: 'Rate', a: 'r' }], S.loads.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).map(l => [fmtWhen(l.createdAt || 0), fileLink(l), esc(l.fileIn || ''), esc(l.office || '—'), esc(l.customer || ''), esc(laneOf(l)), esc(l.carrierName || '—'), esc(l.status), money(rateTotal(l))])) },
-  load_summary: { title: 'Load Summary', sub: 'Counts and booked revenue by status and by office', body: () => { const byS = groupBy(S.loads, l => l.status), byO = groupBy(S.loads, l => l.office || 'Unassigned'); return `<div class="rep-two">${tbl([{ h: 'Status' }, { h: 'Files', a: 'r' }, { h: 'Revenue', a: 'r' }, { h: 'Avg', a: 'r' }], STATUSES.filter(st => byS[st]).map(st => [esc(st), byS[st].length, money(sumRate(byS[st])), money(sumRate(byS[st]) / byS[st].length)]).concat([[`<strong>All files</strong>`, `<strong>${S.loads.length}</strong>`, `<strong>${money(sumRate(S.loads))}</strong>`, '']]))}${tbl([{ h: 'Office' }, { h: 'Files', a: 'r' }, { h: 'Uncovered', a: 'r' }, { h: 'In transit', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'Revenue', a: 'r' }], Object.entries(byO).sort((a, b) => sumRate(b[1]) - sumRate(a[1])).map(([o, arr]) => [esc(o), arr.length, arr.filter(l => HOT.includes(l.status)).length, arr.filter(l => l.status === 'In Transit').length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, money(sumRate(arr))]))}</div>`; } },
+  load_summary: { title: 'Load Summary', sub: 'Counts and booked revenue by status and by office', body: () => { const byS = groupBy(S.loads, l => l.status), byO = groupBy(S.loads, l => l.office || 'Unassigned'); return `<div class="rep-two">${tbl([{ h: 'Status' }, { h: 'Files', a: 'r' }, { h: 'Revenue', a: 'r' }, { h: 'Avg', a: 'r' }], STATUSES.filter(st => byS[st]).map(st => [esc(st), byS[st].length, money(sumRate(byS[st])), money(sumRate(byS[st]) / byS[st].length)]).concat([[`<strong>All files</strong>`, `<strong>${S.loads.length}</strong>`, `<strong>${money(sumRate(S.loads))}</strong>`, '']]))}${tbl([{ h: 'Office' }, { h: 'Files', a: 'r' }, { h: 'Uncovered', a: 'r' }, { h: 'In transit', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'Revenue', a: 'r' }], Object.entries(byO).sort((a, b) => sumRate(b[1]) - sumRate(a[1])).map(([o, arr]) => [esc(o), arr.length, arr.filter(l => HOT.includes(l.status)).length, arr.filter(l => l.status === 'In Transit').length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, money(sumRate(arr))]))}${tbl([{ h: 'Sales rep' }, { h: 'Files', a: 'r' }, { h: 'Uncovered', a: 'r' }, { h: 'In transit', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'Revenue', a: 'r' }], REPS.map(r => { const arr = S.loads.filter(l => l.salesRep === r); return [esc(r), arr.length, arr.filter(l => HOT.includes(l.status)).length, arr.filter(l => l.status === 'In Transit').length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, money(sumRate(arr))]; }))}</div>`; } },
   load_summary_clients: { title: 'Load Summary — Super Clients', sub: 'Customers ranked by booked revenue', body: () => tbl([{ h: 'Customer' }, { h: 'Files', a: 'r' }, { h: 'Open', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'Revenue', a: 'r' }, { h: 'Avg rate', a: 'r' }, { h: 'Offices' }], Object.entries(groupBy(S.loads, l => (l.customer || '—').toUpperCase())).sort((a, b) => sumRate(b[1]) - sumRate(a[1])).map(([c, arr]) => [esc(c), arr.length, arr.filter(l => OPENISH.includes(l.status)).length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, money(sumRate(arr)), money(sumRate(arr) / arr.length), esc([...new Set(arr.map(l => l.office || 'Unassigned'))].join(', '))])) },
   high_value: { title: 'High Value Loads', sub: 'Files at $5,000 and up', body: () => tbl([{ h: 'Rate', a: 'r' }, { h: 'File #', a: 'c' }, { h: 'Ship', a: 'c' }, { h: 'Customer' }, { h: 'Route' }, { h: 'Carrier' }, { h: 'Status', a: 'c' }, { h: 'Office' }], S.loads.filter(l => rateTotal(l) >= 5000).sort((a, b) => rateTotal(b) - rateTotal(a)).map(l => [`<strong>${money(rateTotal(l))}</strong>`, fileLink(l), dts(shipDate(l)), esc(l.customer || ''), esc(laneOf(l)), esc(l.carrierName || '—'), esc(l.status), esc(l.office || '—')])) },
   office_rev_client: { title: 'Office Revenue Share — Client', sub: 'Revenue by office for each customer', body: () => { const clients = Object.entries(groupBy(S.loads, l => (l.customer || '—').toUpperCase())).sort((a, b) => sumRate(b[1]) - sumRate(a[1])); return tbl([{ h: 'Customer' }, ...OFFICES.map(o => ({ h: o, a: 'r' })), { h: 'Total', a: 'r' }], clients.map(([c, arr]) => [esc(c), ...OFFICES.map(o => { const r = sumRate(arr.filter(l => l.office === o)); return r ? money(r) : '—'; }), `<strong>${money(sumRate(arr))}</strong>`])); } },
-  office_rev_review: { title: 'Office Revenue Share — Review', sub: 'Each office\'s share of booked revenue', body: () => { const total = sumRate(S.loads); return tbl([{ h: 'Office' }, { h: 'Files', a: 'r' }, { h: 'Revenue', a: 'r' }, { h: 'Share', a: 'r' }, { h: 'Avg rate', a: 'r' }, { h: 'On-time', a: 'c' }], OFFICES.map(o => { const arr = S.loads.filter(l => l.office === o); const ot = onTimeOf(arr); return [esc(o), arr.length, money(sumRate(arr)), pctStr(sumRate(arr), total), arr.length ? money(sumRate(arr) / arr.length) : '—', pctCell(ot.pct)]; }).concat([[`<strong>Company</strong>`, `<strong>${S.loads.length}</strong>`, `<strong>${money(total)}</strong>`, '100%', '', pctCell(onTimeOf(S.loads).pct)]])); } },
+  office_rev_review: { title: 'Office Revenue Share — Review', sub: 'Each office\'s share of booked revenue, then each sales rep\'s', body: () => { const total = sumRate(S.loads); return '<div class="rep-two">' + tbl([{ h: 'Office' }, { h: 'Files', a: 'r' }, { h: 'Revenue', a: 'r' }, { h: 'Share', a: 'r' }, { h: 'Avg rate', a: 'r' }, { h: 'On-time', a: 'c' }], OFFICES.map(o => { const arr = S.loads.filter(l => l.office === o); const ot = onTimeOf(arr); return [esc(o), arr.length, money(sumRate(arr)), pctStr(sumRate(arr), total), arr.length ? money(sumRate(arr) / arr.length) : '—', pctCell(ot.pct)]; }).concat([[`<strong>Company</strong>`, `<strong>${S.loads.length}</strong>`, `<strong>${money(total)}</strong>`, '100%', '', pctCell(onTimeOf(S.loads).pct)]])) + tbl([{ h: 'Sales rep' }, { h: 'Files', a: 'r' }, { h: 'Revenue', a: 'r' }, { h: 'Share', a: 'r' }, { h: 'Avg rate', a: 'r' }, { h: 'On-time', a: 'c' }], REPS.map(r => { const arr = S.loads.filter(l => l.salesRep === r); const ot = onTimeOf(arr); return [esc(r), arr.length, money(sumRate(arr)), pctStr(sumRate(arr), total), arr.length ? money(sumRate(arr) / arr.length) : '-', pctCell(ot.pct)]; })) + '</div>'; } },
   trace_req_carrier: { title: 'Trace Request — Carrier', sub: 'Carriers to call for a status right now, stalest first', body: () => tbl([{ h: 'Carrier' }, { h: 'Dispatch' }, { h: 'Moving loads', a: 'r' }, { h: 'Oldest check call' }, { h: 'Hours', a: 'r' }, { h: 'Files' }], Object.entries(groupBy(S.loads.filter(l => ACTIVE.includes(l.status) && l.carrierName), l => l.carrierName)).map(([n, arr]) => { const cr = carrierRec(n); const oldest = Math.min(...arr.map(l => (l.tracking || {}).updatedAt || 0)); return { n, cr, arr, oldest }; }).sort((a, b) => a.oldest - b.oldest).map(({ n, cr, arr, oldest }) => [esc(n), esc(cr.dispatchName ? `${cr.dispatchName}${cr.dispatchPhone ? ' · ' + cr.dispatchPhone : ''}` : (cr.phone || '—')), arr.length, oldest ? fmtWhen(oldest) : '<span class="down">never</span>', oldest ? hoursSince(oldest) : '—', arr.map(fileLink).join(' ')])) },
-  broker_volume: { title: 'Broker Volume / On-Time Summary', sub: 'Volume and on-time delivery by office, then by dispatcher', body: () => `<div class="rep-two">${tbl([{ h: 'Office' }, { h: 'Files', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'On-time', a: 'c' }, { h: 'Revenue', a: 'r' }], OFFICES.map(o => { const arr = S.loads.filter(l => l.office === o); const ot = onTimeOf(arr); return [esc(o), arr.length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, pctCell(ot.pct), money(sumRate(arr))]; }))}${tbl([{ h: 'Dispatcher', a: 'c' }, { h: 'Files', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'On-time', a: 'c' }, { h: 'Revenue', a: 'r' }], Object.entries(groupBy(S.loads, l => l.fileIn || '—')).map(([k, arr]) => { const ot = onTimeOf(arr); return [esc(k), arr.length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, pctCell(ot.pct), money(sumRate(arr))]; }))}</div>` },
+  broker_volume: { title: 'Broker Volume / On-Time Summary', sub: 'Volume and on-time delivery by office, by dispatcher and by sales rep', body: () => `<div class="rep-two">${tbl([{ h: 'Office' }, { h: 'Files', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'On-time', a: 'c' }, { h: 'Revenue', a: 'r' }], OFFICES.map(o => { const arr = S.loads.filter(l => l.office === o); const ot = onTimeOf(arr); return [esc(o), arr.length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, pctCell(ot.pct), money(sumRate(arr))]; }))}${tbl([{ h: 'Dispatcher', a: 'c' }, { h: 'Files', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'On-time', a: 'c' }, { h: 'Revenue', a: 'r' }], Object.entries(groupBy(S.loads, l => l.fileIn || '—')).map(([k, arr]) => { const ot = onTimeOf(arr); return [esc(k), arr.length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, pctCell(ot.pct), money(sumRate(arr))]; }))}${tbl([{ h: 'Sales rep' }, { h: 'Files', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'On-time', a: 'c' }, { h: 'Revenue', a: 'r' }], REPS.map(r => { const arr = S.loads.filter(l => l.salesRep === r); const ot = onTimeOf(arr); return [esc(r), arr.length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, pctCell(ot.pct), money(sumRate(arr))]; }))}</div>` },
   carrier_ontime: { title: 'Carrier On-Time Delivery', sub: 'Every carrier with delivered freight, best first', body: () => tbl([{ h: 'Carrier' }, { h: 'Loads', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'Judged', a: 'r' }, { h: 'On-time', a: 'c' }, { h: 'Late', a: 'r' }, { h: 'Offices' }], Object.keys(groupBy(S.loads.filter(l => l.carrierName), l => l.carrierName)).map(n => ({ n, st: carrierStats(n) })).filter(x => x.st.delivered).sort((a, b) => (b.st.onTimePct ?? -1) - (a.st.onTimePct ?? -1)).map(({ n, st }) => [esc(n), st.loads.length, st.delivered, st.judged, pctCell(st.onTimePct), st.judged - Math.round(st.judged * (st.onTimePct || 0) / 100), esc(Object.keys(st.byOffice).join(', '))])) },
   client_ontime: { title: 'Super Client On-Time Delivery', sub: 'On-time delivery by customer', body: () => tbl([{ h: 'Customer' }, { h: 'Files', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'On-time', a: 'c' }, { h: 'Revenue', a: 'r' }], Object.entries(groupBy(S.loads, l => (l.customer || '—').toUpperCase())).map(([c, arr]) => ({ c, arr, ot: onTimeOf(arr) })).sort((a, b) => (b.ot.pct ?? -1) - (a.ot.pct ?? -1)).map(({ c, arr, ot }) => [esc(c), arr.length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, pctCell(ot.pct), money(sumRate(arr))])) },
   eod_pickups: { title: 'End of Day — Pickups today', sub: today(), body: () => tbl([{ h: 'Appt', a: 'c' }, { h: 'File #', a: 'c' }, { h: 'Shipper' }, { h: 'City' }, { h: 'Carrier' }, { h: 'Status', a: 'c' }, { h: 'In / Out' }], stopsOf(S.loads).filter(x => x.kind === 'Pickup' && x.s.date === today()).sort((a, b) => stopKey(a).localeCompare(stopKey(b))).map(x => [x.s.time || '—', fileLink(x.l), esc(x.s.name || '—'), esc(`${x.s.city || ''}, ${x.s.st || ''}`), esc(x.l.carrierName || '—'), esc(x.l.status), inOut(x.s)])) },
@@ -31285,7 +31340,7 @@ const REPORTS = {
   onboard_invite: { title: 'Send Carrier Onboard Invitation', sub: 'Invite a carrier to get set up with JTS', body: () => tbl([{ h: 'Carrier' }, { h: 'City' }, { h: 'Equipment' }, { h: 'Email' }, { h: 'Status', a: 'c' }, { h: '', a: 'r' }], S.carriers.slice().sort((a, b) => a.name.localeCompare(b.name)).map(c => [carLink(c), esc(`${c.city || ''}${c.st ? ', ' + c.st : ''}`), esc(c.equipment || '—'), esc(c.email || '—'), esc(c.status || 'Active'), `<a class="btn btn-secondary btn-sm" href="${inviteMail(c)}">${I.mail}Send invitation</a>`])) },
   carrier_zone: { title: 'Carrier Zone Count Summary', sub: 'How many carriers we have in each state', body: () => tbl([{ h: 'State', a: 'c' }, { h: 'Carriers', a: 'r' }, { h: 'Trucks', a: 'r' }, { h: 'Trailers', a: 'r' }, { h: 'Names' }], Object.entries(groupBy(S.carriers, c => (c.st || '—').toUpperCase())).sort((a, b) => b[1].length - a[1].length).map(([st, arr]) => [esc(st), arr.length, fmt(arr.reduce((n, c) => n + num(c.powerUnits), 0)), fmt(arr.reduce((n, c) => n + num(c.trailerUnits), 0)), arr.map(c => carLink(c)).join(', ')])) },
   client_perf: { title: 'Client Performance Browser / Report', sub: 'Volume, revenue and service by customer', body: () => tbl([{ h: 'Customer' }, { h: 'Files', a: 'r' }, { h: 'Open', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'On-time', a: 'c' }, { h: 'Revenue', a: 'r' }, { h: 'Avg rate', a: 'r' }, { h: 'Avg $/mi', a: 'r' }, { h: 'Last ship', a: 'c' }, { h: 'Offices' }], Object.entries(groupBy(S.loads, l => (l.customer || '—').toUpperCase())).sort((a, b) => sumRate(b[1]) - sumRate(a[1])).map(([c, arr]) => { const ot = onTimeOf(arr); const withMi = arr.map(l => ({ r: rateTotal(l), mi: laneMiles(l) })).filter(x => x.mi); return [esc(c), arr.length, arr.filter(l => OPENISH.includes(l.status)).length, arr.filter(l => ['Delivered', 'Invoiced'].includes(l.status)).length, pctCell(ot.pct), money(sumRate(arr)), money(sumRate(arr) / arr.length), withMi.length ? '$' + (withMi.reduce((n, x) => n + x.r / x.mi, 0) / withMi.length).toFixed(2) : '—', dts(arr.map(shipDate).sort().slice(-1)[0]), esc([...new Set(arr.map(l => l.office || 'Unassigned'))].join(', '))]; })) },
-  agent_client: { title: 'Agent Client Browser', sub: 'Which customers each office and dispatcher handles', body: () => Object.entries(groupBy(S.loads, l => l.office || 'Unassigned')).sort().map(([o, arr]) => grouped(`${esc(o)} office · ${arr.length} files`, tbl([{ h: 'Customer' }, { h: 'Dispatchers' }, { h: 'Files', a: 'r' }, { h: 'Open', a: 'r' }, { h: 'Revenue', a: 'r' }, { h: 'Last ship', a: 'c' }], Object.entries(groupBy(arr, l => (l.customer || '—').toUpperCase())).sort((a, b) => b[1].length - a[1].length).map(([c, cl]) => [esc(c), esc([...new Set(cl.map(l => l.fileIn || '—'))].join(', ')), cl.length, cl.filter(l => OPENISH.includes(l.status)).length, money(sumRate(cl)), dts(cl.map(shipDate).sort().slice(-1)[0])])))).join('') },
+  agent_client: { title: 'Agent Client Browser', sub: 'Which customers each office, dispatcher and sales rep handles', body: () => Object.entries(groupBy(S.loads, l => l.office || 'Unassigned')).sort().map(([o, arr]) => grouped(`${esc(o)} office · ${arr.length} files`, tbl([{ h: 'Customer' }, { h: 'Dispatchers' }, { h: 'Sales reps' }, { h: 'Files', a: 'r' }, { h: 'Open', a: 'r' }, { h: 'Revenue', a: 'r' }, { h: 'Last ship', a: 'c' }], Object.entries(groupBy(arr, l => (l.customer || '—').toUpperCase())).sort((a, b) => b[1].length - a[1].length).map(([c, cl]) => [esc(c), esc([...new Set(cl.map(l => l.fileIn || '—'))].join(', ')), esc([...new Set(cl.map(l => repShort(l.salesRep)).filter(Boolean))].join(', ')), cl.length, cl.filter(l => OPENISH.includes(l.status)).length, money(sumRate(cl)), dts(cl.map(shipDate).sort().slice(-1)[0])])))).join('') },
   lane_rate_history: { title: 'Lane Rate History', sub: 'Every lane we have run, with rate range and $/mile', body: () => tbl([{ h: 'Lane' }, { h: 'Miles', a: 'r' }, { h: 'Loads', a: 'r' }, { h: 'Low', a: 'r' }, { h: 'Avg', a: 'r' }, { h: 'High', a: 'r' }, { h: 'Avg $/mi', a: 'r' }, { h: 'Last', a: 'c' }, { h: 'Carriers' }, { h: '', a: 'r' }], Object.entries(groupBy(S.loads, laneOf)).sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0])).map(([lane, arr]) => { const rs = arr.map(rateTotal), mi = laneMiles(arr[0]), avg = rs.reduce((a, b) => a + b, 0) / rs.length; return [esc(lane), mi ? fmt(mi) : '—', arr.length, money(Math.min(...rs)), money(avg), money(Math.max(...rs)), mi ? '$' + (avg / mi).toFixed(2) : '—', dts(arr.map(shipDate).sort().slice(-1)[0]), esc([...new Set(arr.map(l => l.carrierName).filter(Boolean))].join(', ') || '—'), `<button class="btn btn-ghost" style="padding:1px 7px;min-height:0;font-size:11px" data-act="laneRates" data-id="${esc(arr[0].id)}">Trend</button>`]; })) },
   recv_orig_browser: { title: 'Receiver / Originator Sales Browser', sub: 'Every facility we have picked up from or delivered to, with volume', body: () => { const pick = groupBy(stopsOf(S.loads).filter(x => x.kind === 'Pickup'), x => (x.s.name || x.s.city || '—').toUpperCase()), drop = groupBy(stopsOf(S.loads).filter(x => x.kind === 'Delivery'), x => (x.s.name || x.s.city || '—').toUpperCase()); const cols = [{ h: 'Facility' }, { h: 'City' }, { h: 'Stops', a: 'r' }, { h: 'Customers' }, { h: 'Last', a: 'c' }, { h: 'Contact' }]; const rows = g => Object.entries(g).sort((a, b) => b[1].length - a[1].length).map(([n, arr]) => [esc(n), esc(`${arr[0].s.city || ''}${arr[0].s.st ? ', ' + arr[0].s.st : ''}`), arr.length, esc([...new Set(arr.map(x => x.l.customer || '—'))].join(', ')), dts(arr.map(x => x.s.date || '').sort().slice(-1)[0]), esc(arr.map(x => x.s.contact).find(Boolean) || '—')]); return grouped('Originators (pickup facilities)', tbl(cols, rows(pick))) + grouped('Receivers (delivery facilities)', tbl(cols, rows(drop))); } },
   late_pay: { title: 'Late Pay', sub: 'Invoiced files by days outstanding since delivery — 30+ days is late', body: () => {
@@ -31462,8 +31517,8 @@ function renderCarrierDetail() {
 // Sell-side pricing tab: rate on file (linehaul + fuel), $/mi over approx road miles,
 // 50-mile market pooling, quote guide with confidence, inline-SVG chart. No margin math.
 const RT_KEY = 'jts_rt_v1', MARKET_MI = 50, RT_MIN_MI = 25, RT_RPM_LO = 0.5, RT_RPM_HI = 12;
-const RT_DEFAULT = () => ({ o: '', oGeo: null, oBad: false, d: '', dGeo: null, dBad: false, radius: 50, preset: '12mo', from: '', to: '', bucket: 'auto', metric: 'lf', equip: 'all', office: 'all', customer: '', incMulti: false, incOutliers: false, incQuotes: false, showBand: true, showLoads: true, showYoY: true, focus: null, showExcl: false, laneSort: 'loads', laneDir: -1, laneAll: false, loadsAll: false, present: false });
-const RT_PERSIST = ['o', 'd', 'radius', 'preset', 'from', 'to', 'bucket', 'metric', 'equip', 'office', 'customer', 'incMulti', 'incOutliers', 'incQuotes', 'showBand', 'showLoads', 'showYoY', 'showExcl', 'laneSort', 'laneDir'];
+const RT_DEFAULT = () => ({ o: '', oGeo: null, oBad: false, d: '', dGeo: null, dBad: false, radius: 50, preset: '12mo', from: '', to: '', bucket: 'auto', metric: 'lf', equip: 'all', office: 'all', rep: 'all', customer: '', incMulti: false, incOutliers: false, incQuotes: false, showBand: true, showLoads: true, showYoY: true, focus: null, showExcl: false, laneSort: 'loads', laneDir: -1, laneAll: false, loadsAll: false, present: false });
+const RT_PERSIST = ['o', 'd', 'radius', 'preset', 'from', 'to', 'bucket', 'metric', 'equip', 'office', 'rep', 'customer', 'incMulti', 'incOutliers', 'incQuotes', 'showBand', 'showLoads', 'showYoY', 'showExcl', 'laneSort', 'laneDir'];
 function rtState() {
   if (S.rt) return S.rt;
   const d = RT_DEFAULT();
@@ -31520,7 +31575,7 @@ function rtData() {
     const lh = num(l.linehaul), fuel = num(l.fuel), lf = lh + fuel;
     return { l, id: l.id, ship: shipDate(l), pu, dr, stops: stops.length, miles, lh, fuel, lf, rpm: miles ? lf / miles : null, rpmLH: miles ? lh / miles : null,
       reefer: !!String(l.temp || '').trim(), paid: COVERED.includes(l.status), hot: HOT.includes(l.status), cancelled: l.status === 'Cancelled',
-      cust: String(l.customer || '').trim().toUpperCase(), office: l.office || '', pkey: placeKeyOf(pu, p0), dkey: placeKeyOf(dr, dN), pu0: p0, drN: dN };
+      cust: String(l.customer || '').trim().toUpperCase(), office: l.office || '', rep: l.salesRep || '', pkey: placeKeyOf(pu, p0), dkey: placeKeyOf(dr, dN), pu0: p0, drN: dN };
   });
   // places → markets (greedy, anchors fixed, no chaining)
   const places = new Map();
@@ -31561,7 +31616,7 @@ function rtEndMatch(g, rg, st, radius) {
   const d = milesBetween(rg, g); return d != null && d <= radius;
 }
 function rtLaneMatch(r, rt, swap = false) { const o = swap ? rt.dGeo : rt.oGeo, d = swap ? rt.oGeo : rt.dGeo; return rtEndMatch(r.pu, o, r.pu0.st, rt.radius) && rtEndMatch(r.dr, d, r.drN.st, rt.radius); }
-function rtDimMatch(r, rt) { if (rt.equip === 'reefer' && !r.reefer) return false; if (rt.equip === 'dry' && r.reefer) return false; if (rt.office !== 'all' && r.office !== rt.office) return false; if (rt.customer && r.cust !== rt.customer) return false; return true; }
+function rtDimMatch(r, rt) { if (rt.equip === 'reefer' && !r.reefer) return false; if (rt.equip === 'dry' && r.reefer) return false; if (rt.office !== 'all' && r.office !== rt.office) return false; if (rt.rep && rt.rep !== 'all' && r.rep !== rt.rep) return false; if (rt.customer && r.cust !== rt.customer) return false; return true; }
 function rtReason(r, rt) { // null = eligible for statistics
   if (r.cancelled) return 'cancelled'; if (r.hot) return 'quote'; if (!r.paid) return 'other';
   if (!r.ship) return 'no ship date'; if (!r.pu || !r.dr) return 'unmapped'; if (r.miles == null) return 'no miles'; if (r.lf <= 0) return 'no rate';
@@ -31628,7 +31683,7 @@ function rtCaption(M) {
   const rt = M.rt, r = rt.radius === 'state' ? 'State' : rt.radius === 0 ? 'Exact' : rt.radius + ' mi';
   const winLab = { '90d': '90d', '6mo': '6 mo', '12mo': '12 mo', all: 'All dates', custom: `${dts(M.win.from)}–${dts(M.win.to)}` }[rt.preset];
   const ends = rt.oGeo || rt.dGeo ? `${rt.oGeo ? `${rt.oGeo.name.toUpperCase()}, ${rt.oGeo.st} (${r})` : 'ANY ORIGIN'} → ${rt.dGeo ? `${rt.dGeo.name.toUpperCase()}, ${rt.dGeo.st} (${r})` : 'ANY DESTINATION'}` : 'All lanes';
-  const parts = [ends, M.laneSet && M.laneMi ? fmt(M.laneMi) + ' mi' : '', rt.equip === 'all' ? '' : (rt.equip === 'reefer' ? 'Reefer' : 'Dry'), rt.office === 'all' ? '' : rt.office + ' office', rt.customer || '', winLab, `${M.E.length} paid load${M.E.length === 1 ? '' : 's'}`, M.excluded.length ? `${M.excluded.length} excluded` : ''].filter(Boolean);
+  const parts = [ends, M.laneSet && M.laneMi ? fmt(M.laneMi) + ' mi' : '', rt.equip === 'all' ? '' : (rt.equip === 'reefer' ? 'Reefer' : 'Dry'), rt.office === 'all' ? '' : shortOffice(rt.office) + ' office', !rt.rep || rt.rep === 'all' ? '' : 'Rep ' + repFirst(rt.rep), rt.customer || '', winLab, `${M.E.length} paid load${M.E.length === 1 ? '' : 's'}`, M.excluded.length ? `${M.excluded.length} excluded` : ''].filter(Boolean);
   const pools = []; if (rt.oGeo && rt.radius !== 0 && rt.radius !== 'state') { const mk = rtNearestMarket(rt.oGeo); pools.push('Origin pool: ' + [...new Set(M.base.map(x => x.pu ? `${x.pu.name}${x.pu.name !== rt.oGeo.name ? ' ' + milesBetween(rt.oGeo, x.pu) + ' mi' : ''}` : null).filter(Boolean))].slice(0, 8).join(', ')); }
   if (rt.dGeo && rt.radius !== 0 && rt.radius !== 'state') pools.push('Dest pool: ' + [...new Set(M.base.map(x => x.dr ? `${x.dr.name}${x.dr.name !== rt.dGeo.name ? ' ' + milesBetween(rt.dGeo, x.dr) + ' mi' : ''}` : null).filter(Boolean))].slice(0, 8).join(', '));
   return `<div class="rt-cap"><strong>${esc(parts.join(' · '))}</strong>${pools.length ? `<div class="text-muted" style="font-size:12px">${esc(pools.join(' · '))}</div>` : ''}</div>`;
@@ -31640,7 +31695,7 @@ function rtFilters(M) {
   return `<div class="rt-filters no-print" id="rt-filters">
     <div class="rt-row">${endField('o', 'rtO', 'Origin — city or ZIP')}<button class="btn btn-secondary btn-sm rt-swap" data-act="rtSwap" aria-label="Swap origin and destination" title="Swap">↔</button>${endField('d', 'rtD', 'Destination — city or ZIP')}<span class="chip-lbl">Radius</span>${rtSeg([[0, 'Exact'], [50, '50 mi'], [100, '100 mi'], ['state', 'State']], rt.radius, 'rtSeg', 'radius')}</div>
     <div class="rt-row"><span class="chip-lbl">Dates</span><div class="chips">${[['90d', '90d'], ['6mo', '6 mo'], ['12mo', '12 mo'], ['all', 'All'], ['custom', 'Custom']].map(([v, l]) => rtChip(rt.preset === v, 'rtSeg', `data-k="preset" data-v="${v}"`, l)).join('')}</div>${rt.preset === 'custom' ? `<input class="input rt-date" type="date" value="${esc(rt.from)}" data-act="rtDate" data-k="from"><span class="text-muted" style="font-size:12px">to</span><input class="input rt-date" type="date" value="${esc(rt.to)}" data-act="rtDate" data-k="to">` : ''}<span class="chip-lbl">Bucket</span>${rtSeg([['auto', 'Auto'], ['week', 'Week'], ['month', 'Month']], rt.bucket, 'rtSeg', 'bucket')}<span class="chip-lbl">Metric</span>${rtSeg([['lf', '$/mi LH+fuel'], ['lh', '$/mi line haul'], ['flat', 'Flat $']], rt.metric, 'rtSeg', 'metric')}</div>
-    <div class="rt-row"><span class="chip-lbl">Equip</span><div class="chips">${[['all', 'All'], ['reefer', 'Reefer'], ['dry', 'Dry']].map(([v, l]) => rtChip(rt.equip === v, 'rtSeg', `data-k="equip" data-v="${v}"`, l)).join('')}</div><span class="chip-lbl">Office</span><div class="chips">${[['all', 'All'], ...OFFICES.map(o => [o, o])].map(([v, l]) => rtChip(rt.office === v, 'rtSeg', `data-k="office" data-v="${v}"`, l)).join('')}</div>
+    <div class="rt-row"><span class="chip-lbl">Equip</span><div class="chips">${[['all', 'All'], ['reefer', 'Reefer'], ['dry', 'Dry']].map(([v, l]) => rtChip(rt.equip === v, 'rtSeg', `data-k="equip" data-v="${v}"`, l)).join('')}</div><span class="chip-lbl">Office</span><div class="chips">${[['all', 'All'], ...OFFICES.map(o => [o, shortOffice(o)])].map(([v, l]) => rtChip(rt.office === v, 'rtSeg', `data-k="office" data-v="${esc(v)}"`, l)).join('')}</div><span class="chip-lbl">Rep</span><div class="chips">${[['all', 'All'], ...REPS.map(r => [r, repFirst(r)])].map(([v, l]) => rtChip((rt.rep || 'all') === v, 'rtSeg', `data-k="rep" data-v="${esc(v)}"`, l)).join('')}</div>
       <select class="input rt-cust" data-act="rtCustomer" aria-label="Customer"><option value="">All customers</option>${custs.map(c => `<option value="${esc(c)}"${rt.customer === c ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>
       <div class="chips">${rtChip(rt.incMulti, 'rtToggle', 'data-k="incMulti"', 'Include multi-stop')}${rtChip(rt.incOutliers, 'rtToggle', 'data-k="incOutliers"', 'Include outliers')}${rtChip(rt.incQuotes, 'rtToggle', 'data-k="incQuotes"', 'Include quotes')}<button class="chip clear" data-act="rtReset">✕ Clear</button></div></div>
   </div>`;
@@ -31863,7 +31918,7 @@ function demoHistory() {
   const COMM = { reefer: ['Table grapes — 34°F', 'Stone fruit — 34°F', 'Citrus — 38°F', 'Leafy greens — 34°F', 'Almonds', 'Frozen entrées — -10°F'], dry: ['Dry grocery', 'Paper products', 'Canned goods', 'Beverages'] };
   const pickW = arr => { const tot = arr.reduce((a, x) => a + x[4], 0); let r = rnd(tot); for (const x of arr) { r -= x[4]; if (r < 0) return x; } return arr[0]; };
   const today = todayISO(), start = monthStart(shiftMonths(today, -14)), totalDays = daysBetween(start, shift(today, -1));
-  const officeOf = st => ['CA', 'AZ', 'OR', 'WA', 'NV'].includes(st) ? 'Fresno' : ['TX', 'OK', 'NM'].includes(st) ? 'Dallas' : ['IL', 'WI', 'IA', 'MO', 'IN', 'MI', 'OH'].includes(st) ? 'Chicago' : ['GA', 'TN', 'KY', 'NC', 'FL', 'SC', 'AL'].includes(st) ? 'Atlanta' : 'Fresno';
+  const officeOf = (st, reefer, r) => ['OR', 'WA', 'ID'].includes(st) ? 'Tigard, OR' : ['IL', 'WI', 'IA', 'MO', 'IN', 'MI', 'OH', 'MN'].includes(st) ? 'Madison, WI' : ['CA', 'AZ', 'NV'].includes(st) ? (reefer ? (r % 3 === 0 ? 'Rocklin, CA' : 'Fresno Temp Controlled') : (r % 2 ? 'Fresno Dry' : 'Rocklin, CA')) : (r % 3 === 0 ? 'Rocklin, CA' : r % 3 === 1 ? 'Tigard, OR' : 'Fresno Dry');
   const out = []; let fn = 2430000;
   for (let i = 0; i < 420; i++) {
     let lane = pickW(LANES), tries = 0;
@@ -31887,11 +31942,190 @@ function demoHistory() {
     const drops = [stop(dc, dg, 'test 1234', del, '06:00', 'Distribution Center')];
     if (multi) { const dc2 = dm[(dm.indexOf(dc) + 1) % dm.length]; drops.push(stop(dc2, null, 'test 1234', shift(del, 1), '08:00', 'Distribution Center')); pu.lines.push({ id: uid(), no: 'test 1234', pos: 'Tail', commodity: comm, pallets: '4', cases: '160', weight: '6000', dropIdx: 1 }); }
     if (['Delivered', 'Invoiced'].includes(status)) { const lateMin = rnd(100) < 75 ? -(15 + rnd(90)) : 20 + rnd(240); const t = new Date(del + 'T06:00:00'); t.setMinutes(t.getMinutes() + lateMin); drops[0].inAt = localDT(t.getTime()); drops[0].outAt = localDT(t.getTime() + (45 + rnd(90)) * 60000); }
-    out.push({ id: 'H' + fileNo, fileNo, customer: cust[0], customerEmail: '', fileIn: 'DG', trIn: 'DG', status, temp: reefer ? (rnd(8) === 0 ? '-10°F continuous' : '34°F continuous') : '', office: officeOf(oc[1]),
+    out.push({ id: 'H' + fileNo, fileNo, customer: cust[0], customerEmail: '', fileIn: 'DG', trIn: 'DG', status, temp: reefer ? (rnd(8) === 0 ? '-10°F continuous' : '34°F continuous') : '', office: officeOf(oc[1], reefer, rnd(6)), salesRep: REPS[rnd(REPS.length)],
       linehaul: String(linehaul), fuel: String(fuel), accessorial: String(acc), carrierName: COVERED.includes(status) ? CARR[rnd(CARR.length)] : '', carrierEmail: '', carrier: blankCarrier(), tracking: blankTracking(),
       pickups: [pu], drops, createdAt: parseLocal(ship + 'T12:00').getTime() - (1 + rnd(5)) * 864e5 });
   }
   return out.sort((a, b) => a.pickups[0].date.localeCompare(b.pickups[0].date));
+}
+
+// ── Offices, sales reps and board views ────────────────────────────────────
+const idHash = s => { let h = 7; for (const ch of String(s)) h = (h * 31 + ch.charCodeAt(0)) & 0x7fffffff; return h; };
+const repShort = n => { const p = String(n || '').split(/\s+/); return p.length > 1 ? `${p[0][0]}. ${p.slice(1).join(' ')}` : (n || ''); };
+const repFirst = n => String(n || '').split(/\s+/)[0] || '';
+const repFromSlug = s => REPS.find(r => repSlug(r) === String(s || '').toLowerCase()) || '';
+const officeFromSlug = s => { const m = OFFICE_META.find(o => o[2] === String(s || '').toLowerCase()); return m ? m[0] : ''; };
+const repIsUser = () => !!(S.user && REPS.includes(S.user.name));
+
+// one-time migration of anything saved under the old office names
+function migrateOffices() {
+  const demo = id => /^[LX]/.test(String(id));
+  S.loads.forEach(l => {
+    if (!OFFICES.includes(l.office)) {
+      if (demo(l.id) || !l.office || l.office === 'Fresno') l.office = demo(l.id) ? OFFICES[0] : (String(l.temp || '').trim() ? OFFICES[0] : OFFICES[1]);
+      else l.office = OFFICE_MIGRATE[l.office] || OFFICES[1 + (idHash(l.id) % 4)];
+    }
+    if (!l.salesRep) l.salesRep = REPS[idHash(l.id) % REPS.length];
+  });
+  S.carriers.forEach(c => { c.offices = [...new Set((c.offices || []).map(o => OFFICES.includes(o) ? o : (OFFICE_MIGRATE[o] || OFFICES[0])))]; });
+  if (S.user && !OFFICES.includes(S.user.office)) S.user.office = OFFICE_MIGRATE[S.user.office] || OFFICES[0];
+}
+
+// demo loads for the four offices that had none (added once per browser)
+function demoOfficeLoads() {
+  let seed = 20260923; const rnd = n => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; seed &= 0x7fffffff; return seed % n; };
+  const O = {
+    'Fresno Dry': { orig: [['Fresno', 'CA', '93725', 'Central Valley Dry Goods'], ['Fresno', 'CA', '93727', 'Sun Valley Packaging'], ['Visalia', 'CA', '93291', 'Sierra Paper Products'], ['Madera', 'CA', '93637', 'Madera Bottling']], dest: [['Phoenix', 'AZ', '85043'], ['Las Vegas', 'NV', '89115'], ['Salt Lake City', 'UT', '84104'], ['Denver', 'CO', '80239'], ['Dallas', 'TX', '75236'], ['Los Angeles', 'CA', '90058']], comm: [['Dry grocery', 'Dry van', 26, 2080, 42000], ['Paper products', 'Dry van', 24, 960, 36000], ['Bottled water', 'Dry van', 22, 1320, 44000], ['Packaging film', 'Dry van', 20, 400, 30000], ['Canned goods', 'Dry van', 26, 2600, 44500]], cust: ['Mosqueda Inc.', 'Central Valley Foods', 'Pacific Grocers', 'Heartland Foods'], rpm: 2.35 },
+    'Rocklin, CA': { orig: [['Rocklin', 'CA', '95765', 'Placer Building Supply'], ['Sacramento', 'CA', '95828', 'Capitol Canning'], ['Roseville', 'CA', '95678', 'Roseville Steel'], ['Stockton', 'CA', '95206', 'Delta Lumber Yard']], dest: [['Reno', 'NV', '89506'], ['Portland', 'OR', '97218'], ['Boise', 'ID', '83716'], ['Los Angeles', 'CA', '90058'], ['Phoenix', 'AZ', '85043'], ['Salt Lake City', 'UT', '84104']], comm: [['Dimensional lumber', 'Flatbed', 0, 0, 46000], ['Steel rebar bundles', 'Flatbed', 0, 0, 47000], ['Canned tomatoes', 'Dry van', 26, 2600, 44800], ['Roofing shingles', 'Flatbed', 24, 0, 45000], ['Building insulation', 'Dry van', 20, 320, 18000]], cust: ['Placer Building Supply', 'Capitol Canning', 'Sierra Pacific Homes', 'Western Steel Co.'], rpm: 2.55 },
+    'Tigard, OR': { orig: [['Tigard', 'OR', '97223', 'Tigard Paper Mill'], ['Portland', 'OR', '97218', 'Columbia Seafood Co.'], ['Salem', 'OR', '97301', 'Willamette Nursery'], ['Tacoma', 'WA', '98421', 'Puget Sound Lumber']], dest: [['Seattle', 'WA', '98108'], ['Boise', 'ID', '83716'], ['Sacramento', 'CA', '95828'], ['Spokane', 'WA', '99216'], ['Salt Lake City', 'UT', '84104'], ['Fresno', 'CA', '93725']], comm: [['Kraft paper rolls', 'Dry van', 20, 20, 42000], ['Frozen seafood 0°F', 'Reefer', 22, 1100, 38000], ['Nursery stock', 'Dry van', 18, 900, 24000], ['Plywood units', 'Flatbed', 0, 0, 46500], ['Cedar fencing', 'Flatbed', 0, 0, 44000]], cust: ['Tigard Paper Mill', 'Columbia Seafood Co.', 'Northwest Home Centers', 'Cascade Foods'], rpm: 2.7 },
+    'Madison, WI': { orig: [['Madison', 'WI', '53718', 'Badger State Dairy'], ['Milwaukee', 'WI', '53207', 'Lakeshore Machinery'], ['Green Bay', 'WI', '54304', 'Fox River Paper'], ['Janesville', 'WI', '53546', 'Rock County Foods']], dest: [['Chicago', 'IL', '60632'], ['Minneapolis', 'MN', '55430'], ['Indianapolis', 'IN', '46241'], ['Columbus', 'OH', '43217'], ['Kansas City', 'MO', '64120'], ['Detroit', 'MI', '48209']], comm: [['Cheese 38°F', 'Reefer', 22, 1760, 42000], ['Paper products', 'Dry van', 24, 960, 36000], ['Industrial machinery', 'Flatbed', 0, 0, 45000], ['Dry grocery', 'Dry van', 26, 2080, 42000], ['Snack foods', 'Dry van', 24, 2400, 28000]], cust: ['Badger State Dairy', 'Lakeshore Machinery', 'Great Lakes Grocers', 'Fox River Paper'], rpm: 2.4 }
+  };
+  const MI = { 'Phoenix': 590, 'Las Vegas': 400, 'Salt Lake City': 800, 'Denver': 1150, 'Dallas': 1600, 'Los Angeles': 220, 'Reno': 130, 'Portland': 580, 'Boise': 520, 'Seattle': 170, 'Sacramento': 580, 'Spokane': 350, 'Fresno': 750, 'Chicago': 150, 'Minneapolis': 270, 'Indianapolis': 330, 'Columbus': 500, 'Kansas City': 520, 'Detroit': 400 };
+  const ST = ['Open', 'Quoted', 'Tendered', 'Tendered', 'Booked', 'Booked', 'Dispatched', 'In Transit', 'In Transit', 'Delivered', 'Invoiced'];
+  const CARR = ['Ganske Truck', 'Sierra Reefer Lines', 'Valley Star Transport', 'Rio Grande Freight', 'Great Lakes Haulers', 'Peach State Logistics'];
+  const out = []; let fn = 2442000; let k = 0;
+  Object.entries(O).forEach(([office, cfg]) => {
+    for (let i = 0; i < 22; i++) {
+      fn += 1 + rnd(7); const o = cfg.orig[rnd(cfg.orig.length)], d = cfg.dest[rnd(cfg.dest.length)], c = cfg.comm[rnd(cfg.comm.length)];
+      const status = ST[rnd(ST.length)], date = demoPickupDate(rnd(20)), del = shift(date, 1 + Math.round((MI[d[0]] || 500) / 550) + rnd(2));
+      const miles = MI[d[0]] || 500, rate = Math.round((cfg.rpm + (c[1] === 'Reefer' ? .35 : c[1] === 'Flatbed' ? .25 : 0)) * miles / 25) * 25 + 150;
+      const rep = REPS[(k++ + rnd(3)) % REPS.length], fileNo = String(fn), reefer = c[1] === 'Reefer';
+      const pu = { id: uid(), facilityId: '', name: o[3], address: `${1200 + rnd(8000)} Industrial Way`, city: o[0], st: o[1], zip: o[2], contact: 'Shipping Office', phone: `(${o[1] === 'WI' ? '608' : o[1] === 'OR' ? '503' : o[1] === 'WA' ? '253' : '916'}) 555-01${String(10 + rnd(89))}`, ref: 'test 1234', po: '', date, time: ['07:00', '08:00', '10:00', '13:00'][rnd(4)], notes: '', lines: [{ id: uid(), no: 'test 1234', pos: '', commodity: c[0], pallets: String(c[2]), cases: String(c[3]), weight: String(c[4]), dropIdx: 0 }] };
+      const dl = { id: uid(), facilityId: '', name: `${d[0]} Distribution Center`, address: `${400 + rnd(6000)} Commerce Dr`, city: d[0], st: d[1], zip: d[2], contact: 'Receiving', phone: '', ref: 'test 1234', po: '', date: del, time: '06:00', notes: '' };
+      const l = { id: 'O' + fileNo, fileNo, customer: cfg.cust[rnd(cfg.cust.length)], customerEmail: '', fileIn: rep.split(' ').map(w => w[0]).join(''), trIn: rep.split(' ').map(w => w[0]).join(''), status, temp: reefer ? (c[0].match(/-?\d+°F/) || ['34°F'])[0] + ' continuous' : '', equip: c[1], office, salesRep: rep,
+        linehaul: String(Math.round(rate * .86)), fuel: String(rate - Math.round(rate * .86)), accessorial: '0', carrierName: COVERED.includes(status) ? CARR[rnd(CARR.length)] : '', carrierEmail: '', carrier: blankCarrier(), tracking: blankTracking(), pickups: [pu], drops: [dl], createdAt: Date.now() - (1 + rnd(90)) * 36e5 };
+      if (['Delivered', 'Invoiced'].includes(status)) { const lateMin = rnd(10) < 7 ? -(15 + rnd(90)) : 20 + rnd(240); const t = new Date(del + 'T06:00:00'); t.setMinutes(t.getMinutes() + lateMin); dl.inAt = localDT(t.getTime()); dl.outAt = localDT(t.getTime() + (45 + rnd(90)) * 60000); }
+      out.push(l);
+    }
+  });
+  return out;
+}
+function officeSeedOnce() {
+  let done = false; try { done = localStorage.getItem('jts_office_seed') === '1'; } catch (e) {}
+  if (done || S.loads.some(l => String(l.id).startsWith('O'))) return;
+  S.loads = [...S.loads, ...demoOfficeLoads()];
+  try { localStorage.setItem('jts_office_seed', '1'); } catch (e) {}
+}
+
+// ── board view: offices in view, rep in view, saved views, hash ────────────
+const BV_KEY = () => 'jts_boardview_' + ((S.user && S.user.username) || 'anon');
+const SV_KEY = () => 'jts_saved_views_' + ((S.user && S.user.username) || 'anon');
+const bvHome = () => (S.user && OFFICES.includes(S.user.office)) ? S.user.office : OFFICES[0];
+function bvDefault() { return { offices: [bvHome()], rep: '' }; }
+function bvLoad() {
+  let v = null; try { v = JSON.parse(localStorage.getItem(BV_KEY())); } catch (e) {}
+  const d = bvDefault();
+  if (v && (v.offices === 'all' || Array.isArray(v.offices))) { d.offices = v.offices === 'all' ? 'all' : v.offices.filter(o => OFFICES.includes(o)); if (d.offices !== 'all' && !d.offices.length) d.offices = [bvHome()]; }
+  if (v && v.rep && REPS.includes(v.rep)) d.rep = v.rep;
+  S.bv = d; S.savedViews = (() => { try { return JSON.parse(localStorage.getItem(SV_KEY())) || []; } catch (e) { return []; } })();
+  applyHash();
+}
+const bvOffices = () => (S.bv.rep || S.bv.offices === 'all') ? OFFICES.slice() : S.bv.offices;
+const bvIsAll = () => !!S.bv.rep || S.bv.offices === 'all';
+const bvMulti = () => bvOffices().length > 1;
+function inView(l) { if (S.bv.rep) return l.salesRep === S.bv.rep; return bvIsAll() || S.bv.offices.includes(l.office); }
+function bvSave() { try { localStorage.setItem(BV_KEY(), JSON.stringify({ offices: S.bv.offices, rep: S.bv.rep })); } catch (e) {} }
+function bvHash() { const o = S.bv.rep ? 'all' : (S.bv.offices === 'all' ? 'all' : S.bv.offices.map(x => OFFICE_META.find(m => m[0] === x)[2]).join(',')); return '#office=' + o + (S.bv.rep ? '&rep=' + repSlug(S.bv.rep) : ''); }
+function syncHash() { try { const h = bvHash(); if (location.hash !== h) history.replaceState(null, '', h); } catch (e) {} }
+function applyHash() { // #office=rocklin,tigard&rep=grayson
+  const h = (location.hash || '').replace(/^#/, ''); if (!/(^|&)(office|rep)=/.test(h)) return false;
+  const q = {}; h.split('&').forEach(p => { const [k, v] = p.split('='); if (k) q[k] = decodeURIComponent(v || ''); });
+  if (q.rep !== undefined) S.bv.rep = repFromSlug(q.rep);
+  if (q.office !== undefined) { if (q.office === 'all' || q.office === '') S.bv.offices = 'all'; else { const arr = q.office.split(',').map(officeFromSlug).filter(Boolean); S.bv.offices = arr.length ? arr : [bvHome()]; } }
+  S.dateScope = 'all'; // a shared link opens on the whole view, not just today's date
+  return true;
+}
+function bvSet(patch, opts = {}) {
+  Object.assign(S.bv, patch);
+  if (S.bv.offices !== 'all' && !S.bv.offices.length) S.bv.offices = [bvHome()];
+  bvSave(); syncHash();
+  if (S.view !== 'board') { set({ view: 'board', openMenu: null }); window.scrollTo(0, 0); } else renderBoardBody();
+  if (opts.focusSearch) { const i = document.querySelector('[data-bind="search"]'); if (i) i.focus(); }
+}
+const bvOfficeLabel = () => S.bv.rep || S.bv.offices === 'all' ? 'All offices' : S.bv.offices.length === OFFICES.length ? 'All offices' : S.bv.offices.map(shortOffice).join(' + ');
+function viewLineText(n) {
+  const st = S.statusFilter.length ? S.statusFilter.join(' / ') : S.onlyDelayed ? 'delayed' : S.onlyOverdueCC ? 'overdue check call' : '';
+  return `Viewing: ${bvOfficeLabel()}, ${S.bv.rep ? repFirst(S.bv.rep) + (S.bv.rep === (S.user || {}).name ? ' (my loads)' : '') : 'all reps'}${st ? ', ' + st : ''}, ${n} load${n === 1 ? '' : 's'}${S.search.trim() ? `, matching "${S.search.trim()}"` : ''}`;
+}
+function emptyStateText() {
+  const st = S.statusFilter.length ? S.statusFilter.join(' / ').toLowerCase() : S.onlyDelayed ? 'delayed' : S.onlyOverdueCC ? 'overdue check call' : 'open';
+  const who = S.bv.rep ? ` for ${repFirst(S.bv.rep)}` : '';
+  const where = S.bv.rep || bvIsAll() ? '' : ` in ${S.bv.offices.map(shortOffice).join(' + ')}`;
+  const when = S.dateScope === 'all' ? '' : S.dateScope === 'week' ? ' this week' : ' on this date';
+  return `No ${st} loads${who}${where}${when}${S.search.trim() ? ` matching "${S.search.trim()}"` : ''}.`;
+}
+function renderViewControls() { // office tabs, offices dropdown, rep select, My loads, saved views, clear
+  const all = bvIsAll(), sel = S.bv.offices === 'all' ? OFFICES : S.bv.offices;
+  const counts = {}; OFFICES.forEach(o => { counts[o] = { n: 0, unc: 0 }; });
+  const scoped = S.loads.filter(l => inScope((l.pickups[0] || {}).date));
+  scoped.forEach(l => { const c = counts[l.office]; if (c) { c.n++; if (HOT.includes(l.status)) c.unc++; } });
+  const repN = {}; REPS.forEach(r => { repN[r] = S.loads.filter(l => l.salesRep === r && OPENISH.includes(l.status)).length; });
+  const tab = (o, i) => `<button class="${!all && sel.length === 1 && sel[0] === o ? 'on' : (!all && sel.includes(o) ? 'on part' : '')}" data-act="offTab" data-o="${esc(o)}" title="${esc(o)} · ${counts[o].n} loads, ${counts[o].unc} uncovered · press ${i + 1}"><i class="off-dot" style="background:${officeColor(o)}"></i>${esc(shortOffice(o))} <span class="n">${counts[o].n}</span>${counts[o].unc ? `<span class="n unc">${counts[o].unc}</span>` : ''}</button>`;
+  const allN = scoped.length, allU = scoped.filter(l => HOT.includes(l.status)).length;
+  return `<div class="seg off-tabs">${OFFICES.map(tab).join('')}<button class="${all ? 'on' : ''}" data-act="offAll" title="All offices · press 0">All <span class="n">${allN}</span>${allU ? `<span class="n unc">${allU}</span>` : ''}</button></div>
+    <div class="off-pick"><button class="btn btn-secondary btn-sm" data-act="offMenu" title="Pick several offices">Offices ▾</button>${S.officeMenu ? `<div class="off-menu">${OFFICES.map(o => `<label class="chk"><input type="checkbox" data-act="offChk" data-o="${esc(o)}"${!all && sel.includes(o) ? ' checked' : ''}${S.bv.rep ? ' disabled' : ''}> <i class="off-dot" style="background:${officeColor(o)}"></i>${esc(o)}</label>`).join('')}<label class="chk"><input type="checkbox" data-act="offChk" data-o="*"${all ? ' checked' : ''}${S.bv.rep ? ' disabled' : ''}> All offices</label>${S.bv.rep ? '<div class="text-muted" style="font-size:11px;padding:4px 2px">Showing all offices while a rep is selected</div>' : ''}</div>` : ''}</div>
+    <select class="input rep-sel" data-act="repSel" title="Sales rep"><option value="">All reps</option>${REPS.map(r => `<option value="${esc(r)}"${S.bv.rep === r ? ' selected' : ''}>${esc(r)} (${repN[r]})</option>`).join('')}</select>
+    <button class="btn btn-secondary btn-sm${S.bv.rep && S.bv.rep === (S.user || {}).name ? ' on' : ''}" data-act="myLoads" title="Your loads across every office · press M">My Loads</button>
+    <select class="input sv-sel" data-act="viewPick" title="Saved views"><option value="">Saved views</option>${S.savedViews.map((v, i) => `<option value="v:${i}">${esc(v.name)}</option>`).join('')}<option value="save">Save current view...</option>${S.savedViews.length ? '<option value="del">Delete a saved view...</option>' : ''}</select>
+    <button class="btn btn-secondary btn-sm" data-act="clearFilters" title="Back to your home office, all reps, all statuses">Clear filters</button>
+    ${isMobile() ? '' : '<button class="btn btn-ghost btn-sm kbd-hint" data-act="kbdHelp" title="Keyboard shortcuts">?</button>'}`;
+}
+function renderLegend() {
+  if (!bvMulti()) return '';
+  return `<div class="off-legend">${bvOffices().map(o => `<span><i class="off-dot" style="background:${officeColor(o)}"></i>${esc(shortOffice(o))}</span>`).join('')}</div>`;
+}
+function boardCols() { // office column only when more than one office is on screen; rep column always
+  const cols = COLS.slice();
+  cols.splice(5, 0, { key: 'rep', label: 'Rep', align: 'l', w: 92 });
+  if (bvMulti()) cols.splice(4, 0, { key: 'office', label: 'Office', align: 'l', w: 90 });
+  return cols;
+}
+function saveViewDialog() {
+  dialog({ title: 'Save this view', body: `${bvOfficeLabel()}, ${S.bv.rep ? repFirst(S.bv.rep) : 'all reps'}${S.statusFilter.length ? ', ' + S.statusFilter.join(' / ') : ''}. Give it a name.`, input: 'text', placeholder: 'e.g. Rocklin + Tigard uncovered', okLabel: 'Save view' }).then(name => {
+    name = String(name || '').trim(); if (!name) { renderBoardBody(); return; }
+    S.savedViews = S.savedViews.filter(v => v.name.toLowerCase() !== name.toLowerCase());
+    S.savedViews.push({ name, offices: S.bv.offices, rep: S.bv.rep, statusFilter: S.statusFilter.slice(), onlyDelayed: S.onlyDelayed, onlyOverdueCC: S.onlyOverdueCC });
+    try { localStorage.setItem(SV_KEY(), JSON.stringify(S.savedViews)); } catch (e) {}
+    renderBoardBody();
+  });
+}
+function deleteViewDialog() {
+  dialog({ title: 'Delete a saved view', body: 'Saved: ' + S.savedViews.map(v => v.name).join(' · ') + '. Type the name to delete.', input: 'text', placeholder: 'View name', okLabel: 'Delete', danger: true }).then(name => {
+    name = String(name || '').trim().toLowerCase(); const before = S.savedViews.length;
+    if (name) S.savedViews = S.savedViews.filter(v => v.name.toLowerCase() !== name);
+    if (S.savedViews.length !== before) { try { localStorage.setItem(SV_KEY(), JSON.stringify(S.savedViews)); } catch (e) {} }
+    renderBoardBody();
+  });
+}
+function applySavedView(v) {
+  S.statusFilter = (v.statusFilter || []).slice(); S.onlyDelayed = !!v.onlyDelayed; S.onlyOverdueCC = !!v.onlyOverdueCC;
+  bvSet({ offices: v.offices === 'all' ? 'all' : (v.offices || []).filter(o => OFFICES.includes(o)), rep: REPS.includes(v.rep) ? v.rep : '' });
+}
+function kbdHelpDialog() {
+  notify('Keyboard shortcuts', '1 to 5: jump to an office (Fresno TC, Fresno Dry, Rocklin, Tigard, Madison) · 0: all offices · M: My Loads · /: search · Esc: clear the search box. Shortcuts work on the board when no field is focused.');
+}
+const OFFICE_ACT = {
+  offTab: (el, e) => { const o = el.dataset.o; const add = e && (e.shiftKey || e.ctrlKey || e.metaKey); let offices; if (add && S.bv.offices !== 'all') { offices = S.bv.offices.includes(o) ? S.bv.offices.filter(x => x !== o) : [...S.bv.offices, o]; } else offices = [o]; bvSet({ offices, rep: '' }); },
+  offAll: () => bvSet({ offices: 'all', rep: '' }),
+  offMenu: () => { S.officeMenu = !S.officeMenu; renderBoardBody(); },
+  offChk: el => { const o = el.dataset.o; if (o === '*') { bvSet({ offices: el.checked ? 'all' : [bvHome()] }); return; } let arr = S.bv.offices === 'all' ? OFFICES.slice() : S.bv.offices.slice(); arr = el.checked ? [...new Set([...arr, o])] : arr.filter(x => x !== o); S.officeMenu = true; bvSet({ offices: arr.length === OFFICES.length ? 'all' : arr }); },
+  repSel: el => bvSet({ rep: el.value }),
+  myLoads: () => { if (!repIsUser()) { notify('Not on the rep list', `${S.user.name} is not one of the sales reps, so there are no loads to show. Pick a rep from the dropdown instead.`); return; } bvSet({ rep: S.bv.rep === S.user.name ? '' : S.user.name }); },
+  clearFilters: () => { S.statusFilter = []; S.onlyDelayed = false; S.onlyOverdueCC = false; S.search = ''; S.officeMenu = false; const i = document.querySelector('[data-bind="search"]'); if (i) i.value = ''; bvSet({ offices: [bvHome()], rep: '' }); },
+  viewPick: el => { const v = el.value; el.value = ''; if (v === 'save') saveViewDialog(); else if (v === 'del') deleteViewDialog(); else if (v.startsWith('v:')) { const sv = S.savedViews[+v.slice(2)]; if (sv) applySavedView(sv); } },
+  kbdHelp: () => kbdHelpDialog(),
+  draftRep: el => { S.draft.salesRep = el.value; }
+};
+const OFFICE_CHANGE = ['offChk', 'repSel', 'viewPick', 'draftRep'];
+function boardKeys(e) {
+  if (!S.user || S.view !== 'board' || isMobile() || e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target; if (t && (t.matches('input, select, textarea') || t.isContentEditable)) { if (e.key === 'Escape' && t.dataset && t.dataset.bind === 'search') { t.value = ''; S.search = ''; renderBoardBody(); } return; }
+  if (document.querySelector('.dialog-backdrop')) return;
+  if (e.key >= '1' && e.key <= '5') { e.preventDefault(); bvSet({ offices: [OFFICES[+e.key - 1]], rep: '' }); }
+  else if (e.key === '0') { e.preventDefault(); bvSet({ offices: 'all', rep: '' }); }
+  else if (e.key === 'm' || e.key === 'M') { e.preventDefault(); ACT.myLoads(); }
+  else if (e.key === '/') { e.preventDefault(); const i = document.querySelector('[data-bind="search"]'); if (i) { i.focus(); i.select(); } }
+  else if (e.key === '?') { e.preventDefault(); kbdHelpDialog(); }
 }
 
 // ── Carrier vetting · Rate confirmation · Check-call timeline ──────────────
@@ -31900,6 +32134,14 @@ const fmtLong = ts => new Date(ts).toLocaleString('en-US', { month: 'short', day
 const fmtDur = m => { m = Math.max(0, Math.round(m)); const d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60; return d ? `${d}d ${h}h` : h ? `${h}h ${String(mm).padStart(2, '0')}m` : `${mm}m`; };
 const fileLoad = () => S.loads.find(x => x.id === S.tenderId);
 const noDash = t => String(t).replace(/\s*[\u2014\u2013]\s*/g, ' - ');
+function stripDashes(root) { // visible text only: text nodes, placeholders and titles
+  if (!root) return;
+  const fix = t => t === '\u2014' || t.trim() === '\u2014' ? t.replace('\u2014', '-') : t.replace(/\s*\u2014\s*/g, ' - ').replace(/\u2013/g, '-');
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n => /[\u2014\u2013]/.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT });
+  const nodes = []; while (w.nextNode()) nodes.push(w.currentNode);
+  nodes.forEach(n => { n.nodeValue = fix(n.nodeValue); });
+  root.querySelectorAll('[placeholder], [title]').forEach(el => { ['placeholder', 'title'].forEach(a => { const v = el.getAttribute(a); if (v && /[\u2014\u2013]/.test(v)) el.setAttribute(a, fix(v)); }); });
+}
 // Tap-to-call: any phone number shown as text becomes a tel: link (inputs, buttons and existing links are left alone)
 const PHONE_RE = /(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}(?!\d)/g;
 const telHref = m => { const d = m.replace(/\D/g, ''); return 'tel:' + (d.length === 10 ? '+1' + d : '+' + d); };
@@ -32033,7 +32275,7 @@ const rcAccBlank = () => RC_ACC.map(([key, label, basis]) => ({ key, label, basi
 const tempSetpoint = l => { const m = String(l.temp || '').match(/-?\d+(\.\d+)?/); return m ? parseFloat(m[0]) : null; };
 function rcDefaults(l) {
   const sp = tempSetpoint(l);
-  return { equipment: l.temp ? 'Reefer' : 'Dry van', tempSet: sp === null ? '' : String(sp), tempMode: /cycle/i.test(l.temp || '') ? 'Cycle' : 'Continuous', linehaul: String(num(l.linehaul)), fuel: String(num(l.fuel)), other: String(num(l.accessorial)), acc: rcAccBlank(), terms: PAY_TERMS[0], notes: '' };
+  return { equipment: l.equip && EQUIPMENT.includes(l.equip) ? l.equip : (l.temp ? 'Reefer' : 'Dry van'), tempSet: sp === null ? '' : String(sp), tempMode: /cycle/i.test(l.temp || '') ? 'Cycle' : 'Continuous', linehaul: String(num(l.linehaul)), fuel: String(num(l.fuel)), other: String(num(l.accessorial)), acc: rcAccBlank(), terms: PAY_TERMS[0], notes: '' };
 }
 function ensureRcDraft(l) { if (!S.rcDraft || S.rcDraft._id !== l.id) S.rcDraft = { _id: l.id, ...clone(l.rateCon ? l.rateCon.form : rcDefaults(l)) }; }
 const rcTotal = f => num(f.linehaul) + num(f.fuel) + num(f.other) + (f.acc || []).reduce((s, a) => s + num(a.pre), 0);
@@ -32646,7 +32888,7 @@ function render() {
   if (!S.user) {
     document.body.classList.remove('dwell-alert'); document.documentElement.classList.remove('dwell-alert');
     login.classList.remove('hidden'); strip.classList.add('hidden'); nav.classList.add('hidden'); view.innerHTML = '';
-    login.innerHTML = renderLogin(); const u = $('#login-user'); if (u) u.focus();
+    login.innerHTML = renderLogin(); stripDashes(login); const u = $('#login-user'); if (u) u.focus();
     return;
   }
   document.body.classList.toggle('m', isMobile());
@@ -32666,7 +32908,7 @@ function render() {
   else if (S.view === 'carrier') v.innerHTML = renderCarrierDetail();
   else if (S.view === 'report') v.innerHTML = renderReport();
   else if (S.view === 'rates') { v.innerHTML = renderRates(); rtRefresh(); }
-  linkifyPhones(v);
+  linkifyPhones(v); stripDashes(app);
   measureShell();
 }
 function measureShell() {
@@ -32700,6 +32942,7 @@ const ACT = {
   cancel: () => { set({ draft: null, view: 'board' }); window.scrollTo(0, 0); },
   save: () => saveDraft(),
   draftStatus: el => { S.draft.status = el.value; },
+  draftOffice: el => { S.draft.office = el.value; },
   facility: el => {
     const kind = el.dataset.kind, i = +el.dataset.i, id = el.value;
     const src = (kind === 'pickups' ? S.shippers : S.receivers).find(x => x.id === id);
@@ -32880,8 +33123,11 @@ const ACT = {
   addFac: el => { const k = el.dataset.kind, cur = S.dirDraft[k]; if (!cur.name.trim()) return; S[k] = [...S[k], { id: uid(), ...cur }]; S.dirDraft[k] = blankFac(); persist(); render(); },
   rmFac: el => { const k = el.dataset.kind; S[k] = S[k].filter(x => x.id !== el.dataset.id); persist(); render(); }
 };
-const CHANGE_ACTS = new Set(['dateSet', 'draftStatus', 'facility', 'dropIdx', 'userRole', 'userOffice', 'carPick', 'carOffice', 'rtCustomer', 'rtDate', 'sortSel', 'evType']);
+const CHANGE_ACTS = new Set(['dateSet', 'draftStatus', 'draftOffice', 'facility', 'dropIdx', 'userRole', 'userOffice', 'carPick', 'carOffice', 'rtCustomer', 'rtDate', 'sortSel', 'evType']);
 Object.assign(ACT, OPS_ACT); OPS_CHANGE.forEach(a => CHANGE_ACTS.add(a));
+Object.assign(ACT, OFFICE_ACT); OFFICE_CHANGE.forEach(a => CHANGE_ACTS.add(a));
+document.addEventListener('keydown', boardKeys);
+window.addEventListener('hashchange', () => { if (!S.user || !S.bv) return; if (applyHash()) { bvSave(); if (S.view !== 'board') { set({ view: 'board', openMenu: null }); } else renderBoardBody(); } });
 I.doc12 = svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8"></path>', 12);
 I.clock18 = svg('<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>', 18);
 I.shield18 = svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path>', 18);
@@ -32908,7 +33154,7 @@ app.addEventListener('input', e => {
   setPath(S, path, el.value);
   if (el.dataset.ac) { if (el.dataset.ac === 'track') S.trackDraft.geo = null; if (el.dataset.ac === 'rtO') { S.rt.oGeo = null; S.rt.oBad = false; } if (el.dataset.ac === 'rtD') { S.rt.dGeo = null; S.rt.dBad = false; } acShow(el); }
   if (path === 'search') renderBoardBody();
-  else if (path === 'carSearch') { const v = $('#view'); const y = window.scrollY; v.innerHTML = renderCarriers(); window.scrollTo(0, y); const inp = document.querySelector('[data-bind="carSearch"]'); if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } }
+  else if (path === 'carSearch') { const v = $('#view'); const y = window.scrollY; v.innerHTML = renderCarriers(); stripDashes(v); window.scrollTo(0, y); const inp = document.querySelector('[data-bind="carSearch"]'); if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } }
   else if (path === 'trackDraft.nextStop') refreshDistances();
   else if (path.startsWith('calc.')) { if (path === 'calc.origin') S.calc.oGeo = null; if (path === 'calc.dest') S.calc.dGeo = null; const o = $('#calc-out'); if (o) o.innerHTML = calcOut(); }
   else if (path.startsWith('draft.')) builderDerived();
@@ -32931,7 +33177,7 @@ app.addEventListener('submit', e => {
   const u = signIn(form.username.value, form.password.value);
   if (!u) { S.loginErr = 'Wrong username or password.'; $('#login-err').textContent = S.loginErr; form.password.value = ''; form.password.focus(); return; }
   writeSession(u.username, form.remember.checked);
-  S.user = u; S.users = loadUsers(); S.loginErr = ''; render();
+  S.user = u; S.users = loadUsers(); S.loginErr = ''; migrateOffices(); bvLoad(); render();
 });
 
 // menubar: click toggles, hover switches once one is open, outside click / Escape closes
@@ -32948,7 +33194,7 @@ menubar.addEventListener('mouseover', e => {
   S.hoverMenu = label; if (S.openMenu && label) S.openMenu = label; renderMenubar();
 });
 menubar.addEventListener('mouseleave', () => { if (S.hoverMenu) { S.hoverMenu = null; renderMenubar(); } });
-document.addEventListener('pointerdown', e => { if (S.openMenu && !(e.target.closest && e.target.closest('[data-menubar]'))) { S.openMenu = null; renderMenubar(); } if (!(e.target.closest && e.target.closest('#rt-chart'))) rtHideTip(); }, true);
+document.addEventListener('pointerdown', e => { if (S.officeMenu && !(e.target.closest && e.target.closest('.off-pick'))) { S.officeMenu = false; if (S.view === 'board') renderBoardBody(); } if (S.openMenu && !(e.target.closest && e.target.closest('[data-menubar]'))) { S.openMenu = null; renderMenubar(); } if (!(e.target.closest && e.target.closest('#rt-chart'))) rtHideTip(); }, true);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.openMenu) { S.openMenu = null; renderMenubar(); } });
 window.addEventListener('storage', e => { if (!e.key || e.key === STORE_KEY) reloadFromStore(); });
 let wasMobile = isMobile();
@@ -32967,8 +33213,10 @@ setInterval(() => {
 }, 60000);
 applySkin(S.skin);
 (() => { let removed = false; try { removed = localStorage.getItem('jts_rt_hist') === 'removed'; } catch (e) {} if (!removed && !S.loads.some(l => String(l.id).startsWith('H'))) S.loads = [...S.loads, ...demoHistory()]; })();
+officeSeedOnce(); migrateOffices();
 opsDemoSeed();
 persist();
+bvLoad();
 render();
 alertKey = alertSignature();
 </script>
