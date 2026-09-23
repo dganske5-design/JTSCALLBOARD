@@ -437,20 +437,23 @@ body.m .search-wrap { min-width: 0; }
 body.m .stats { font-size: 11.5px; gap: 2px 12px; }
 body.m .grid-wrap { display: none; }
 .cards { display: none; }
-body.m .cards { display: flex; flex-direction: column; gap: 8px; }
-.lc { background: #fff; border: 1px solid #808080; border-left: 5px solid #8cef8c; padding: 8px 10px; display: flex; flex-direction: column; gap: 3px; font-size: 13px; font-weight: 600; color: #1b1d1e; }
+body.m .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 6px; }
+.lc { background: #fff; border: 1px solid #808080; border-left: 4px solid #8cef8c; padding: 5px 8px 4px; display: flex; flex-direction: column; gap: 1px; font-size: 12.5px; font-weight: 600; color: #1b1d1e; line-height: 1.3; }
+.lc .lane { font-weight: 500; }
+.lc .orig { flex: none; max-width: 48%; }
 .lc.hot { border-left-color: #f00000; }
 .lc .row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .lc .row > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lc .file { color: #0a2fbd; font-weight: 700; font-size: 15px; }
-.lc .st { margin-left: auto; font-size: 11px; padding: 2px 8px; background: #eef0f3; flex: none; }
+.lc .file { color: #0a2fbd; font-weight: 700; font-size: 14px; flex: none; }
+.lc .st { margin-left: auto; font-size: 10.5px; padding: 1px 7px; background: #eef0f3; flex: 0 1 auto; max-width: 52%; }
 .lc.hot .st { background: #f00000; color: #fff; }
 .lc .orig { background: #fbf7d3; color: #3b3405; padding: 0 4px; }
 .lc .orig.driven { background: #b5a24d; color: #241f04; }
 .lc .unc { color: #c40000; font-weight: 700; }
 .lc .rate { margin-left: auto; font-weight: 700; flex: none; }
-.lc .acts { display: flex; gap: 4px; margin-top: 4px; }
-.lc .acts .btn { min-height: 0; padding: 3px 10px; font-size: 12px; }
+.lc .acts { display: inline-flex; gap: 0; flex: none; margin-left: 4px; }
+.lc .acts .btn { min-height: 0; height: 22px; padding: 0 6px; font-size: 11.5px; }
+.lc .acts .btn-icon { width: 24px; padding: 0; }
 body.m .grid6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 body.m .grid6 > * { grid-column: span 2 !important; }
 body.m .grid6 > .half { grid-column: span 1 !important; }
@@ -592,7 +595,7 @@ body.m .rc-acc-tbl td, body.m .rc-acc-tbl th { padding: 4px; }
 .cc-tag.over { color: #c40000; }
 .lc.cc-soon { background: #fff1c9; }
 .lc.cc-over { background: #ffd6d6; border-color: #c40000; }
-.lc .cc-tag { font-size: 11px; }
+.lc .cc-tag { font-size: 10px; margin-top: 0; }
 .chip.ccover.on { background: #c40000; color: #fff; border-color: #c40000; }
 .stats .cc-n { color: #fff; background: #c40000; padding: 0 6px; }
 .cc-badge { background: #c40000 !important; color: #fff !important; border-color: #c40000 !important; font-weight: 700; font-size: 11.5px; min-height: 0; padding: 3px 9px; gap: 4px; letter-spacing: 0.02em; }
@@ -30887,11 +30890,9 @@ function renderBoardBody() {
     const driven = /DRIVEN/.test(r.originator);
     return `<div class="lc${hot ? ' hot' : ''}${ccRowClass(l)}" data-act="view" data-id="${esc(l.id)}">
       <div class="row"><span class="file">${esc(r.fileNo)}</span><span class="text-muted" style="font-weight:600">${dt}</span>${(() => { const dl = delayAt(l); return dl ? `<span class="st delayed">${delayText(dl)} · ${fmtMins(dl.mins)}</span>` : `<span class="st">${esc(l.status)}${condMark(l)}</span>`; })()}</div>
+      <div class="row"><span class="orig${driven ? ' driven' : ''}">${esc(r.originator)}</span><span class="lane">${esc(r.puCity)}, ${esc(r.puSt)} → ${esc(r.delCity)}, ${esc(r.delSt)}</span></div>
+      <div class="row"><span class="${r.carrier ? '' : 'unc'}">${r.carrier ? esc(r.carrier) : 'UNCOVERED'}</span><span class="rate">${money(r.rate)}</span><span class="acts"><button class="btn btn-ghost" data-act="view" data-id="${esc(l.id)}">Tender</button><button class="btn btn-icon btn-ghost" title="Edit" data-act="edit" data-id="${esc(l.id)}">${I.pencil12}</button><button class="btn btn-icon btn-ghost" title="Delete" style="color:#c40000" data-act="delete" data-id="${esc(l.id)}">${I.trash12}</button></span></div>
       ${ccRowTag(l)}
-      <div class="row"><span class="orig${driven ? ' driven' : ''}">${esc(r.originator)}</span></div>
-      <div class="row"><span>${esc(r.puCity)}, ${esc(r.puSt)} → ${esc(r.delCity)}, ${esc(r.delSt)}</span></div>
-      <div class="row"><span class="${r.carrier ? '' : 'unc'}">${r.carrier ? esc(r.carrier) : 'UNCOVERED'}</span><span class="rate">${money(r.rate)}</span></div>
-      <div class="acts"><button class="btn btn-ghost" data-act="view" data-id="${esc(l.id)}">Tender</button><button class="btn btn-ghost" data-act="edit" data-id="${esc(l.id)}">Edit</button><button class="btn btn-ghost" style="color:#c40000" data-act="delete" data-id="${esc(l.id)}">Delete</button></div>
     </div>`;
   }).join('');
   const base = baseRows(), cnt = st => base.filter(l => l.status === st).length;
