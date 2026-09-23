@@ -493,6 +493,38 @@ body.m #users .fac { flex-wrap: wrap; }
   #tender-sheet .corner { display: none !important; }
   .grid-wrap { border-color: #000; }
 }
+/* ── New load browser (order inbox) ───────────────────────────────────── */
+#orders { max-width: 1100px; padding: var(--space-6) var(--space-6) var(--space-8); }
+.dropzone { display: flex; align-items: center; gap: 14px; padding: 18px 20px; border: 2px dashed var(--color-accent); background: color-mix(in srgb, var(--color-accent) 6%, transparent); cursor: pointer; font-size: 14px; }
+.dropzone svg { width: 28px; height: 28px; flex: none; color: var(--color-accent-700); }
+.dropzone.hot { background: color-mix(in srgb, var(--color-accent) 18%, transparent); border-style: solid; }
+.ord-ta { font-family: var(--font-body); font-size: 13px; resize: vertical; }
+.ord-list { display: flex; flex-direction: column; gap: 8px; }
+.ord { border: 1px solid var(--color-divider); background: var(--color-surface); border-left: 4px solid #c47a00; }
+.ord.done { border-left-color: #2e7d32; opacity: 0.82; }
+.ord.done .ord-subj { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--color-text) 40%, transparent); }
+.ord-head { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; }
+.ord-chk { display: flex; align-items: center; padding-top: 2px; }
+.ord-chk input { width: 20px; height: 20px; cursor: pointer; accent-color: #2e7d32; }
+.ord-main { flex: 1; min-width: 0; cursor: pointer; }
+.ord-subj { font-weight: 700; font-size: 14.5px; }
+.ord-meta { font-size: 12px; color: color-mix(in srgb, var(--color-text) 70%, transparent); margin-top: 2px; }
+.ord-done { font-size: 12.5px; color: #1f6b2a; font-weight: 600; margin-top: 3px; }
+.ord-link { color: var(--color-accent-700); text-decoration: underline; cursor: pointer; }
+.ord-snip { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 75%, transparent); margin-top: 4px; }
+.ord-acts { display: flex; gap: 4px; flex: none; align-items: center; }
+.ord-body { border-top: 1px solid var(--color-divider); padding: 10px 12px 12px 42px; display: flex; flex-direction: column; gap: 8px; }
+.ord-pre { white-space: pre-wrap; word-break: break-word; font: inherit; font-size: 13px; margin: 0; max-height: 360px; overflow: auto; background: color-mix(in srgb, var(--color-bg) 60%, transparent); padding: 8px 10px; border: 1px solid var(--color-divider); }
+.ord-att { display: flex; flex-wrap: wrap; gap: 6px; }
+.ord-imgs img { max-width: 100%; max-height: 420px; border: 1px solid var(--color-divider); }
+.ord-from { grid-column: span 6; font-size: 12.5px; padding: 6px 10px; background: #fff3dd; border-left: 3px solid var(--jts-gold, #D4AF37); margin-top: -4px; }
+.nav-n { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 6px; background: #c47a00; color: #fff; font-size: 11px; font-weight: 700; border-radius: 9px; }
+body.m #orders { padding: var(--space-4) 16px var(--space-8); }
+body.m .ord-head { flex-wrap: wrap; }
+body.m .ord-acts { width: 100%; justify-content: flex-end; }
+body.m .ord-body { padding-left: 12px; }
+body.m #tabbar .tab { font-size: 9px; }
+
 /* ── Offices, reps and board views ─────────────────────────────────────── */
 .off-tabs { flex-wrap: wrap; }
 .off-tabs button { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; white-space: nowrap; }
@@ -30639,6 +30671,7 @@ const S = (() => {
     loads: p && p.loads ? p.loads : d.loads,
     carriers: p && p.carriers ? p.carriers : d.carriers, rt: null,
     bv: { offices: 'all', rep: '' }, savedViews: [], officeMenu: false,
+    orders: p && p.orders ? p.orders : [], orderTab: 'new', orderSearch: '', orderOpen: null, dropHot: false,
     vetProfiles: p && p.vetProfiles ? p.vetProfiles : {}, rcSeq: p && p.rcSeq ? p.rcSeq : 100000, vetDraft: null, rcDraft: null, ccDraft: null, onlyOverdueCC: false, carTab: 'branch', carSearch: '', carrierId: null, carrierTab: 'profile', carDraft: null, reportKey: null, calc: { origin: '', dest: '', oGeo: null, dGeo: null, rate: '', fuel: '' },
     shippers: p && p.shippers ? p.shippers : d.shippers,
     receivers: p && p.receivers ? p.receivers : d.receivers
@@ -30646,12 +30679,12 @@ const S = (() => {
 })();
 const isMobile = () => S.layout === 'mobile' || (S.layout === 'auto' && window.innerWidth <= MOBILE_BP);
 function setLayout(v) { S.layout = v; try { localStorage.setItem(LAYOUT_KEY, v); } catch (e) {} render(); }
-function persist() { DATA_VER++; try { localStorage.setItem(STORE_KEY, JSON.stringify({ loads: S.loads, shippers: S.shippers, receivers: S.receivers, carriers: S.carriers, vetProfiles: S.vetProfiles || {}, rcSeq: S.rcSeq || 100000 })); } catch (e) {} }
+function persist() { DATA_VER++; try { localStorage.setItem(STORE_KEY, JSON.stringify({ loads: S.loads, shippers: S.shippers, receivers: S.receivers, carriers: S.carriers, vetProfiles: S.vetProfiles || {}, rcSeq: S.rcSeq || 100000, orders: S.orders || [] })); } catch (e) {} }
 function set(patch) { Object.assign(S, patch); persist(); render(); }
 function reloadFromStore() {
   const p = readStore();
   S.refreshedAt = Date.now(); DATA_VER++;
-  if (p && p.loads) { S.loads = p.loads; S.shippers = p.shippers || S.shippers; S.receivers = p.receivers || S.receivers; S.carriers = p.carriers || S.carriers; S.vetProfiles = p.vetProfiles || S.vetProfiles; if (p.rcSeq) S.rcSeq = Math.max(S.rcSeq || 0, p.rcSeq); }
+  if (p && p.loads) { S.loads = p.loads; S.shippers = p.shippers || S.shippers; S.receivers = p.receivers || S.receivers; S.carriers = p.carriers || S.carriers; S.vetProfiles = p.vetProfiles || S.vetProfiles; S.orders = p.orders || S.orders; if (p.rcSeq) S.rcSeq = Math.max(S.rcSeq || 0, p.rcSeq); }
   if (S.view === 'board') renderBoardBody(); else if (S.view !== 'builder') render();
 }
 
@@ -30663,6 +30696,7 @@ const MENUS = [
   { label: 'File', items: [
     { label: 'New load…', act: () => set({ draft: blankDraft(), view: 'builder', openMenu: null }) },
     { label: 'Load board', act: go({ view: 'board' }) },
+    { label: 'New load browser', act: go({ view: 'orders' }) },
     { label: 'Print current view', act: () => { set({ openMenu: null }); setTimeout(() => window.print(), 60); } } ] },
   { label: 'Tracing', items: [
     { label: 'Trace Console', act: R('trace_console') }, SEP,
@@ -30767,6 +30801,7 @@ function renderShell() {
   $('#nav').innerHTML = `
     <div class="brand"><img class="logo brand-logo" src="${LOGO}" alt="Johanson Transportation Service" title="${esc(COMPANY.name)}"><span class="tag tag-outline">Dispatch</span></div>
     <button class="btn btn-ghost navbtn${S.view === 'board' ? ' on' : ''}" data-act="goBoard">Load board</button>
+    <button class="btn btn-ghost navbtn${S.view === 'orders' ? ' on' : ''}" data-act="goOrders" title="Drop customer emails here and turn them into loads">New load browser${ordersOpen() ? `<span class="nav-n">${ordersOpen()}</span>` : ''}</button>
     ${(() => { const n = ccOverdueCount(); return n ? `<button class="btn cc-badge" data-act="chipOverdueCC" title="${n} load${n === 1 ? '' : 's'} with an overdue check call. Click to filter the board.">${I.clock18}${n} overdue</button>` : ''; })()}
     <button class="btn btn-ghost navbtn${S.view === 'directory' ? ' on' : ''}" data-act="goDirectory">Shippers &amp; receivers</button>
     <button class="btn btn-ghost navbtn${S.view === 'carriers' || S.view === 'carrier' ? ' on' : ''}" data-act="goCarriers">Carriers</button>
@@ -30795,6 +30830,7 @@ function renderTabbar() {
   const tab = (act, icon, label, on) => `<button class="tab${on ? ' on' : ''}" data-act="${act}">${icon}<span>${label}</span></button>`;
   tb.innerHTML = tab('goBoard', I.list, 'Board', S.view === 'board')
     + `<button class="tab primary" data-act="newLoad">${I.plus18}<span>New</span></button>`
+    + tab('goOrders', I.inbox18, ordersOpen() ? `Inbox ${ordersOpen()}` : 'Inbox', S.view === 'orders')
     + tab('goDirectory', I.building, 'Facilities', S.view === 'directory')
     + tab('goRates', I.chart18, 'Rates', S.view === 'rates')
     + tab('goCarriers', I.truck18, 'Carriers', S.view === 'carriers' || S.view === 'carrier')
@@ -31075,7 +31111,7 @@ function renderBuilder() {
       <button class="btn btn-primary blueprint" data-act="save">${CORNERS}${d.id ? 'Update load tender' : 'Create load tender'}</button>
     </div>
     <section class="card blueprint">${CORNERS}
-      <div class="card-kicker">Load</div>
+      <div class="card-kicker">Load</div>${d.orderId ? (() => { const o = ordersOf().find(x => x.id === d.orderId); return o ? `<div class="ord-from"><strong>Building from email:</strong> ${esc(o.subject || o.fileName || 'order')}${o.from ? ' · ' + esc(String(o.from).replace(/<[^>]*>/g, '').trim()) : ''}. Check every prefilled field against the email. Saving this load marks the order as entered by you.</div>` : ''; })() : ''}
       <div class="grid6" style="gap:var(--space-3)">
         ${f('fileNo', 1, 'File number')}
         ${f('customer', 3, 'Originator / customer', 'placeholder="Who is this load for?"')}
@@ -31128,6 +31164,7 @@ function saveDraft() {
   if (!d.id) { d.id = uid(); d.createdAt = Date.now(); }
   const exists = S.loads.some(l => l.id === d.id);
   const loads = exists ? S.loads.map(l => l.id === d.id ? d : l) : [d, ...S.loads];
+  if (d.orderId) markOrderDone(d.orderId, { loadId: d.id, fileNo: d.fileNo });
   const addFac = (list, st) => (st.name && !list.some(x => x.name.toLowerCase() === st.name.toLowerCase()))
     ? [...list, { id: uid(), name: st.name, address: st.address, city: st.city, st: st.st, zip: st.zip, contact: st.contact, phone: st.phone }] : list;
   let shippers = S.shippers, receivers = S.receivers;
@@ -32201,6 +32238,180 @@ function boardKeys(e) {
   else if (e.key === '?') { e.preventDefault(); kbdHelpDialog(); }
 }
 
+// ── New load browser: drop or paste customer emails, build the load, stamp who entered it ──
+const ORDER_MAX_ATTACH = 1500000; // bytes kept inline per attachment; bigger files keep their name only
+const ordersOf = () => S.orders || [];
+const ordersOpen = () => ordersOf().filter(o => o.status !== 'done').length;
+function orderLog(o, text) { o.history = o.history || []; o.history.push({ at: Date.now(), by: S.user ? S.user.name : '', text }); }
+function addOrder(o) {
+  const rec = { id: 'ord-' + uid(), receivedAt: Date.now(), receivedBy: S.user ? S.user.name : '', status: 'new', source: 'drop', fileName: '', from: '', subject: '', sentAt: '', body: '', attachments: [], notes: '', doneAt: 0, doneBy: '', loadId: '', fileNo: '', history: [], ...o };
+  orderLog(rec, `Received by ${rec.receivedBy || 'unknown'} (${rec.source})`);
+  S.orders = [rec, ...ordersOf()]; persist(); return rec;
+}
+// ── email parsing ────────────────────────────────────────────────────────────
+function decodeMimeWord(s) { // =?UTF-8?B?...?= and =?UTF-8?Q?...?=
+  return String(s || '').replace(/=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g, (m, cs, enc, txt) => { try { if (enc.toUpperCase() === 'B') return utf8Bytes(atob(txt)); return utf8Bytes(txt.replace(/_/g, ' ').replace(/=([0-9A-F]{2})/gi, (x, h) => String.fromCharCode(parseInt(h, 16)))); } catch (e) { return txt; } });
+}
+function utf8Bytes(bin) { try { return decodeURIComponent(bin.split('').map(c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join('')); } catch (e) { return bin; } }
+const qpDecode = t => utf8Bytes(String(t).replace(/=\r?\n/g, '').replace(/=([0-9A-F]{2})/gi, (m, h) => String.fromCharCode(parseInt(h, 16))));
+const b64Decode = t => { try { return utf8Bytes(atob(String(t).replace(/\s+/g, ''))); } catch (e) { return ''; } };
+const htmlToText = h => String(h).replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/gi, '').replace(/<br\s*\/?>|<\/p>|<\/div>|<\/tr>|<\/li>|<\/h\d>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\n{3,}/g, '\n\n').trim();
+function parseHeaders(raw) {
+  const h = {}; raw.replace(/\r\n/g, '\n').split(/\n(?=\S)/).forEach(line => { const m = line.match(/^([\w-]+):\s*([\s\S]*)$/); if (m) h[m[1].toLowerCase()] = decodeMimeWord(m[2].replace(/\n[ \t]+/g, ' ').trim()); }); return h;
+}
+function mimeBody(raw, headers) { // returns plain text from a MIME message (walks multipart, prefers text/plain)
+  const ct = (headers['content-type'] || 'text/plain').toLowerCase(), enc = (headers['content-transfer-encoding'] || '').toLowerCase();
+  const bm = ct.match(/boundary="?([^";]+)"?/i);
+  if (ct.startsWith('multipart/') && bm) {
+    const parts = raw.split('--' + bm[1]).slice(1).filter(p => !p.startsWith('--'));
+    let plain = '', html = '';
+    parts.forEach(p => { const idx = p.replace(/\r\n/g, '\n').search(/\n\n/); const ph = parseHeaders(idx >= 0 ? p.slice(0, idx) : ''), pb = idx >= 0 ? p.replace(/\r\n/g, '\n').slice(idx + 2) : p; const pct = (ph['content-type'] || '').toLowerCase(); if (pct.startsWith('multipart/')) { const t = mimeBody(pb, ph); if (t && !plain) plain = t; } else if (pct.startsWith('text/plain') && !plain) plain = mimeBody(pb, ph); else if (pct.startsWith('text/html') && !html) html = mimeBody(pb, ph); });
+    return plain || (html ? htmlToText(html) : '');
+  }
+  let text = enc === 'quoted-printable' ? qpDecode(raw) : enc === 'base64' ? b64Decode(raw) : raw;
+  if (ct.startsWith('text/html')) text = htmlToText(text);
+  return text.trim();
+}
+function parseEml(raw) {
+  raw = String(raw).replace(/\r\n/g, '\n'); const idx = raw.search(/\n\n/);
+  const headers = parseHeaders(idx >= 0 ? raw.slice(0, idx) : raw), body = idx >= 0 ? mimeBody(raw.slice(idx + 2), headers) : '';
+  return { from: headers.from || '', subject: headers.subject || '', sentAt: headers.date || '', to: headers.to || '', body };
+}
+function parsePastedEmail(text) { // Outlook / Gmail copy-paste puts From / Sent / Subject lines at the top
+  const t = String(text).replace(/\r\n/g, '\n'); const get = k => { const m = t.match(new RegExp('^' + k + ':\\s*(.+)$', 'im')); return m ? m[1].trim() : ''; };
+  const from = get('From'), subject = get('Subject'), sentAt = get('Sent') || get('Date');
+  let body = t; if (from || subject) { const m = t.match(/^Subject:.*\n+/im); if (m) body = t.slice(m.index + m[0].length); }
+  return { from, subject, sentAt, body: body.trim() };
+}
+function orderHints(o) { // best-effort pulls from the email text; the builder is prefilled, the person checks it
+  const t = `${o.subject}\n${o.body}`, h = {};
+  const pu = t.match(/\b(?:PU|pickup|pick-up|pick up)\s*(?:#|no\.?|number|nbr)\s*[:.]?\s*([A-Z0-9-]{3,})/i); if (pu) h.pu = pu[1];
+  const del = t.match(/\b(?:DEL|delivery|PO|order|ref)\s*(?:#|no\.?|number|nbr)\s*[:.]?\s*([A-Z0-9-]{3,})/i); if (del) h.del = del[1];
+  const temp = t.match(/(-?\d{1,3})\s*°?\s*F\b|(\bfrozen\b)|(\breefer\b)/i); if (temp) h.temp = temp[1] ? `${temp[1]}°F continuous` : temp[2] ? '-10°F continuous' : '34°F continuous';
+  const plt = t.match(/(\d{1,3})\s*(?:plts?|pallets?|skids?)/i); if (plt) h.pallets = plt[1];
+  const wt = t.match(/([\d,]{4,7})\s*(?:lbs?|pounds)/i); if (wt) h.weight = wt[1].replace(/,/g, '');
+  const places = [...t.matchAll(/\b([A-Z][A-Za-z.' ]{2,28}),\s*([A-Z]{2})\b(?:\s+(\d{5}))?/g)].map(m => ({ city: m[1].trim(), st: m[2], zip: m[3] || '' })).filter(p => !/^(From|To|Subject|Sent|Re|Fw|Fwd)$/i.test(p.city));
+  if (places[0]) h.pickup = places[0]; if (places[1]) h.drop = places[1];
+  const dates = [...t.matchAll(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/g)].map(m => { const y = m[3] ? (m[3].length === 2 ? '20' + m[3] : m[3]) : String(new Date().getFullYear()); return `${y}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`; }).filter(d => !isNaN(new Date(d + 'T12:00')));
+  const uniq = [...new Set(dates)]; if (uniq[0]) h.puDate = uniq[0]; if (uniq[1]) h.delDate = uniq[1];
+  const cust = String(o.from || '').replace(/<[^>]*>/g, '').replace(/"/g, '').trim(); const dom = (String(o.from || '').match(/@([\w.-]+)/) || [])[1];
+  h.customer = cust && !/@/.test(cust) ? cust : dom ? dom.split('.')[0].replace(/^\w/, c => c.toUpperCase()) : '';
+  h.email = (String(o.from || '').match(/[\w.+-]+@[\w.-]+/) || [])[0] || '';
+  return h;
+}
+function draftFromOrder(o) {
+  const d = blankDraft(), h = orderHints(o);
+  d.orderId = o.id; d.customer = h.customer || ''; d.customerEmail = h.email || ''; d.temp = h.temp || '';
+  const p = d.pickups[0], dr = d.drops[0], ln = p.lines[0];
+  if (h.pickup) { p.city = h.pickup.city; p.st = h.pickup.st; p.zip = h.pickup.zip; } if (h.drop) { dr.city = h.drop.city; dr.st = h.drop.st; dr.zip = h.drop.zip; }
+  if (h.puDate) p.date = h.puDate; if (h.delDate) dr.date = h.delDate;
+  if (h.pu) ln.no = h.pu; if (h.del) dr.ref = h.del; if (h.pallets) ln.pallets = h.pallets; if (h.weight) ln.weight = h.weight;
+  p.notes = `From email: ${o.subject || o.fileName || 'order'}`.slice(0, 120);
+  return d;
+}
+// ── intake: files, dropped text, pasted text ──────────────────────────────
+function readFileAs(file, how) { return new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => res(null); how === 'text' ? r.readAsText(file) : r.readAsDataURL(file); }); }
+async function intakeFiles(files) {
+  const list = [...files]; if (!list.length) return 0; let n = 0;
+  for (const f of list) {
+    const name = f.name || 'file', ext = (name.match(/\.([a-z0-9]+)$/i) || ['', ''])[1].toLowerCase();
+    if (ext === 'eml' || f.type === 'message/rfc822') { const raw = await readFileAs(f, 'text'); const e = parseEml(raw || ''); addOrder({ source: 'file', fileName: name, ...e }); n++; continue; }
+    if (ext === 'txt' || ext === 'md' || f.type.startsWith('text/')) { const raw = await readFileAs(f, 'text'); const e = parsePastedEmail(raw || ''); addOrder({ source: 'file', fileName: name, ...e, subject: e.subject || name }); n++; continue; }
+    const att = { name, type: f.type || (ext === 'msg' ? 'application/vnd.ms-outlook' : ''), size: f.size, dataUrl: '' };
+    if (f.size <= ORDER_MAX_ATTACH) att.dataUrl = (await readFileAs(f, 'data')) || '';
+    addOrder({ source: 'file', fileName: name, subject: name, attachments: [att], notes: ext === 'msg' ? 'Outlook .msg file: open it in Outlook, copy the email text and paste it here to fill in the details.' : (att.dataUrl ? '' : 'File too large to keep inside the board; only its name is saved.') }); n++;
+  }
+  return n;
+}
+function intakeText(text, source) {
+  const t = String(text || '').trim(); if (!t) return null;
+  const e = parsePastedEmail(t);
+  return addOrder({ source, ...e, subject: e.subject || t.split('\n')[0].slice(0, 90) });
+}
+async function handleDrop(e) {
+  e.preventDefault(); const dt = e.dataTransfer; if (!dt) return; let n = 0;
+  if (dt.files && dt.files.length) n = await intakeFiles(dt.files);
+  else { const html = dt.getData('text/html'), txt = dt.getData('text/plain') || (html ? htmlToText(html) : ''); if (intakeText(txt, 'drop')) n = 1; }
+  S.dropHot = false; render();
+  if (n) notify(n === 1 ? 'Order received' : `${n} orders received`, 'It is in the New load browser. Create the load from it, then check it off when the order is entered.');
+  else notify('Nothing to read', 'Drop an .eml file, a PDF, an image, or highlighted email text. From Outlook, copy the email and paste it here instead.');
+}
+async function handlePaste(e) {
+  const cd = e.clipboardData; if (!cd) return;
+  const files = [...(cd.files || [])];
+  if (files.length) { e.preventDefault(); const n = await intakeFiles(files); render(); if (n) notify('Order received', 'Pasted file saved to the New load browser.'); return; }
+  const html = cd.getData('text/html'), txt = cd.getData('text/plain') || (html ? htmlToText(html) : '');
+  if (!txt.trim()) return; e.preventDefault(); intakeText(txt, 'paste'); render(); notify('Order received', 'Pasted email saved to the New load browser.');
+}
+// ── marking entered ──────────────────────────────────────────────────────
+function markOrderDone(id, extra = {}) {
+  S.orders = ordersOf().map(o => { if (o.id !== id) return o; const c = clone(o); c.status = 'done'; c.doneAt = Date.now(); c.doneBy = S.user ? S.user.name : ''; if (extra.loadId) c.loadId = extra.loadId; if (extra.fileNo) c.fileNo = extra.fileNo; orderLog(c, `Entered by ${c.doneBy}${c.fileNo ? ' as file ' + c.fileNo : ''}`); return c; });
+  persist();
+}
+function reopenOrder(id) { S.orders = ordersOf().map(o => { if (o.id !== id) return o; const c = clone(o); orderLog(c, `Reopened by ${S.user ? S.user.name : ''} (was entered by ${c.doneBy} ${fmtWhen(c.doneAt)})`); c.status = 'new'; c.doneAt = 0; c.doneBy = ''; return c; }); persist(); }
+// ── view ─────────────────────────────────────────────────────────────────
+function renderOrders() {
+  const q = (S.orderSearch || '').trim().toLowerCase(), tab = S.orderTab || 'new';
+  const all = ordersOf(), list = all.filter(o => tab === 'all' || (tab === 'done' ? o.status === 'done' : o.status !== 'done')).filter(o => !q || [o.subject, o.from, o.body, o.fileName, o.notes, o.receivedBy, o.doneBy, o.fileNo].join(' ').toLowerCase().includes(q));
+  const nNew = all.filter(o => o.status !== 'done').length, nDone = all.length - nNew;
+  const fromOf = o => String(o.from || '').replace(/<[^>]*>/g, '').replace(/"/g, '').trim() || (String(o.from || '').match(/[\w.+-]+@[\w.-]+/) || [''])[0];
+  const card = o => { const open = S.orderOpen === o.id, done = o.status === 'done', load = o.loadId ? S.loads.find(l => l.id === o.loadId) : null; const body = o.body || ''; return `<div class="ord${done ? ' done' : ''}${open ? ' open' : ''}">
+    <div class="ord-head">
+      <label class="ord-chk" title="${done ? 'Entered. Click to reopen.' : 'Check when the order is entered'}"><input type="checkbox" data-act="ordToggle" data-id="${esc(o.id)}"${done ? ' checked' : ''}></label>
+      <div class="ord-main" data-act="ordOpen" data-id="${esc(o.id)}">
+        <div class="ord-subj">${esc(o.subject || o.fileName || 'Untitled order')}${o.attachments.length ? ` <span class="tag tag-outline" style="font-size:10px">${o.attachments.length} file${o.attachments.length === 1 ? '' : 's'}</span>` : ''}</div>
+        <div class="ord-meta">${fromOf(o) ? `From ${esc(fromOf(o))}${o.sentAt ? ' · ' + esc(o.sentAt) : ''} · ` : ''}Received ${fmtWhen(o.receivedAt)} by <strong>${esc(o.receivedBy || 'unknown')}</strong></div>
+        ${done ? `<div class="ord-done">Entered by <strong>${esc(o.doneBy)}</strong> · ${fmtLong(o.doneAt)}${o.fileNo ? ` · <a class="ord-link" data-act="view" data-id="${esc(o.loadId)}">File ${esc(o.fileNo)}</a>` : ''}${load && load.status ? ` · ${esc(load.status)}` : ''}</div>` : ''}
+        ${!open && body ? `<div class="ord-snip">${esc(body.replace(/\s+/g, ' ').slice(0, 180))}${body.length > 180 ? '...' : ''}</div>` : ''}
+      </div>
+      <div class="ord-acts">
+        ${done ? '' : `<button class="btn btn-primary btn-sm" data-act="ordCreate" data-id="${esc(o.id)}" title="Open the load builder prefilled from this email">${I.plus}Create load</button>`}
+        <button class="btn btn-icon btn-ghost" title="Delete" data-act="ordDelete" data-id="${esc(o.id)}">${I.trash12}</button>
+      </div>
+    </div>
+    ${open ? `<div class="ord-body">
+      ${body ? `<pre class="ord-pre">${esc(body)}</pre>` : '<div class="text-muted" style="font-size:12.5px">No email text. Open the attachment or paste the email text below.</div>'}
+      ${o.attachments.length ? `<div class="ord-att">${o.attachments.map((a, i) => a.dataUrl ? `<a class="btn btn-secondary btn-sm" href="${a.dataUrl}" download="${esc(a.name)}" target="_blank">${esc(a.name)} <span class="text-muted">(${Math.round(a.size / 1024)} KB)</span></a>` : `<span class="tag tag-neutral">${esc(a.name)} (${Math.round(a.size / 1024)} KB, name only)</span>`).join('')}</div>` : ''}
+      ${o.attachments.some(a => a.dataUrl && /^data:image\//.test(a.dataUrl)) ? `<div class="ord-imgs">${o.attachments.filter(a => a.dataUrl && /^data:image\//.test(a.dataUrl)).map(a => `<img src="${a.dataUrl}" alt="${esc(a.name)}">`).join('')}</div>` : ''}
+      <div class="field"><label>Notes for whoever enters it</label><div style="display:flex;gap:6px"><input class="input" id="ordnote-${esc(o.id)}" value="${esc(o.notes || '')}" placeholder="Special instructions, questions for the customer, anything the rep should know" data-enter="ordnote-btn-${esc(o.id)}"><button class="btn btn-secondary btn-sm" id="ordnote-btn-${esc(o.id)}" data-act="ordNote" data-id="${esc(o.id)}">Save</button></div></div>
+      ${!body ? `<div class="field"><label>Paste the email text here to fill in the details</label><textarea class="input ord-ta" id="ordtext-${esc(o.id)}" rows="5" placeholder="Copy the email from Outlook or Gmail and paste it here"></textarea><div style="margin-top:6px"><button class="btn btn-secondary btn-sm" data-act="ordText" data-id="${esc(o.id)}">Save email text</button></div></div>` : ''}
+      <div class="log" style="margin-top:6px">${(o.history || []).slice().reverse().map(h => `<div><time>${fmtWhen(h.at)} · ${esc(h.by)}</time><div>${esc(h.text)}</div></div>`).join('')}</div>
+    </div>` : ''}
+  </div>`; };
+  return `<main id="orders">
+    <div class="page-head" style="margin-bottom:var(--space-3)">
+      <h1 style="font-size:28px">New load browser</h1>
+      <span class="text-muted" style="font-size:13px">Drop customer emails here. Ops creates the load from the email and checks it off, and the board records who entered it and when.</span>
+    </div>
+    <div class="dropzone${S.dropHot ? ' hot' : ''}" id="order-drop" data-act="ordBrowse">
+      ${I.mail}<div><strong>Drop an email or file here</strong>, paste with Ctrl+V / Cmd+V, or click to browse.<div class="text-muted" style="font-size:12px;margin-top:2px">Works with .eml emails, PDFs, images and highlighted email text. From Outlook: copy the email, then paste here.</div></div>
+      <input type="file" id="order-file" multiple accept=".eml,.msg,.txt,.pdf,.png,.jpg,.jpeg,.gif,.webp,message/rfc822,text/plain,application/pdf,image/*" style="display:none">
+    </div>
+    <div class="field" style="margin:8px 0 0"><label>Or paste the email text here (phones and browsers that block paste on the page)</label><div style="display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap"><textarea class="input ord-ta" id="order-paste" rows="3" placeholder="Paste the email, including the From and Subject lines if you have them" style="flex:1 1 320px"></textarea><button class="btn btn-secondary" data-act="ordPasteBtn">Add order</button></div></div>
+    <div class="ctl-row no-print" style="margin:var(--space-3) 0 8px">
+      <div class="seg">${[['new', `To enter (${nNew})`], ['done', `Entered (${nDone})`], ['all', `All (${all.length})`]].map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-act="ordTab" data-v="${k}">${l}</button>`).join('')}</div>
+      <div class="search-wrap" style="min-width:220px">${I.search}<input class="input" placeholder="Search subject, sender, text, who entered it" value="${esc(S.orderSearch || '')}" data-bind="orderSearch"></div>
+    </div>
+    <div class="ord-list">${list.length ? list.map(card).join('') : `<div class="text-muted empty">${all.length ? 'Nothing matches here.' : 'No orders yet. Drop or paste the first customer email above.'}</div>`}</div>
+  </main>`;
+}
+const ORDER_ACT = {
+  goOrders: () => { set({ view: 'orders', openMenu: null }); window.scrollTo(0, 0); },
+  ordTab: el => { S.orderTab = el.dataset.v; render(); },
+  ordOpen: el => { S.orderOpen = S.orderOpen === el.dataset.id ? null : el.dataset.id; render(); },
+  ordBrowse: (el, e) => { if (e && e.target.closest && e.target.closest('input')) return; const inp = document.getElementById('order-file'); if (inp) inp.click(); },
+  ordPasteBtn: () => { const ta = document.getElementById('order-paste'); const o = intakeText(ta ? ta.value : '', 'paste'); if (!o) { notify('Nothing to add', 'Paste the email text first.'); return; } render(); notify('Order received', 'It is in the To enter list.'); },
+  ordCreate: el => { const o = ordersOf().find(x => x.id === el.dataset.id); if (!o) return; set({ draft: draftFromOrder(o), view: 'builder' }); window.scrollTo(0, 0); },
+  ordToggle: el => {
+    const o = ordersOf().find(x => x.id === el.dataset.id); if (!o) return;
+    if (o.status === 'done') { confirmUI('Reopen this order?', `It was entered by ${o.doneBy} on ${fmtLong(o.doneAt)}. Reopening keeps that in the history.`, 'Reopen').then(ok => { if (ok) reopenOrder(o.id); render(); }); return; }
+    dialog({ title: 'Mark as entered?', body: `This stamps the order as entered by ${S.user.name} at ${fmtLong(Date.now())}. Type the JTS file number if you have it.`, input: 'text', placeholder: 'File # (optional)', okLabel: 'Entered' }).then(v => { if (v === null) { render(); return; } const fileNo = String(v || '').trim(); const l = fileNo ? S.loads.find(x => x.fileNo === fileNo) : null; markOrderDone(o.id, { fileNo, loadId: l ? l.id : '' }); render(); });
+  },
+  ordNote: el => { const inp = document.getElementById('ordnote-' + el.dataset.id); S.orders = ordersOf().map(o => o.id === el.dataset.id ? { ...o, notes: inp ? inp.value : o.notes } : o); persist(); render(); },
+  ordText: el => { const ta = document.getElementById('ordtext-' + el.dataset.id); const e = parsePastedEmail(ta ? ta.value : ''); if (!e.body) return; S.orders = ordersOf().map(o => { if (o.id !== el.dataset.id) return o; const c = clone(o); c.body = e.body; if (e.from) c.from = e.from; if (e.subject) c.subject = e.subject; if (e.sentAt) c.sentAt = e.sentAt; orderLog(c, `Email text added by ${S.user.name}`); return c; }); persist(); render(); },
+  ordDelete: el => { const o = ordersOf().find(x => x.id === el.dataset.id); if (!o) return; confirmUI('Delete this order?', `${o.subject || o.fileName || 'Untitled'}${o.status === 'done' ? ' (already entered by ' + o.doneBy + ')' : ''}. This removes it from the browser for everyone on this computer.`).then(ok => { if (!ok) return; S.orders = ordersOf().filter(x => x.id !== o.id); persist(); render(); }); }
+};
+
 // ── Carrier vetting · Rate confirmation · Check-call timeline ──────────────
 const JTS_NAVY = '#0B1F3A', JTS_GOLD = '#D4AF37';
 const fmtLong = ts => new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -32976,6 +33187,7 @@ function render() {
   else if (S.view === 'builder') v.innerHTML = renderBuilder();
   else if (S.view === 'tender') { v.innerHTML = renderFile(S.loads.find(l => l.id === S.tenderId)); if (S.fileTab === 'tracking') refreshDistances(); }
   else if (S.view === 'directory') v.innerHTML = renderDirectory();
+  else if (S.view === 'orders') v.innerHTML = renderOrders();
   else if (S.view === 'users') v.innerHTML = renderUsers();
   else if (S.view === 'carriers') v.innerHTML = renderCarriers();
   else if (S.view === 'carrier') v.innerHTML = renderCarrierDetail();
@@ -33200,9 +33412,16 @@ const CHANGE_ACTS = new Set(['dateSet', 'draftStatus', 'draftOffice', 'facility'
 Object.assign(ACT, OPS_ACT); OPS_CHANGE.forEach(a => CHANGE_ACTS.add(a));
 Object.assign(ACT, OFFICE_ACT); OFFICE_CHANGE.forEach(a => CHANGE_ACTS.add(a));
 document.addEventListener('keydown', boardKeys);
+document.addEventListener('dragover', e => { if (!S.user || S.view !== 'orders') return; e.preventDefault(); const z = document.getElementById('order-drop'); if (z) z.classList.add('hot'); });
+document.addEventListener('dragleave', e => { const z = document.getElementById('order-drop'); if (z && (!e.relatedTarget || e.relatedTarget === document.documentElement)) z.classList.remove('hot'); });
+document.addEventListener('drop', e => { if (!S.user || S.view !== 'orders') return; handleDrop(e); });
+document.addEventListener('paste', e => { if (!S.user || S.view !== 'orders') return; const t = e.target; if (t && (t.matches('input, textarea') || t.isContentEditable)) return; handlePaste(e); });
+document.addEventListener('change', e => { if (e.target && e.target.id === 'order-file') { intakeFiles(e.target.files).then(n => { render(); if (n) notify(n === 1 ? 'Order received' : `${n} orders received`, 'Create the load from it, then check it off when the order is entered.'); }); } });
 window.addEventListener('hashchange', () => { if (!S.user || !S.bv) return; if (applyHash()) { bvSave(); if (S.view !== 'board') { set({ view: 'board', openMenu: null }); } else renderBoardBody(); } });
 I.doc12 = svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8"></path>', 12);
 I.clock18 = svg('<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>', 18);
+I.inbox18 = svg('<path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>', 18);
+Object.assign(ACT, ORDER_ACT);
 I.shield18 = svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path>', 18);
 
 const app = $('#app');
@@ -33228,6 +33447,7 @@ app.addEventListener('input', e => {
   if (el.dataset.ac) { if (el.dataset.ac === 'track') S.trackDraft.geo = null; if (el.dataset.ac === 'rtO') { S.rt.oGeo = null; S.rt.oBad = false; } if (el.dataset.ac === 'rtD') { S.rt.dGeo = null; S.rt.dBad = false; } acShow(el); }
   if (path === 'search') renderBoardBody();
   else if (path === 'carSearch') { const v = $('#view'); const y = window.scrollY; v.innerHTML = renderCarriers(); stripDashes(v); window.scrollTo(0, y); const inp = document.querySelector('[data-bind="carSearch"]'); if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } }
+  else if (path === 'orderSearch') { const v = $('#view'); const y = window.scrollY; v.innerHTML = renderOrders(); stripDashes(v); window.scrollTo(0, y); const inp = document.querySelector('[data-bind="orderSearch"]'); if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } }
   else if (path === 'trackDraft.nextStop') refreshDistances();
   else if (path.startsWith('calc.')) { if (path === 'calc.origin') S.calc.oGeo = null; if (path === 'calc.dest') S.calc.dGeo = null; const o = $('#calc-out'); if (o) o.innerHTML = calcOut(); }
   else if (path.startsWith('draft.')) builderDerived();
