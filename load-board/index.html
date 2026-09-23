@@ -533,11 +533,19 @@ body.m #tabbar .tab { font-size: 9px; }
 .src-meta { font-size: 12px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
 .src-note { font-size: 12.5px; padding: 6px 10px; background: #fff3dd; border-left: 3px solid var(--jts-gold, #D4AF37); }
 .src-tools { display: flex; gap: 2px; flex: none; }
-.src-tools .btn, .src-zoom .btn { min-height: 0; height: 26px; padding: 0 8px; font-size: 12px; }
-.src-zoom { display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 4px; }
-.src-zoom .src-pct { min-width: 46px; }
-.src-imgwrap { max-height: 70vh; overflow: auto; border: 1px solid var(--color-divider); background: #fff; }
-.src-img { max-width: 100%; display: block; cursor: zoom-in; }
+.src-tools .btn, .zs-bar .btn { min-height: 0; height: 26px; padding: 0 8px; font-size: 12px; }
+.zs-bar { display: flex; gap: 3px; flex-wrap: wrap; align-items: center; margin-bottom: 4px; }
+.zs-bar .zs-pct { min-width: 64px; text-align: center; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.zs-range { width: 110px; min-width: 70px; accent-color: var(--color-accent); margin: 0 2px; }
+.zs { position: relative; height: 56vh; min-height: 260px; overflow: hidden; border: 1px solid var(--color-divider); background: #e9ebef; display: flex; align-items: center; justify-content: center; touch-action: none; cursor: grab; user-select: none; }
+.zs.tall { height: 78vh; }
+.zs:active { cursor: grabbing; }
+.zs img { max-width: none; max-height: none; transform-origin: center center; will-change: transform; background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,0.25); -webkit-user-drag: none; pointer-events: none; }
+.zs-hint { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); font-size: 11px; padding: 3px 9px; background: rgba(20,24,30,0.78); color: #fff; border-radius: 2px; pointer-events: none; opacity: 0; transition: opacity .2s; white-space: nowrap; max-width: 95%; overflow: hidden; text-overflow: ellipsis; }
+.zs:hover .zs-hint, .zs.nudge .zs-hint { opacity: 1; }
+.zs.nudge { box-shadow: inset 0 0 0 2px var(--color-accent); }
+.zs-full { height: auto; flex: 1; border: 0; background: transparent; }
+.zs-full .zs-hint { display: none; }
 .src-pane.wide { flex-basis: 680px; }
 .src-card .src-imgwrap { max-height: none; }
 .lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(8, 12, 20, 0.94); display: flex; flex-direction: column; }
@@ -546,10 +554,14 @@ body.m #tabbar .tab { font-size: 9px; }
 .lb-bar .btn-secondary { color: #fff; border-color: #555; }
 .lb-name { font-size: 13px; opacity: 0.85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lb-pct { min-width: 60px; }
-.lb-stage { flex: 1; overflow: hidden; display: flex; align-items: center; justify-content: center; touch-action: none; cursor: grab; }
-.lb-stage:active { cursor: grabbing; }
-.lb-stage img { max-width: none; transform-origin: center center; user-select: none; -webkit-user-drag: none; background: #fff; }
+.lb-bar .zs-bar { margin: 0; }
+.lb-bar .zs-bar .btn-secondary { color: #fff; border-color: #555; }
+.lb-bar .zs-pct { color: #fff; }
 body.lb-open { overflow: hidden; }
+body.m .zs { height: 46vh; min-height: 220px; }
+body.m .zs-range { width: 80px; }
+body.m .lb-bar { flex-wrap: wrap; gap: 4px; }
+body.m .lb-name { width: 100%; }
 .src-pdf { width: 100%; height: 520px; border: 1px solid var(--color-divider); background: #fff; }
 .src-pre { max-height: none; }
 .src-card { gap: 8px; }
@@ -32434,45 +32446,81 @@ const orderOfLoad = l => (l && l.orderId) ? ordersOf().find(o => o.id === l.orde
 function renderOrderSource(o, compact) { // the email, images and PDFs the order came in with, for checking the entry against
   const fromOf = String(o.from || '').replace(/<[^>]*>/g, '').replace(/"/g, '').trim() || (String(o.from || '').match(/[\w.+-]+@[\w.-]+/) || [''])[0];
   const imgs = o.attachments.filter(a => a.dataUrl && /^data:image\//.test(a.dataUrl)), pdfs = o.attachments.filter(a => a.dataUrl && /^data:application\/pdf/.test(a.dataUrl)), others = o.attachments.filter(a => !imgs.includes(a) && !pdfs.includes(a));
-  const zoomBar = i => `<div class="src-zoom no-print"><button class="btn btn-secondary btn-sm" data-act="srcScale" data-i="${i}" data-d="-1" title="Zoom out">&minus;</button><button class="btn btn-secondary btn-sm src-pct" data-act="srcScale" data-i="${i}" data-d="0" title="Fit to panel">Fit</button><button class="btn btn-secondary btn-sm" data-act="srcScale" data-i="${i}" data-d="1" title="Zoom in">+</button><button class="btn btn-secondary btn-sm" data-act="srcScale" data-i="${i}" data-d="100" title="Actual size">1:1</button><button class="btn btn-primary btn-sm" data-act="srcFull" data-i="${i}" title="Open full screen with pinch, wheel and drag zoom">Full screen</button></div>`;
+  const zoomBar = key => zoomToolbar(key, false);
   return `<div class="src-head"><div class="card-kicker">Source email · check the entry against this</div><div class="src-tools no-print"><button class="btn btn-ghost btn-sm" data-act="srcFont" data-d="-1" title="Smaller text">A&minus;</button><button class="btn btn-ghost btn-sm" data-act="srcFont" data-d="1" title="Larger text">A+</button>${compact ? '' : `<button class="btn btn-ghost btn-sm" data-act="srcWide" title="Give the panel more room">${S.srcWide ? 'Narrower' : 'Wider'}</button><button class="btn btn-ghost btn-sm" data-act="srcToggle" title="Hide the source panel">Hide</button>`}</div></div>
     <div class="src-subj">${esc(o.subject || o.fileName || 'Untitled order')}</div>
     <div class="src-meta">${fromOf ? `From ${esc(fromOf)}${o.sentAt ? ' · ' + esc(o.sentAt) : ''} · ` : ''}Received ${fmtWhen(o.receivedAt)} by ${esc(o.receivedBy || 'unknown')}${o.status === 'done' ? ` · Entered by ${esc(o.doneBy)} ${fmtWhen(o.doneAt)}` : ''}</div>
     ${o.notes ? `<div class="src-note">${esc(o.notes)}</div>` : ''}
-    ${imgs.map((a, i) => `<div class="src-imgblk">${zoomBar(i)}<div class="src-imgwrap" id="src-imgwrap-${i}"><img class="src-img" id="src-img-${i}" src="${a.dataUrl}" alt="${esc(a.name)}" title="Click to open full screen" data-act="srcFull" data-i="${i}"></div><div class="text-muted" style="font-size:11px">${esc(a.name)} · scroll inside the box when zoomed in</div></div>`).join('')}
+    ${imgs.map((a, i) => { const key = o.id + ':' + i; return `<div class="src-imgblk">${zoomBar(key)}<div class="zs${compact ? ' tall' : ''}" data-zs="${esc(key)}" data-name="${esc(a.name)}"><img src="${a.dataUrl}" alt="${esc(a.name)}" draggable="false"><div class="zs-hint">Drag to move · Ctrl + wheel or pinch to zoom · double-click for 2x</div></div><div class="text-muted" style="font-size:11px">${esc(a.name)}</div></div>`; }).join('')}
     ${pdfs.map(a => `<div><object class="src-pdf" data="${a.dataUrl}" type="application/pdf"><div class="text-muted" style="font-size:12px;padding:8px">This browser will not show the PDF inline. <a href="${a.dataUrl}" target="_blank" rel="noopener">Open ${esc(a.name)}</a></div></object><div class="text-muted" style="font-size:11px">${esc(a.name)} · <a href="${a.dataUrl}" target="_blank" rel="noopener">open in a new tab</a></div></div>`).join('')}
     ${others.length ? `<div class="ord-att">${others.map(a => a.dataUrl ? `<a class="btn btn-secondary btn-sm" href="${a.dataUrl}" download="${esc(a.name)}">${esc(a.name)}</a>` : `<span class="tag tag-neutral">${esc(a.name)} (name only)</span>`).join('')}</div>` : ''}
     ${o.body ? `<pre class="ord-pre src-pre" style="font-size:${S.srcFont || 13}px">${esc(o.body)}</pre>` : (!imgs.length && !pdfs.length ? '<div class="text-muted" style="font-size:12.5px">No email text was saved with this order.</div>' : '')}`;
 }
-function srcApplyScale(i) { // scale an in-panel image; 0 = fit the panel width
-  const img = document.getElementById('src-img-' + i), wrap = document.getElementById('src-imgwrap-' + i); if (!img || !wrap) return;
-  S.srcScales = S.srcScales || {}; const sc = S.srcScales[i] || 0;
-  const apply = () => { if (!sc) { img.style.width = ''; img.style.maxWidth = '100%'; } else { img.style.maxWidth = 'none'; img.style.width = Math.round(img.naturalWidth * sc) + 'px'; } const b = wrap.parentElement.querySelector('.src-pct'); if (b) b.textContent = sc ? Math.round(sc * 100) + '%' : 'Fit'; };
-  if (img.complete && img.naturalWidth) apply(); else img.onload = apply;
+// ── zoom engine: one behavior for the panel and full screen ─────────────────
+// transform-based (no nested scroll boxes), zoom at the cursor, drag to pan, pinch, slider, clamped so the image never leaves the stage
+const ZS = new Map(); // stage key -> instance
+S.zsState = S.zsState || {};
+function zoomToolbar(key, full) {
+  const k = esc(key);
+  return `<div class="zs-bar no-print" data-zsbar="${k}"><button class="btn btn-secondary btn-sm" data-act="zsCmd" data-k="${k}" data-c="out" title="Zoom out">&minus;</button><input type="range" class="zs-range" min="0" max="100" value="0" data-zsrange="${k}" title="Zoom" aria-label="Zoom"><button class="btn btn-secondary btn-sm" data-act="zsCmd" data-k="${k}" data-c="in" title="Zoom in">+</button><span class="zs-pct" data-zspct="${k}">Fit</span><button class="btn btn-secondary btn-sm" data-act="zsCmd" data-k="${k}" data-c="fit" title="Fit the whole image">Fit</button><button class="btn btn-secondary btn-sm" data-act="zsCmd" data-k="${k}" data-c="width" title="Fit the width">Width</button><button class="btn btn-secondary btn-sm" data-act="zsCmd" data-k="${k}" data-c="one" title="Actual pixels">1:1</button><button class="btn btn-secondary btn-sm" data-act="zsCmd" data-k="${k}" data-c="rot" title="Rotate">&#8635;</button>${full ? `<button class="btn btn-primary btn-sm" data-act="zsCmd" data-k="${k}" data-c="close" title="Close (Esc)">Close</button>` : `<button class="btn btn-primary btn-sm" data-act="zsCmd" data-k="${k}" data-c="full" title="Open full screen">Full screen</button>`}</div>`;
 }
-function srcRestoreScales() { Object.keys(S.srcScales || {}).forEach(i => srcApplyScale(i)); }
-function openLightbox(src, name) { // full-screen viewer: wheel zoom at the cursor, drag to pan, pinch on touch, double-click toggles 1:1 and fit
-  const lb = document.createElement('div'); lb.className = 'lightbox'; lb.innerHTML = `<div class="lb-bar"><span class="lb-name">${esc(name || '')}</span><span class="spacer"></span><button class="btn btn-secondary btn-sm" data-lb="out">&minus;</button><button class="btn btn-secondary btn-sm lb-pct" data-lb="fit">Fit</button><button class="btn btn-secondary btn-sm" data-lb="in">+</button><button class="btn btn-secondary btn-sm" data-lb="one">1:1</button><button class="btn btn-secondary btn-sm" data-lb="rot" title="Rotate">&#8635;</button><button class="btn btn-primary btn-sm" data-lb="close">Close (Esc)</button></div><div class="lb-stage"><img src="${src}" alt="${esc(name || '')}" draggable="false"></div>`;
+function makeZoomStage(stage, key, opts = {}) {
+  const img = stage.querySelector('img'); if (!img) return null;
+  const st = { scale: 1, tx: 0, ty: 0, rot: 0, fitScale: 1, min: 0.05, max: 16 };
+  const saved = S.zsState[key];
+  const bar = () => document.querySelector(`[data-zsbar="${CSS.escape(key)}"]`);
+  const dims = () => { const w = st.rot % 180 ? img.naturalHeight : img.naturalWidth, h = st.rot % 180 ? img.naturalWidth : img.naturalHeight; return { w: w || 1, h: h || 1 }; };
+  const box = () => stage.getBoundingClientRect();
+  const clamp = () => { const { w, h } = dims(), r = box(); const dw = w * st.scale, dh = h * st.scale; const sx = Math.max(0, (dw - r.width) / 2), sy = Math.max(0, (dh - r.height) / 2); st.tx = Math.min(sx, Math.max(-sx, st.tx)); st.ty = Math.min(sy, Math.max(-sy, st.ty)); };
+  const paint = (animate) => {
+    clamp(); img.style.transition = animate ? 'transform .18s ease-out' : 'none';
+    img.style.transform = `translate(${st.tx}px, ${st.ty}px) scale(${st.scale}) rotate(${st.rot}deg)`;
+    const pct = Math.round(st.scale * 100), b = bar();
+    if (b) { const p = b.querySelector('.zs-pct'); if (p) p.textContent = Math.abs(st.scale - st.fitScale) < 0.005 ? `Fit ${pct}%` : pct + '%'; const rg = b.querySelector('.zs-range'); if (rg) rg.value = String(Math.round(100 * (Math.log(st.scale / st.min) / Math.log(st.max / st.min)))); }
+    stage.classList.toggle('zoomed', st.scale > st.fitScale + 0.005);
+    S.zsState[key] = { scale: st.scale, tx: st.tx, ty: st.ty, rot: st.rot };
+  };
+  const fitCalc = () => { const { w, h } = dims(), r = box(); return Math.min(r.width / w, r.height / h) || 1; };
+  const fit = (animate = true) => { st.fitScale = fitCalc(); st.scale = st.fitScale; st.tx = 0; st.ty = 0; paint(animate); };
+  const width = () => { const { w } = dims(), r = box(); st.scale = (r.width / w) || 1; st.tx = 0; st.ty = -Infinity; paint(true); };
+  const setScale = (ns, cx, cy, animate) => { // zoom keeping the point (cx, cy) fixed on screen; cx, cy default to the stage center
+    const r = box(); ns = Math.min(st.max, Math.max(st.min, ns)); if (cx === undefined) { cx = r.left + r.width / 2; cy = r.top + r.height / 2; }
+    const px = cx - r.left - r.width / 2 - st.tx, py = cy - r.top - r.height / 2 - st.ty, k = ns / st.scale;
+    st.tx -= px * (k - 1); st.ty -= py * (k - 1); st.scale = ns; paint(animate);
+  };
+  const zoomBy = (f, cx, cy) => setScale(st.scale * f, cx, cy, true);
+  // pointer: drag to pan, two fingers to pinch
+  const pts = new Map(); let drag = null, pinch = null, moved = false;
+  const onDown = e => { if (e.button !== undefined && e.button !== 0) return; try { stage.setPointerCapture(e.pointerId); } catch (x) {} pts.set(e.pointerId, [e.clientX, e.clientY]); moved = false; if (pts.size === 1) drag = { x: e.clientX, y: e.clientY, tx: st.tx, ty: st.ty }; else if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), scale: st.scale }; drag = null; } e.preventDefault(); };
+  const onMove = e => { if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, [e.clientX, e.clientY]); if (pinch && pts.size === 2) { const [a, b] = [...pts.values()]; const d = Math.hypot(a[0] - b[0], a[1] - b[1]); setScale(pinch.scale * d / pinch.d, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, false); moved = true; } else if (drag) { const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 3) moved = true; st.tx = drag.tx + dx; st.ty = drag.ty + dy; paint(false); } };
+  const onUp = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; if (!pts.size) drag = null; };
+  const onWheel = e => { if (opts.ctrlWheel && !(e.ctrlKey || e.metaKey)) { stage.classList.add('nudge'); clearTimeout(st.nt); st.nt = setTimeout(() => stage.classList.remove('nudge'), 900); return; } e.preventDefault(); const f = Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0015)); setScale(st.scale * f, e.clientX, e.clientY, false); };
+  const onDbl = e => { e.preventDefault(); if (st.scale > st.fitScale * 1.05) fit(); else setScale(Math.max(2, st.fitScale * 2), e.clientX, e.clientY, true); };
+  stage.addEventListener('pointerdown', onDown); stage.addEventListener('pointermove', onMove); stage.addEventListener('pointerup', onUp); stage.addEventListener('pointercancel', onUp);
+  stage.addEventListener('wheel', onWheel, { passive: false }); stage.addEventListener('dblclick', onDbl);
+  const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => { const f = fitCalc(); if (Math.abs(st.scale - st.fitScale) < 0.005) { st.fitScale = f; st.scale = f; } else st.fitScale = f; paint(false); }) : null; if (ro) ro.observe(stage);
+  const inst = { fit, width, one: () => setScale(1, undefined, undefined, true), zoomBy, setScale, rotate: () => { st.rot = (st.rot + 90) % 360; fit(); }, sliderTo: v => setScale(st.min * Math.pow(st.max / st.min, v / 100), undefined, undefined, false), state: st, destroy: () => { if (ro) ro.disconnect(); ZS.delete(key); } };
+  const start = () => { st.fitScale = fitCalc(); if (saved && saved.scale) { st.scale = saved.scale; st.tx = saved.tx; st.ty = saved.ty; st.rot = saved.rot || 0; st.fitScale = fitCalc(); paint(false); } else fit(false); };
+  if (img.complete && img.naturalWidth) start(); else img.addEventListener('load', start, { once: true });
+  ZS.set(key, inst); return inst;
+}
+function zsMount() { // (re)bind every stage on the page after a render; old instances for removed DOM are dropped
+  ZS.forEach((inst, key) => { if (!document.querySelector(`.zs[data-zs="${CSS.escape(key)}"]`)) inst.destroy(); });
+  document.querySelectorAll('.zs[data-zs]').forEach(el => { const key = el.dataset.zs; if (ZS.has(key) && ZS.get(key).stage === el) return; if (ZS.has(key)) ZS.get(key).destroy(); const inst = makeZoomStage(el, key, { ctrlWheel: !el.classList.contains('zs-full') }); if (inst) inst.stage = el; });
+}
+function srcRestoreScales() { zsMount(); }
+function openLightbox(src, name, fromKey) { // full screen: wheel zooms directly, plus keyboard
+  const key = 'full:' + (fromKey || uid());
+  const lb = document.createElement('div'); lb.className = 'lightbox';
+  lb.innerHTML = `<div class="lb-bar"><span class="lb-name">${esc(name || '')}</span><span class="spacer"></span>${zoomToolbar(key, true)}</div><div class="zs zs-full" data-zs="${esc(key)}"><img src="${src}" alt="${esc(name || '')}" draggable="false"></div>`;
   document.body.appendChild(lb); document.body.classList.add('lb-open');
-  const stage = lb.querySelector('.lb-stage'), img = lb.querySelector('img'), pct = lb.querySelector('.lb-pct');
-  let scale = 1, fitScale = 1, tx = 0, ty = 0, rot = 0, drag = null, pinch = null;
-  const paint = () => { img.style.transform = `translate(${tx}px, ${ty}px) scale(${scale}) rotate(${rot}deg)`; pct.textContent = Math.round(scale * 100) + '%'; };
-  const fit = () => { const r = stage.getBoundingClientRect(); const w = rot % 180 ? img.naturalHeight : img.naturalWidth, h = rot % 180 ? img.naturalWidth : img.naturalHeight; fitScale = Math.min(r.width / w, r.height / h, 1) || 1; scale = fitScale; tx = 0; ty = 0; paint(); };
-  const zoomAt = (f, cx, cy) => { const r = stage.getBoundingClientRect(); const px = cx - r.left - r.width / 2 - tx, py = cy - r.top - r.height / 2 - ty; const ns = Math.min(12, Math.max(0.1, scale * f)); const k = ns / scale; tx -= px * (k - 1); ty -= py * (k - 1); scale = ns; paint(); };
-  const center = () => { const r = stage.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
-  const close = () => { lb.remove(); document.body.classList.remove('lb-open'); document.removeEventListener('keydown', onKey); };
-  const onKey = e => { if (e.key === 'Escape') { e.preventDefault(); close(); } else if (e.key === '+' || e.key === '=') zoomAt(1.25, ...center()); else if (e.key === '-') zoomAt(0.8, ...center()); else if (e.key === '0') fit(); };
+  const stage = lb.querySelector('.zs'); const inst = makeZoomStage(stage, key, { ctrlWheel: false }); inst.stage = stage;
+  const close = () => { inst.destroy(); delete S.zsState[key]; lb.remove(); document.body.classList.remove('lb-open'); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') { e.preventDefault(); close(); } else if (e.key === '+' || e.key === '=') inst.zoomBy(1.5); else if (e.key === '-' || e.key === '_') inst.zoomBy(1 / 1.5); else if (e.key === '0') inst.fit(); else if (e.key === '1') inst.one(); else if (e.key === 'r' || e.key === 'R') inst.rotate(); };
   document.addEventListener('keydown', onKey);
-  lb.addEventListener('click', e => { const b = e.target.closest('[data-lb]'); if (!b) return; const k = b.dataset.lb; if (k === 'close') close(); else if (k === 'in') zoomAt(1.25, ...center()); else if (k === 'out') zoomAt(0.8, ...center()); else if (k === 'fit') fit(); else if (k === 'one') { scale = 1; tx = 0; ty = 0; paint(); } else if (k === 'rot') { rot = (rot + 90) % 360; fit(); } });
-  stage.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY); }, { passive: false });
-  stage.addEventListener('dblclick', e => { if (scale > fitScale * 1.05) fit(); else zoomAt(2 / scale, e.clientX, e.clientY); });
-  const pts = new Map();
-  stage.addEventListener('pointerdown', e => { stage.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); if (pts.size === 1) drag = { x: e.clientX, y: e.clientY, tx, ty }; else if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), scale }; drag = null; } });
-  stage.addEventListener('pointermove', e => { if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, [e.clientX, e.clientY]); if (pinch && pts.size === 2) { const [a, b] = [...pts.values()]; const d = Math.hypot(a[0] - b[0], a[1] - b[1]); const ns = Math.min(12, Math.max(0.1, pinch.scale * d / pinch.d)); zoomAt(ns / scale, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2); } else if (drag) { tx = drag.tx + (e.clientX - drag.x); ty = drag.ty + (e.clientY - drag.y); paint(); } });
-  const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; if (!pts.size) drag = null; };
-  stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
-  if (img.complete && img.naturalWidth) fit(); else img.onload = fit;
-  window.addEventListener('resize', fit, { once: false });
+  inst.close = close;
+  lb.addEventListener('click', e => { if (e.target === stage) return; });
+  return inst;
 }
 function wrapSource(d, html) {
   const o = orderOfLoad(d); if (!o) return html;
@@ -32483,8 +32531,7 @@ const ORDER_ACT = {
   srcToggle: () => { S.srcOpen = S.srcOpen === false; render(); },
   srcWide: () => { S.srcWide = !S.srcWide; render(); },
   srcFont: el => { S.srcFont = Math.min(24, Math.max(10, (S.srcFont || 13) + (+el.dataset.d) * 2)); document.querySelectorAll('.src-pre').forEach(p => { p.style.fontSize = S.srcFont + 'px'; }); },
-  srcScale: el => { const i = el.dataset.i, d = +el.dataset.d; S.srcScales = S.srcScales || {}; const img = document.getElementById('src-img-' + i); const wrap = document.getElementById('src-imgwrap-' + i); const cur = S.srcScales[i] || (img && wrap ? Math.min(1, wrap.clientWidth / (img.naturalWidth || 1)) : 1); S.srcScales[i] = d === 0 ? 0 : d === 100 ? 1 : Math.min(8, Math.max(0.1, cur * (d > 0 ? 1.25 : 0.8))); srcApplyScale(i); },
-  srcFull: el => { const img = document.getElementById('src-img-' + el.dataset.i); if (img) openLightbox(img.src, img.alt); },
+  zsCmd: el => { const key = el.dataset.k, c = el.dataset.c, inst = ZS.get(key); if (!inst) return; if (c === 'in') inst.zoomBy(1.5); else if (c === 'out') inst.zoomBy(1 / 1.5); else if (c === 'fit') inst.fit(); else if (c === 'width') inst.width(); else if (c === 'one') inst.one(); else if (c === 'rot') inst.rotate(); else if (c === 'close') { if (inst.close) inst.close(); } else if (c === 'full') { const img = inst.stage.querySelector('img'); openLightbox(img.src, inst.stage.dataset.name || img.alt, key); } },
   goOrders: () => { set({ view: 'orders', openMenu: null }); window.scrollTo(0, 0); },
   ordTab: el => { S.orderTab = el.dataset.v; render(); },
   ordOpen: el => { S.orderOpen = S.orderOpen === el.dataset.id ? null : el.dataset.id; render(); },
@@ -33501,6 +33548,7 @@ const CHANGE_ACTS = new Set(['dateSet', 'draftStatus', 'draftOffice', 'facility'
 Object.assign(ACT, OPS_ACT); OPS_CHANGE.forEach(a => CHANGE_ACTS.add(a));
 Object.assign(ACT, OFFICE_ACT); OFFICE_CHANGE.forEach(a => CHANGE_ACTS.add(a));
 document.addEventListener('keydown', boardKeys);
+document.addEventListener('click', e => { const el = e.target.closest && e.target.closest('.lightbox [data-act="zsCmd"]'); if (el) ACT.zsCmd(el); });
 document.addEventListener('dragover', e => { if (!S.user || S.view !== 'orders') return; e.preventDefault(); const z = document.getElementById('order-drop'); if (z) z.classList.add('hot'); });
 document.addEventListener('dragleave', e => { const z = document.getElementById('order-drop'); if (z && (!e.relatedTarget || e.relatedTarget === document.documentElement)) z.classList.remove('hot'); });
 document.addEventListener('drop', e => { if (!S.user || S.view !== 'orders') return; handleDrop(e); });
@@ -33530,6 +33578,7 @@ app.addEventListener('change', e => {
   const el = e.target.closest('[data-act]');
   if (el && CHANGE_ACTS.has(el.dataset.act)) ACT[el.dataset.act](el, e);
 });
+document.addEventListener('input', e => { const el = e.target; if (el && el.dataset && el.dataset.zsrange !== undefined) { const inst = ZS.get(el.dataset.zsrange); if (inst) inst.sliderTo(+el.value); } });
 app.addEventListener('input', e => {
   const el = e.target; const path = el.dataset.bind; if (!path) return;
   setPath(S, path, el.value);
