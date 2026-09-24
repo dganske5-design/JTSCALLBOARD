@@ -548,6 +548,9 @@ body.m #users .fac { flex-wrap: wrap; }
 .lg-stop-body { display: flex; gap: 4px; padding: 2px 3px; }
 .lg-addr { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 3px; }
 .lg-stop.pu .lg-addr { background: #fff9d6; } .lg-stop.dl .lg-addr { background: #9be39b; }
+.lg-stop.pu .lg-compact { background: #fff9d6; } .lg-stop.dl .lg-compact { background: #9be39b; }
+.lg-compact .lg-name { font-weight: 700; cursor: default; }
+.lg-facsel, .lg-stop-h { cursor: default; }
 .lg-addr .lg-in { width: 100%; }
 .lg-c2 { grid-column: span 2; } .lg-c1 { grid-column: span 1; }
 .lg-row2 { display: flex; gap: 2px; min-width: 0; } .lg-row2 .lg-in { flex: 1; }
@@ -32799,7 +32802,7 @@ function renderLegacyEditor(d) {
         ${pu ? `<span class="lg-lbl">Lbs:</span>${inp(base + '.lines.0.weight', ln.weight, 'lg-w80 lg-num', 'inputmode="numeric"')}` : ''}<span class="lg-lbl">Pallet In/Out:</span>${inp(base + '.palletIn', s.palletIn, 'lg-w60 lg-num')}${inp(base + '.palletOut', s.palletOut, 'lg-w60 lg-num')}<span class="lg-lbl">In/Out:</span>${inp(base + '.inAt', s.inAt, 'lg-w150', 'type="datetime-local"')}${inp(base + '.outAt', s.outAt, 'lg-w150', 'type="datetime-local"')}${pu ? '' : `<span class="lg-lbl">Seal #:</span>${inp(base + '.seal', s.seal, 'lg-w100')}`}
       </div>
       ${pu ? '' : `<div class="lg-stop-r"><span class="lg-lbl" style="margin-left:auto">Reason:</span>${inp(base + '.reason', s.reason, 'lg-grow')}<span class="lg-lbl">Arrival:</span>${inp(base + '.arrival', s.arrival, 'lg-w150', 'type="datetime-local"')}</div>`}
-      <div class="lg-stop-body">
+      ${(S.lgAddrOpen || {})[kind + '-' + i] ? `<div class="lg-stop-body">
         <div class="lg-addr lg-stop-grid">
           ${inp(base + '.name', s.name, 'lg-c2', 'placeholder="Facility name"')}${inp(base + '.address', s.address, 'lg-c2', 'placeholder="Street address"')}
           ${inp(base + '.city', s.city, 'lg-req', `placeholder="City" autocomplete="off" data-ac="city" data-kind="${kind}" data-i="${i}"`)}<span class="lg-row2">${inp(base + '.st', s.st, 'lg-w40', 'placeholder="ST" maxlength="2"')}${inp(base + '.zip', s.zip, 'lg-w70', 'placeholder="ZIP"')}</span>
@@ -32810,6 +32813,7 @@ function renderLegacyEditor(d) {
       </div>
       <div class="lg-stop-r lg-gray">${chk(base + '.apptRequired', s.apptRequired, 'Appt. Required')}${pu ? `<span class="lg-lbl" style="margin-left:auto">Ground Inspector:</span>${sel(base + '.groundInspector', s.groundInspector, ['', ...GROUND_INSPECTORS], 'lg-w120')}<span class="lg-lbl">Seal #:</span>${inp(base + '.seal', s.seal, 'lg-w100')}` : ''}</div>
       <div class="lg-stop-r lg-gray">${chk(base + '.stopChecked', s.stopChecked, 'Stop Checked')}<span class="lg-lbl" style="margin-left:auto">Internal Note:</span>${inp(base + '.internalNote', s.internalNote, 'lg-grow', 'placeholder="Never prints"')}</div>
+      <div class="lg-stop-r lg-gray"><button class="lg-link" data-act="lgAddr" data-k="${kind}-${i}">hide details</button></div>` : `<div class="lg-stop-r lg-compact">${inp(base + '.name', s.name, 'lg-grow lg-name', 'placeholder="Facility name" title="Double-click for the address and details"')}${inp(base + '.phone', s.phone, 'lg-w150', 'placeholder="Phone" type="tel"')}<button class="lg-link" data-act="lgAddr" data-k="${kind}-${i}" title="Address, contact, commodity, notes, appointment and seal">details</button></div>`}
     </div>`;
   };
   const billRow = (b, i) => `<tr><td>${b.billTo !== '' || i === 0 ? sel(`draft.bills.${i}.billTo`, b.billTo, ['', 'TBA - TO BE ANNOUNCED', ...custs], 'lg-bill-to') : `<span class="lg-truck-tag" title="Carrier pay line">TRUCK PAY</span>`}</td><td>${sel(`draft.bills.${i}.product`, b.product, BILL_PRODUCTS)}</td><td>${inp(`draft.bills.${i}.rate`, b.rate, 'lg-num lg-w80', 'placeholder=".00" inputmode="decimal"')}</td><td>${sel(`draft.bills.${i}.method`, b.method, BILL_METHODS)}</td><td>${inp(`draft.bills.${i}.qty`, b.qty, 'lg-num lg-w50')}</td><td class="lg-num"><span id="lg-sub-${i}">${money(billAmt(b)).replace('$', '')}</span></td><td><button class="lg-link" data-act="lgRmBill" data-i="${i}" title="Remove line">x</button></td></tr>`;
@@ -32847,7 +32851,7 @@ function renderLegacyEditor(d) {
     </div>
     <div class="lg-main">
       <div class="lg-top">
-        <div class="lg-r"><span class="lg-lbl">Ship Date:</span>${inp('draft.pickups.0.date', (d.pickups[0] || {}).date, 'lg-w110', 'type="date"')}<span class="lg-lbl">Commodity:</span><input class="lg-in lg-w180" list="comm-list" value="${esc(((d.pickups[0] || {}).lines || [{}])[0].commodity || '')}" data-bind="draft.pickups.0.lines.0.commodity"${ro}><span class="lg-lbl">Weight:</span><span class="lg-in lg-w60 lg-num lg-static" id="tot-wt">${fmt(w.wt)}</span><span class="lg-lbl">Pallets:</span><span class="lg-in lg-w50 lg-num lg-static" id="tot-plt">${fmt(w.plt)}</span><span class="lg-lbl">Miles:</span>${inp('draft.miles', d.miles, 'lg-w60 lg-num lg-req', 'inputmode="numeric"')}${ico('&#128207;', 'Calculate miles from the stops', 'lgMiles')}
+        <div class="lg-r"><span class="lg-lbl">Ship Date:</span>${inp('draft.pickups.0.date', (d.pickups[0] || {}).date, 'lg-w110', 'type="date"')}<span class="lg-lbl">Commodity:</span><input class="lg-in lg-w180" list="comm-list" value="${esc(((d.pickups[0] || {}).lines || [{}])[0].commodity || '')}" data-bind="draft.pickups.0.lines.0.commodity"${ro}><span class="lg-lbl">Weight:</span><span class="lg-in lg-w60 lg-num lg-static" id="tot-wt">${fmt(w.wt)}</span><span class="lg-lbl">Pallets:</span>${inp('draft.pickups.0.lines.0.pallets', ((d.pickups[0] || {}).lines || [{}])[0].pallets, 'lg-w50 lg-num', 'inputmode="numeric" title="Pallets on the first pickup"')}<span class="lg-lbl">Miles:</span>${inp('draft.miles', d.miles, 'lg-w60 lg-num lg-req', 'inputmode="numeric"')}${ico('&#128207;', 'Calculate miles from the stops', 'lgMiles')}
           <span class="lg-topbtns"><button class="lg-btn" data-act="lgCheck">Check</button><button class="lg-ico lg-dollar" title="Lane rates" data-act="lgRates">$</button><span class="lg-lbl">File:</span><span class="lg-fileno${isNew ? ' new' : ''}">${esc(d.fileNo)}</span></span></div>
         <div class="lg-r"><span class="lg-lbl">Ship PO:</span>${inp('draft.shipPO', d.shipPO, 'lg-grow')}
           <span class="lg-topbtns"><button class="lg-btn" data-act="cancel">Return</button><button class="lg-btn" data-act="lgDispatch" title="Save and mark Dispatched">Dispatch</button><button class="lg-btn" data-act="save" title="Save this file">Load</button><button class="lg-btn lg-active" data-act="lgActiveQ" title="Save and go to the board">Active Q</button></span></div>
@@ -32896,6 +32900,7 @@ function renderLgSide(d) {
 }
 const LG_ACT = {
   lgTab: el => { S.lgTab = el.dataset.v; render(); },
+  lgAddr: el => { S.lgAddrOpen = S.lgAddrOpen || {}; S.lgAddrOpen[el.dataset.k] = !S.lgAddrOpen[el.dataset.k]; render(); },
   lgSide: el => { S.lgSide = S.lgSide === el.dataset.v ? '' : el.dataset.v; render(); },
   lgSel: el => { setPath(S, el.dataset.path, el.value); if (/\.(billTo|product|method)$/.test(el.dataset.path) || el.dataset.path === 'draft.equip') render(); else lgRefresh(); },
   lgChk: el => { setPath(S, el.dataset.path, !!el.checked); },
@@ -33953,6 +33958,7 @@ I.doc12 = svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V
 I.clock18 = svg('<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>', 18);
 I.inbox18 = svg('<path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>', 18);
 Object.assign(ACT, ORDER_ACT); Object.assign(ACT, LG_ACT); LG_CHANGE.forEach(a => CHANGE_ACTS.add(a));
+document.addEventListener('dblclick', e => { if (S.view !== 'builder') return; const st = e.target.closest && e.target.closest('.lg-stop'); if (!st) return; if (!(e.target.closest('.lg-facsel, .lg-name, .lg-stop-h, .lg-compact'))) return; e.preventDefault(); const k = st.dataset.kind + '-' + st.dataset.i; S.lgAddrOpen = S.lgAddrOpen || {}; S.lgAddrOpen[k] = !S.lgAddrOpen[k]; render(); });
 document.addEventListener('keydown', e => { if (!S.user || S.view !== 'builder' || !e.altKey || isMobile()) return; const k = e.key.toLowerCase(); const t = k === 'z' ? 'loading' : k === 'x' ? 'accounting' : k === 'c' ? 'trace' : ''; if (t) { e.preventDefault(); S.lgTab = t; render(); } });
 I.shield18 = svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path>', 18);
 
