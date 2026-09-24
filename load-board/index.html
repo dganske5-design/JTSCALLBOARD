@@ -504,6 +504,7 @@ body.m #users .fac { flex-wrap: wrap; }
 .lg-btn { font: inherit; font-size: 11px; padding: 2px 10px; border: 1px solid #707070; background: linear-gradient(#fdfdfd, #e6e6e6); border-radius: 3px; cursor: pointer; color: #000; white-space: nowrap; }
 .lg-btn:hover { background: linear-gradient(#fff, #d9e6f5); border-color: #3b78c4; }
 .lg-btn.on { background: #ffe680; }
+.lg-btn.lg-board { font-weight: 700; }
 .lg-btn.lg-active { background: #4f8fe0; color: #fff; border-color: #2b5fa8; border-radius: 10px; }
 .lg-banner { flex: 1; min-width: 200px; text-align: right; padding: 3px 10px; font-weight: 700; font-size: 12px; }
 .lg-banner.add { background: #5cff5c; } .lg-banner.edit { background: #ffe680; }
@@ -32891,9 +32892,9 @@ function renderLegacyEditor(d) {
   return `<main id="lgedit" class="lg${locked ? ' locked' : ''}">
     <div class="lg-titlebar">${I.truckRed}<span>[${isNew ? 'New File' : 'File ' + esc(d.fileNo)}] Load Editor - (${esc(d.office || OFFICES[0])})</span></div>
     <div class="lg-toolbar">
-      <button class="lg-ico" title="First file" data-act="lgNav" data-d="first">|&#9664;</button><button class="lg-ico" title="Previous file" data-act="lgNav" data-d="prev">&#9664;</button><button class="lg-ico" title="Next file" data-act="lgNav" data-d="next">&#9654;</button><button class="lg-ico" title="Last file" data-act="lgNav" data-d="last">&#9654;|</button>
+      <button class="lg-btn lg-board" data-act="lgLeave" title="Back to the load board">&#9664; Board</button><span class="lg-sep"></span><button class="lg-ico" title="First file" data-act="lgNav" data-d="first">|&#9664;</button><button class="lg-ico" title="Previous file" data-act="lgNav" data-d="prev">&#9664;</button><button class="lg-ico" title="Next file" data-act="lgNav" data-d="next">&#9654;</button><button class="lg-ico" title="Last file" data-act="lgNav" data-d="last">&#9654;|</button>
       <input class="lg-in lg-w80" id="lg-goto" placeholder="File #" data-enter="lg-goto-btn" title="Type a file number and press Enter"><button class="lg-ico" id="lg-goto-btn" data-act="lgGoto" style="display:none"></button><span class="lg-count">${fmt(S.loads.length)} Files</span>
-      <span class="lg-sep"></span>${ico('&#128196;', 'New file', 'newLoad')}${ico('&#9998;', locked ? 'Unlock for editing' : 'Editing', 'lgLock')}${ico('&#128190;', 'Save', 'save')}${ico('&#8630;', 'Undo changes', 'lgUndo')}${ico('&#10006;', 'Delete file', 'lgDelete')}${ico('&#128269;', 'Find file', 'lgFind')}${ico('&#128203;', 'Copy file', 'lgCopy')}${ico('&#128424;', 'Print tender', 'lgPrint')}
+      <span class="lg-sep"></span>${ico('&#128196;', 'New file', 'newLoad')}${ico('&#9998;', locked ? 'Unlock for editing' : 'Edit (this file is open for editing). Click Board or Return to leave.', 'lgEdit')}${ico('&#128190;', 'Save', 'save')}${ico('&#8630;', 'Undo changes', 'lgUndo')}${ico('&#10006;', isNew ? 'Discard this new file and go back to the board' : 'Delete this file', 'lgDelete')}${ico('&#128269;', 'Find file', 'lgFind')}${ico('&#128203;', 'Copy file', 'lgCopy')}${ico('&#128424;', 'Print tender', 'lgPrint')}
       <span class="lg-sep"></span><button class="lg-btn${locked ? ' on' : ''}" data-act="lgLock">Lockdown</button>${banner}
     </div>
     <div class="lg-tabs">${[['loading', 'Loading <u>Z</u>'], ['accounting', 'Accounting <u>X</u>'], ['trace', 'Trace <u>C</u>']].map(([k, l]) => `<button class="lg-tab${tab === k ? ' on' : ''}" data-act="lgTab" data-v="${k}">${l}</button>`).join('')}</div>
@@ -32933,7 +32934,9 @@ const LG_ACT = {
   lgRmAdv: el => { S.draft.advances.splice(+el.dataset.i, 1); render(); },
   lgLock: () => { S.lgLocked = !S.lgLocked; render(); },
   lgUndo: () => { const d = S.draft; const orig = S.loads.find(l => l.id === d.id); confirmUI('Undo changes?', orig ? 'Reloads the file as last saved.' : 'Clears everything on this new file.', 'Undo').then(ok => { if (!ok) return; S.draft = orig ? normalizeDraft(clone(orig)) : blankDraft(); render(); }); },
-  lgDelete: () => { const d = S.draft; if (!S.loads.some(l => l.id === d.id)) { notify('Nothing to delete', 'This file has not been saved yet. Use Return to leave it.'); return; } confirmUI('Delete file ' + d.fileNo + '?', 'This removes the file from the board for everyone on this computer.').then(ok => { if (ok) set({ loads: S.loads.filter(x => x.id !== d.id), draft: null, view: 'board' }); }); },
+  lgDelete: () => { const d = S.draft; if (!S.loads.some(l => l.id === d.id)) { confirmUI('Discard new file ' + d.fileNo + '?', 'Nothing has been saved. You go back to the load board.', 'Discard').then(ok => { if (ok) { S.lgLocked = false; set({ draft: null, view: 'board' }); window.scrollTo(0, 0); } }); return; } confirmUI('Delete file ' + d.fileNo + '?', 'This removes the file from the board for everyone on this computer.').then(ok => { if (ok) { S.lgLocked = false; set({ loads: S.loads.filter(x => x.id !== d.id), draft: null, view: 'board' }); window.scrollTo(0, 0); } }); },
+  lgLeave: () => { S.lgLocked = false; set({ draft: null, view: 'board' }); window.scrollTo(0, 0); },
+  lgEdit: () => { if (S.lgLocked) { S.lgLocked = false; render(); toast('File unlocked for editing'); } else toast('This file is already open for editing. Use Load to save, or Board / Return to leave.'); },
   lgFind: () => { dialog({ title: 'Find file', body: 'File number, customer or city.', input: 'text', placeholder: 'e.g. 2442380', okLabel: 'Find' }).then(q => { if (!q) return; q = String(q).trim().toLowerCase(); const l = S.loads.find(x => String(x.fileNo).toLowerCase() === q) || S.loads.find(x => [x.fileNo, x.customer, (x.pickups[0] || {}).city, finalDrop(x).city].join(' ').toLowerCase().includes(q)); if (!l) { notify('Not found', 'No file matches ' + q + '.'); return; } set({ draft: normalizeDraft(clone(l)), view: 'builder' }); }); },
   lgGoto: () => { const inp = document.getElementById('lg-goto'); const q = (inp ? inp.value : '').trim(); if (!q) return; const l = S.loads.find(x => String(x.fileNo) === q); if (!l) { notify('Not found', 'No file ' + q + '.'); return; } set({ draft: normalizeDraft(clone(l)), view: 'builder' }); },
   lgNav: el => { const sorted = S.loads.slice().sort((a, b) => String(a.fileNo).localeCompare(String(b.fileNo))); if (!sorted.length) return; const i = sorted.findIndex(x => x.id === S.draft.id); const j = el.dataset.d === 'first' ? 0 : el.dataset.d === 'last' ? sorted.length - 1 : el.dataset.d === 'prev' ? Math.max(0, i - 1) : Math.min(sorted.length - 1, i < 0 ? 0 : i + 1); set({ draft: normalizeDraft(clone(sorted[j])), view: 'builder' }); },
@@ -33772,7 +33775,7 @@ const ACT = {
   delete: el => { const l = S.loads.find(x => x.id === el.dataset.id); if (!l) return; confirmUI('Delete file ' + l.fileNo + '?', 'This removes the file from the board for everyone on this computer.').then(ok => { if (ok) set({ loads: S.loads.filter(x => x.id !== l.id) }); }); },
   print: () => window.print(),
   // builder
-  cancel: () => { set({ draft: null, view: 'board' }); window.scrollTo(0, 0); },
+  cancel: () => { S.lgLocked = false; set({ draft: null, view: 'board' }); window.scrollTo(0, 0); },
   save: () => saveDraft(),
   draftStatus: el => { S.draft.status = el.value; },
   draftOffice: el => { S.draft.office = el.value; },
@@ -33972,6 +33975,7 @@ I.clock18 = svg('<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></
 I.inbox18 = svg('<path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>', 18);
 Object.assign(ACT, ORDER_ACT); Object.assign(ACT, LG_ACT); LG_CHANGE.forEach(a => CHANGE_ACTS.add(a));
 document.addEventListener('dblclick', e => { if (S.view !== 'builder') return; const st = e.target.closest && e.target.closest('.lg-stop'); if (!st) return; if (!(e.target.closest('.lg-facsel, .lg-name, .lg-stop-h, .lg-compact'))) return; e.preventDefault(); const k = st.dataset.kind + '-' + st.dataset.i; S.lgAddrOpen = S.lgAddrOpen || {}; S.lgAddrOpen[k] = !S.lgAddrOpen[k]; render(); });
+document.addEventListener('keydown', e => { if (!S.user || S.view !== 'builder' || e.key !== 'Escape' || isMobile() || document.querySelector('.dialog-backdrop')) return; if (e.target && e.target.matches && e.target.matches('input, select, textarea')) { e.target.blur(); return; } confirmUI('Leave the load editor?', 'Unsaved changes on this file are lost.', 'Leave').then(ok => { if (ok) ACT.lgLeave(); }); });
 document.addEventListener('keydown', e => { if (!S.user || S.view !== 'builder' || !e.altKey || isMobile()) return; const k = e.key.toLowerCase(); const t = k === 'z' ? 'loading' : k === 'x' ? 'accounting' : k === 'c' ? 'trace' : ''; if (t) { e.preventDefault(); S.lgTab = t; render(); } });
 I.shield18 = svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path>', 18);
 
