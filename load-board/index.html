@@ -550,6 +550,16 @@ body.m #users .fac { flex-wrap: wrap; }
 .lg-stop.pu .lg-addr { background: #fff9d6; } .lg-stop.dl .lg-addr { background: #9be39b; }
 .lg-stop.pu .lg-compact { background: #fff9d6; } .lg-stop.dl .lg-compact { background: #9be39b; }
 .lg-compact .lg-name { font-weight: 700; cursor: default; }
+.lg-compact-body { padding: 2px 3px 3px; }
+.lg-notes-big { width: 100%; height: 64px; min-height: 40px; resize: vertical; font-size: 12px; background: #fffef2; }
+.lg-stop.dl .lg-notes-big { background: #f2fff2; }
+.lg-log { padding: 2px 6px 4px; background: #f7f7f7; border-top: 1px solid #ddd; max-height: 130px; overflow: auto; }
+.lg-log > div { display: flex; gap: 8px; padding: 2px 0; border-bottom: 1px dotted #ddd; font-size: 11px; }
+.lg-log-when { flex: none; width: 118px; color: #444; font-variant-numeric: tabular-nums; }
+.lg-log-who { flex: none; width: 150px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lg-log-txt { flex: 1; min-width: 0; }
+.lg-log-peek { margin-top: 2px; font-size: 11px; color: #444; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lg-log-peek:hover { text-decoration: underline; }
 .lg-facsel, .lg-stop-h { cursor: default; }
 .lg-addr .lg-in { width: 100%; }
 .lg-c2 { grid-column: span 2; } .lg-c1 { grid-column: span 1; }
@@ -32812,8 +32822,10 @@ function renderLegacyEditor(d) {
         <textarea class="lg-in lg-notes" placeholder="Stop notes (print on the tender)" data-bind="${base}.notes"${ro}>${esc(s.notes || '')}</textarea>
       </div>
       <div class="lg-stop-r lg-gray">${chk(base + '.apptRequired', s.apptRequired, 'Appt. Required')}${pu ? `<span class="lg-lbl" style="margin-left:auto">Ground Inspector:</span>${sel(base + '.groundInspector', s.groundInspector, ['', ...GROUND_INSPECTORS], 'lg-w120')}<span class="lg-lbl">Seal #:</span>${inp(base + '.seal', s.seal, 'lg-w100')}` : ''}</div>
-      <div class="lg-stop-r lg-gray">${chk(base + '.stopChecked', s.stopChecked, 'Stop Checked')}<span class="lg-lbl" style="margin-left:auto">Internal Note:</span>${inp(base + '.internalNote', s.internalNote, 'lg-grow', 'placeholder="Never prints"')}</div>
-      <div class="lg-stop-r lg-gray"><button class="lg-link" data-act="lgAddr" data-k="${kind}-${i}">hide details</button></div>` : `<div class="lg-stop-r lg-compact">${inp(base + '.name', s.name, 'lg-grow lg-name', 'placeholder="Facility name" title="Double-click for the address and details"')}${inp(base + '.phone', s.phone, 'lg-w150', 'placeholder="Phone" type="tel"')}<button class="lg-link" data-act="lgAddr" data-k="${kind}-${i}" title="Address, contact, commodity, notes, appointment and seal">details</button></div>`}
+      <div class="lg-stop-r lg-gray">${chk(base + '.stopChecked', s.stopChecked, 'Stop Checked')}<span class="lg-lbl" style="margin-left:auto">Internal Note:</span><input class="lg-in lg-grow" id="lgnote-${kind}-${i}" placeholder="Type a note and press Enter. Stamped with the date, time and your name. Never prints." data-enter="lgnote-btn-${kind}-${i}"${ro}><button class="lg-btn" id="lgnote-btn-${kind}-${i}" data-act="lgNote" data-kind="${kind}" data-i="${i}">Add</button></div>
+      ${(s.calls || []).length ? `<div class="lg-log">${(s.calls || []).slice().reverse().map(c => `<div><span class="lg-log-when">${new Date(c.at).toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit', hour: 'numeric', minute: '2-digit' })}</span><span class="lg-log-who">${esc(c.by || '')}${c.who ? ' (spoke to ' + esc(c.who) + ')' : ''}</span><span class="lg-log-txt">${esc(c.text)}</span></div>`).join('')}</div>` : ''}
+      <div class="lg-stop-r lg-gray"><button class="lg-link" data-act="lgAddr" data-k="${kind}-${i}">hide details</button></div>` : `<div class="lg-stop-r lg-compact">${inp(base + '.name', s.name, 'lg-grow lg-name', 'placeholder="Facility name" title="Double-click for the address and details"')}${inp(base + '.phone', s.phone, 'lg-w150', 'placeholder="Phone" type="tel"')}<button class="lg-link" data-act="lgAddr" data-k="${kind}-${i}" title="Address, contact, commodity, internal log, appointment and seal">details</button></div>
+      <div class="lg-compact-body"><textarea class="lg-in lg-notes-big" data-bind="${base}.notes" placeholder="Important ${pu ? 'pickup' : 'delivery'} details that print on the tender: appointment instructions, ${pu ? 'PU numbers' : 'PO numbers'}, pallet counts, temperature, lumper, check-in steps"${ro}>${esc(s.notes || '')}</textarea>${(s.calls || []).length ? `<div class="lg-log-peek" data-act="lgAddr" data-k="${kind}-${i}" title="Open details for the full internal log">Internal log: ${(s.calls || []).length} note${(s.calls || []).length === 1 ? '' : 's'} · last ${fmtWhen((s.calls || [])[(s.calls || []).length - 1].at)}: ${esc((s.calls || [])[(s.calls || []).length - 1].text.slice(0, 90))}</div>` : ''}</div>`}
     </div>`;
   };
   const billRow = (b, i) => `<tr><td>${b.billTo !== '' || i === 0 ? sel(`draft.bills.${i}.billTo`, b.billTo, ['', 'TBA - TO BE ANNOUNCED', ...custs], 'lg-bill-to') : `<span class="lg-truck-tag" title="Carrier pay line">TRUCK PAY</span>`}</td><td>${sel(`draft.bills.${i}.product`, b.product, BILL_PRODUCTS)}</td><td>${inp(`draft.bills.${i}.rate`, b.rate, 'lg-num lg-w80', 'placeholder=".00" inputmode="decimal"')}</td><td>${sel(`draft.bills.${i}.method`, b.method, BILL_METHODS)}</td><td>${inp(`draft.bills.${i}.qty`, b.qty, 'lg-num lg-w50')}</td><td class="lg-num"><span id="lg-sub-${i}">${money(billAmt(b)).replace('$', '')}</span></td><td><button class="lg-link" data-act="lgRmBill" data-i="${i}" title="Remove line">x</button></td></tr>`;
@@ -32901,6 +32913,7 @@ function renderLgSide(d) {
 const LG_ACT = {
   lgTab: el => { S.lgTab = el.dataset.v; render(); },
   lgAddr: el => { S.lgAddrOpen = S.lgAddrOpen || {}; S.lgAddrOpen[el.dataset.k] = !S.lgAddrOpen[el.dataset.k]; render(); },
+  lgNote: el => { const k = el.dataset.kind, i = +el.dataset.i, inp = document.getElementById(`lgnote-${k}-${i}`); const text = (inp ? inp.value : '').trim(); if (!text) { if (inp) inp.focus(); return; } const st = S.draft[k][i]; st.calls = st.calls || []; st.calls.push({ at: Date.now(), by: S.user.name, who: '', text }); render(); const n = document.getElementById(`lgnote-${k}-${i}`); if (n) n.focus(); },
   lgSide: el => { S.lgSide = S.lgSide === el.dataset.v ? '' : el.dataset.v; render(); },
   lgSel: el => { setPath(S, el.dataset.path, el.value); if (/\.(billTo|product|method)$/.test(el.dataset.path) || el.dataset.path === 'draft.equip') render(); else lgRefresh(); },
   lgChk: el => { setPath(S, el.dataset.path, !!el.checked); },
