@@ -31404,7 +31404,7 @@ function renderTender(l) {
       ${head(p)}
       ${stopTimes('pickups', i, p)}
       <table class="table"><thead><tr><th>PU #</th><th>Commodity</th>${showDest ? '<th>Deliver to</th>' : ''}<th class="r">Pallets</th><th class="r">Pieces</th><th class="r">Weight (lbs)</th></tr></thead><tbody>
-        ${p.lines.map(ln => `<tr><td style="white-space:nowrap">${esc(ln.no || '—')}${ln.pos ? ` <span class="pos-tag">${esc(ln.pos.toUpperCase())}</span>` : ''}</td><td>${esc(ln.commodity || '—')}</td>${showDest ? `<td>Drop ${(ln.dropIdx || 0) + 1}</td>` : ''}<td class="r">${fmt(num(ln.pallets))}</td><td class="r">${fmt(num(ln.cases))}</td><td class="r">${fmt(num(ln.weight))}</td></tr>`).join('')}
+        ${(p.lines || []).map(ln => `<tr><td style="white-space:nowrap">${esc(ln.no || '—')}${ln.pos ? ` <span class="pos-tag">${esc(ln.pos.toUpperCase())}</span>` : ''}</td><td>${esc(ln.commodity || '—')}</td>${showDest ? `<td>Drop ${(ln.dropIdx || 0) + 1}</td>` : ''}<td class="r">${fmt(num(ln.pallets))}</td><td class="r">${fmt(num(ln.cases))}</td><td class="r">${fmt(num(ln.weight))}</td></tr>`).join('')}
         <tr style="font-weight:700"><td></td><td>Stop total</td>${showDest ? '<td></td>' : ''}<td class="r">${fmt(st.plt)}</td><td class="r">${fmt(st.cs)}</td><td class="r">${fmt(st.wt)}</td></tr>
       </tbody></table>
       ${notes(p)}
@@ -31412,7 +31412,7 @@ function renderTender(l) {
   }).join('');
   const drops = l.drops.map((dr, i) => {
     const rows = [];
-    l.pickups.forEach((p, pi) => p.lines.forEach(ln => { if ((ln.dropIdx || 0) === i) rows.push(`<tr><td style="white-space:nowrap">${esc(ln.no || '—')}${ln.pos ? ` <span class="pos-tag">${esc(ln.pos.toUpperCase())}</span>` : ''}</td><td>${esc(ln.commodity || '—')}</td>${showOrigin ? `<td>Pickup ${pi + 1}</td>` : ''}<td class="r">${fmt(num(ln.pallets))}</td><td class="r">${fmt(num(ln.cases))}</td><td class="r">${fmt(num(ln.weight))}</td></tr>`); }));
+    l.pickups.forEach((p, pi) => (p.lines || []).forEach(ln => { if ((ln.dropIdx || 0) === i) rows.push(`<tr><td style="white-space:nowrap">${esc(ln.no || '—')}${ln.pos ? ` <span class="pos-tag">${esc(ln.pos.toUpperCase())}</span>` : ''}</td><td>${esc(ln.commodity || '—')}</td>${showOrigin ? `<td>Pickup ${pi + 1}</td>` : ''}<td class="r">${fmt(num(ln.pallets))}</td><td class="r">${fmt(num(ln.cases))}</td><td class="r">${fmt(num(ln.weight))}</td></tr>`); }));
     const at = assignedTotals(l, i);
     return `<div class="t-stop drop">
       <div class="stop-head"><span class="t-stop-label">Delivery ${i + 1}${l.drops.length > 1 ? ' of ' + l.drops.length : ''}</span><span class="tag tag-outline">DEL # ${esc(dr.ref || 'TBD')}</span><div class="spacer"></div><span style="font-size:13px">Appt: <strong>${esc(appt(dr))}</strong></span></div>
@@ -32172,6 +32172,17 @@ const officeFromSlug = s => { const m = OFFICE_META.find(o => o[2] === String(s 
 const repIsUser = () => !!(S.user && REPS.includes(S.user.name));
 
 // one-time migration of anything saved under the old office names
+function healLoads() { // files saved by earlier versions may lack pieces newer screens expect
+  S.loads = (S.loads || []).filter(l => l && typeof l === 'object').map(l => {
+    if (!l.id) l.id = uid(); if (!l.fileNo) l.fileNo = nextFileNo(); if (!l.status) l.status = 'Open';
+    if (!Array.isArray(l.pickups) || !l.pickups.length) l.pickups = [{ ...blankStop(), lines: [blankLine()] }];
+    if (!Array.isArray(l.drops) || !l.drops.length) l.drops = [blankStop()];
+    l.pickups.forEach(p => { if (!Array.isArray(p.lines) || !p.lines.length) p.lines = [blankLine(p.ref || '', '')]; p.lines.forEach(ln => { if (!ln.id) ln.id = uid(); }); if (!p.id) p.id = uid(); });
+    l.drops.forEach(d => { if (!d.id) d.id = uid(); });
+    if (!l.createdAt) l.createdAt = Date.now();
+    return l;
+  });
+}
 function migrateOffices() {
   const demo = id => /^[LX]/.test(String(id));
   S.loads.forEach(l => {
@@ -33734,6 +33745,7 @@ function render() {
   if (S.view === 'tender' && !S.loads.some(l => l.id === S.tenderId)) S.view = 'board';
   renderShell();
   const v = $('#view');
+  try {
   if (S.view === 'board') { v.innerHTML = renderBoard(); renderBoardBody(); }
   else if (S.view === 'builder') v.innerHTML = renderBuilder();
   else if (S.view === 'tender') { v.innerHTML = renderFile(S.loads.find(l => l.id === S.tenderId)); if (S.fileTab === 'tracking') refreshDistances(); }
@@ -33744,9 +33756,15 @@ function render() {
   else if (S.view === 'carrier') v.innerHTML = renderCarrierDetail();
   else if (S.view === 'report') v.innerHTML = renderReport();
   else if (S.view === 'rates') { v.innerHTML = renderRates(); rtRefresh(); }
+  } catch (err) {
+    console.error(err);
+    v.innerHTML = `<main style="padding:24px;max-width:760px"><div class="card blueprint" style="border-color:#c40000">${CORNERS}<div class="card-kicker" style="color:#c40000">This screen hit an error</div><div style="font-size:13px">${esc(String(err && err.message || err))}</div><div class="text-muted" style="font-size:12px">The file is still saved. Go back to the board and try again; if it keeps happening, send Drew this message.</div><div class="ctl-row" style="margin-top:8px"><button class="btn btn-primary" data-act="goBoard">Back to board</button>${S.tenderId ? `<button class="btn btn-secondary" data-act="edit" data-id="${esc(S.tenderId)}">Open in the editor</button>` : ''}</div></div></main>`;
+    if (S.view !== 'board') S.lastError = { view: S.view, message: String(err && err.message || err), at: Date.now() };
+  }
   linkifyPhones(v); stripDashes(app); srcRestoreScales();
   measureShell();
 }
+window.addEventListener('error', e => { try { if (typeof toast === 'function' && S && S.user) toast('Something went wrong: ' + esc(e.message || 'unknown error'), 6000); } catch (x) {} });
 function measureShell() {
   const strip = $('#strip'), nav = $('#nav');
   document.documentElement.style.setProperty('--strip-h', strip.offsetHeight + 'px');
@@ -34026,7 +34044,7 @@ app.addEventListener('submit', e => {
   const u = signIn(form.username.value, form.password.value);
   if (!u) { S.loginErr = 'Wrong username or password.'; $('#login-err').textContent = S.loginErr; form.password.value = ''; form.password.focus(); return; }
   writeSession(u.username, form.remember.checked);
-  S.user = u; S.users = loadUsers(); S.loginErr = ''; migrateOffices(); bvLoad(); render(); intakeSchedule();
+  S.user = u; S.users = loadUsers(); S.loginErr = ''; healLoads(); migrateOffices(); bvLoad(); render(); intakeSchedule();
 });
 
 // menubar: click toggles, hover switches once one is open, outside click / Escape closes
@@ -34062,7 +34080,7 @@ setInterval(() => {
 }, 60000);
 applySkin(S.skin);
 (() => { let removed = false; try { removed = localStorage.getItem('jts_rt_hist') === 'removed'; } catch (e) {} if (!removed && !S.loads.some(l => String(l.id).startsWith('H'))) S.loads = [...S.loads, ...demoHistory()]; })();
-officeSeedOnce(); migrateOffices();
+healLoads(); officeSeedOnce(); migrateOffices();
 opsDemoSeed();
 persist();
 bvLoad();
