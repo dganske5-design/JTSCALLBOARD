@@ -493,6 +493,88 @@ body.m #users .fac { flex-wrap: wrap; }
   #tender-sheet .corner { display: none !important; }
   .grid-wrap { border-color: #000; }
 }
+/* ── Legacy load editor ────────────────────────────────────────────────── */
+.lg { font-family: Tahoma, "Segoe UI", Verdana, sans-serif; font-size: 11px; color: #000; background: #f0f0f0; display: flex; flex-direction: column; min-height: calc(100vh - var(--shell-h)); }
+.lg-titlebar { display: flex; align-items: center; gap: 6px; padding: 3px 8px; background: #fff; border-bottom: 1px solid #d0d0d0; font-size: 12px; }
+.lg-toolbar { display: flex; align-items: center; gap: 3px; padding: 3px 6px; background: #f0f0f0; border-bottom: 1px solid #c8c8c8; flex-wrap: wrap; }
+.lg-ico { width: 22px; height: 22px; border: 1px solid transparent; background: transparent; cursor: pointer; font-size: 13px; line-height: 1; padding: 0; color: #333; flex: none; }
+.lg-ico:hover { border-color: #7a9cc6; background: #e5f0ff; }
+.lg-count { font-size: 11px; margin: 0 6px; white-space: nowrap; }
+.lg-sep { width: 1px; height: 18px; background: #c0c0c0; margin: 0 4px; flex: none; }
+.lg-btn { font: inherit; font-size: 11px; padding: 2px 10px; border: 1px solid #707070; background: linear-gradient(#fdfdfd, #e6e6e6); border-radius: 3px; cursor: pointer; color: #000; white-space: nowrap; }
+.lg-btn:hover { background: linear-gradient(#fff, #d9e6f5); border-color: #3b78c4; }
+.lg-btn.on { background: #ffe680; }
+.lg-btn.lg-active { background: #4f8fe0; color: #fff; border-color: #2b5fa8; border-radius: 10px; }
+.lg-banner { flex: 1; min-width: 200px; text-align: right; padding: 3px 10px; font-weight: 700; font-size: 12px; }
+.lg-banner.add { background: #5cff5c; } .lg-banner.edit { background: #ffe680; }
+.lg-tabs { display: flex; gap: 2px; padding: 4px 6px 0; background: #f0f0f0; }
+.lg-tab { font: inherit; font-size: 11px; padding: 3px 8px; border: 1px solid #a0a0a0; border-bottom: none; background: #e8e8e8; cursor: pointer; color: #000; }
+.lg-tab.on { background: #fff; font-weight: 700; position: relative; top: 1px; }
+.lg-body { display: flex; align-items: stretch; background: #fff; border-top: 1px solid #a0a0a0; flex: 1; min-height: 0; }
+.lg-left { width: 312px; flex: none; padding: 4px; border-right: 1px solid #c8c8c8; background: #f7f7f7; display: flex; flex-direction: column; gap: 6px; }
+.lg-main { flex: 1; min-width: 0; padding: 4px 6px; display: flex; flex-direction: column; gap: 6px; }
+.lg-group { border: 1px solid #c8c8c8; background: #f0f0f0; }
+.lg-group-h { font-weight: 700; padding: 2px 4px; background: #e4e4e4; border-bottom: 1px solid #c8c8c8; }
+.lg-r { display: flex; align-items: center; gap: 3px; padding: 1px 3px; }
+.lg-lbl { white-space: nowrap; text-align: right; }
+.lg-lw { width: 74px; flex: none; }
+.lg-in { font: inherit; font-size: 11px; height: 19px; padding: 1px 3px; border: 1px solid #7a7a7a; border-top-color: #5a5a5a; background: #fff; color: #000; min-width: 0; box-sizing: border-box; border-radius: 0; }
+.lg-in:focus { outline: 1px solid #3b78c4; }
+.lg-sel { padding: 0 1px; }
+.lg-static { display: inline-flex; align-items: center; background: #f5f5f5; }
+.lg-cyan { background: #e4f4ff; } .lg-yellow { background: #ffffc0; } .lg-req { border: 1px solid #e00000 !important; }
+.lg-num { text-align: right; }
+.lg-grow { flex: 1 1 60px; }
+.lg-w14 { width: 14px; flex: none; } .lg-w30 { width: 30px; flex: none; } .lg-w40 { width: 40px; flex: none; } .lg-w50 { width: 50px; flex: none; } .lg-w60 { width: 60px; flex: none; } .lg-w70 { width: 70px; flex: none; } .lg-w80 { width: 80px; flex: none; } .lg-w90 { width: 90px; flex: none; } .lg-w100 { width: 100px; flex: none; } .lg-w110 { width: 110px; flex: none; } .lg-w120 { width: 120px; flex: none; } .lg-w150 { width: 150px; flex: none; } .lg-w180 { width: 180px; flex: none; } .lg-w220 { width: 220px; flex: none; }
+.lg-ini { text-transform: uppercase; text-align: center; font-weight: 700; }
+.lg-contract { color: #e00000; font-weight: 700; } .lg-contract.ok { color: #1f6b2a; }
+.lg-v { display: inline-flex; width: 16px; height: 16px; border: 1px solid #333; border-radius: 50%; align-items: center; justify-content: center; font-size: 9px; flex: none; }
+.lg-comments { flex: 1; display: flex; flex-direction: column; min-height: 120px; }
+.lg-ta { flex: 1; height: auto; min-height: 100px; resize: vertical; font-size: 11px; }
+.lg-top { border: 1px solid #c8c8c8; background: #f0f0f0; padding: 2px; }
+.lg-topbtns { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+.lg-dollar { color: #1f6b2a; font-weight: 700; border: 1px solid #1f6b2a; border-radius: 50%; }
+.lg-fileno { color: #e00000; font-weight: 700; font-size: 13px; }
+.lg-stops { display: flex; flex-direction: column; gap: 4px; }
+.lg-stop { border: 1px solid #c8c8c8; }
+.lg-stop-h { display: flex; align-items: center; gap: 3px; padding: 2px 3px; background: #e8e8e8; }
+.lg-seq { font-weight: 700; width: 18px; flex: none; }
+.lg-stop-tools { margin-left: auto; display: flex; gap: 6px; }
+.lg-link { font: inherit; font-size: 11px; color: #0a2fbd; background: none; border: 0; text-decoration: underline; cursor: pointer; padding: 0 2px; }
+.lg-link.red { color: #e00000; font-weight: 700; text-decoration: none; }
+.lg-stop-r { display: flex; align-items: center; gap: 3px; padding: 2px 3px; flex-wrap: wrap; }
+.lg-stop.pu .lg-facsel { background: #fff9d6; } .lg-stop.dl .lg-facsel { background: #9be39b; }
+.lg-facsel { font-weight: 700; width: 300px; flex: none; }
+.lg-stop-body { display: flex; gap: 4px; padding: 2px 3px; }
+.lg-addr { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 3px; }
+.lg-stop.pu .lg-addr { background: #fff9d6; } .lg-stop.dl .lg-addr { background: #9be39b; }
+.lg-addr .lg-in { width: 100%; }
+.lg-c2 { grid-column: span 2; } .lg-c1 { grid-column: span 1; }
+.lg-row2 { display: flex; gap: 2px; min-width: 0; } .lg-row2 .lg-in { flex: 1; }
+.lg-note-lbl { font-size: 10px; align-self: center; }
+.lg-notes { width: 260px; flex: none; height: auto; min-height: 60px; resize: vertical; background: #f5f5f5; }
+.lg-gray { background: #ececec; border-top: 1px solid #d8d8d8; }
+.lg-chk { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.lg-stop-r.lg-gray > .lg-chk { width: 210px; flex: none; }
+.lg-split { height: 6px; background: #dcdcdc; border-top: 1px solid #b8b8b8; border-bottom: 1px solid #b8b8b8; margin: 2px 0; }
+.lg-billing { margin-top: auto; border: 1px solid #c8c8c8; }
+.lg-grid { width: 100%; border-collapse: collapse; font-size: 11px; }
+.lg-grid th { text-align: left; font-weight: 400; padding: 2px 4px; background: #e8e8e8; border-bottom: 1px solid #c8c8c8; }
+.lg-grid td { padding: 1px 3px; border-bottom: 1px solid #eee; }
+.lg-grid td .lg-in { width: 100%; }
+.lg-bill-to { background: #fff9d6; }
+.lg-truck-tag { font-size: 10px; color: #555; letter-spacing: 0.05em; }
+.lg-side { display: flex; flex: none; }
+.lg-side-panel { width: 360px; border-left: 1px solid #c8c8c8; background: #f7f7f7; padding: 6px; overflow: auto; max-height: calc(100vh - var(--shell-h) - 140px); display: flex; flex-direction: column; gap: 6px; }
+.lg-side-panel .zs { height: 44vh; }
+.lg-vtabs { width: 24px; flex: none; display: flex; flex-direction: column; gap: 4px; padding: 4px 2px; background: #e8e8e8; border-left: 1px solid #c8c8c8; }
+.lg-vtab { writing-mode: vertical-rl; font: inherit; font-size: 11px; padding: 8px 2px; border: 1px solid #a0a0a0; background: #f0f0f0; cursor: pointer; color: #000; }
+.lg-vtab.on { background: #fff; font-weight: 700; }
+.lg-res { display: flex; flex-direction: column; gap: 4px; padding: 6px; }
+.lg-statusbar { display: flex; align-items: center; gap: 6px; padding: 3px 8px; background: #f0f0f0; border-top: 1px solid #c8c8c8; font-size: 11px; }
+.lg.locked .lg-in { background: #f0f0f0; color: #555; }
+@media print { #lgedit { display: none; } }
+
 /* ── New load browser (order inbox) ───────────────────────────────────── */
 #orders { max-width: 1100px; padding: var(--space-6) var(--space-6) var(--space-8); }
 .dropzone { display: flex; align-items: center; gap: 14px; padding: 18px 20px; border: 2px dashed var(--color-accent); background: color-mix(in srgb, var(--color-accent) 6%, transparent); cursor: pointer; font-size: 14px; }
@@ -31130,6 +31212,11 @@ function stopFields(kind, i, s) {
   </div>`;
 }
 function renderBuilder() {
+  const d = S.draft; const key = d.id || 'new:' + d.fileNo;
+  if (S.lgDraftId !== key) { S.lgDraftId = key; S.lgTab = 'loading'; S.lgLocked = false; S.lgSide = orderOfLoad(d) ? 'docs' : ''; }
+  return isMobile() ? renderBuilderCards() : renderLegacyEditor(d);
+}
+function renderBuilderCards() {
   const d = S.draft, multi = d.drops.length > 1, t = loadTotals(d);
   const f = (k, span, label, extra = '') => `<div class="field${span <= 1 ? ' half' : ''}" style="grid-column:span ${span}"><label>${label}</label><input class="input" ${extra} value="${esc(d[k] ?? '')}" data-bind="draft.${k}"></div>`;
   const pickups = d.pickups.map((p, i) => {
@@ -31218,14 +31305,16 @@ function renderBuilder() {
 function builderDerived() {
   const d = S.draft; if (!d) return;
   const t = loadTotals(d);
-  $('#tot-plt').textContent = fmt(t.plt); $('#tot-cs').textContent = fmt(t.cs); $('#tot-wt').textContent = fmt(t.wt);
-  $('#tot-rate').textContent = money(rateTotal(d)); $('#rate-allin').textContent = money(rateTotal(d));
+  const put = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  put('tot-plt', fmt(t.plt)); put('tot-cs', fmt(t.cs)); put('tot-wt', fmt(t.wt)); put('tot-rate', money(rateTotal(d))); put('rate-allin', money(rateTotal(d)));
+  if (typeof lgRefresh === 'function' && document.getElementById('lgedit')) lgRefresh();
   d.pickups.forEach((p, i) => { const st = stopTotals(p); const el = document.querySelector(`[data-sub="${i}"]`); if (el) el.textContent = `${fmt(st.plt)} plt · ${fmt(st.cs)} pcs · ${fmt(st.wt)} lbs`; });
   d.drops.forEach((dr, i) => { const at = assignedTotals(d, i); const el = document.querySelector(`[data-assigned="${i}"]`); if (el) el.textContent = `Receives ${fmt(at.plt)} plt · ${fmt(at.cs)} pcs · ${fmt(at.wt)} lbs`; });
   document.querySelectorAll('select[data-dropsel]').forEach(sel => { const v = sel.value; sel.innerHTML = dropOptions(d, parseInt(v) || 0); });
 }
 function saveDraft() {
   const d = clone(S.draft);
+  if (d.bills) lgSyncBilling(d);
   const was = S.loads.find(l => l.id === d.id);
   if (COVERED.includes(d.status) && (!was || HOT.includes(was.status)) && vetBlocked(d)) { vetGateDialog(was || d, () => { if (was) { const ov = (S.loads.find(l => l.id === d.id) || {}).vetting; if (ov) S.draft.vetting = ov; } else S.draft.vetting = d.vetting; saveDraft(); }); return; }
   d.pickups.forEach(p => { p.lines.forEach(l => { l.no = (l.no || '').trim(); }); delete p.refs; p.ref = refText(p); });
@@ -32643,6 +32732,200 @@ const ORDER_ACT = {
   ordDelete: el => { const o = ordersOf().find(x => x.id === el.dataset.id); if (!o) return; confirmUI('Delete this order?', `${o.subject || o.fileName || 'Untitled'}${o.status === 'done' ? ' (already entered by ' + o.doneBy + ')' : ''}. This removes it from the browser for everyone on this computer.`).then(ok => { if (!ok) return; S.orders = ordersOf().filter(x => x.id !== o.id); persist(); render(); }); }
 };
 
+// ── Legacy TMS load editor: the classic "Load Editor" screen, same fields and placement ──
+const EQUIP_TYPES = ['Refrigerated', 'Dry Van', 'Flatbed', 'Step Deck', 'Power Only', 'Hotshot', 'Box Truck'];
+const TRAILER_TYPES = ['Reefer 53', 'Reefer 48', 'Dry 53', 'Dry 48', 'Flatbed 48', 'Step Deck', 'Conestoga'];
+const BILL_PRODUCTS = ['LINE HAUL', 'FUEL SURCHARGE', 'DETENTION', 'LAYOVER', 'LUMPER', 'TONU', 'EXTRA STOP', 'ACCESSORIAL'];
+const BILL_METHODS = ['FLAT', 'PER MILE', 'PER CWT', 'PER PALLET', 'PERCENT'];
+const GROUND_INSPECTORS = ['USDA', 'CDFA', 'FDA', 'Customer QA', 'None'];
+const STOP_STATUSES = ['', 'Scheduled', 'Arrived', 'Loading', 'Loaded', 'Unloading', 'Delivered', 'Refused'];
+function lgNormalize(d) { // make sure every legacy field exists on the draft so bindings never hit undefined
+  d.carrier = { ...blankCarrier(), mc: '', dot: '', code: '', dispatchName: '', dispatchPhone: '', eta: '', tr: '', emptyLoc: '', trailerType: '', dispatchReq: '', dispatchBy: '', dispatchLoc: '', dispatchTime: '', dispatchTimeBy: '', ...(d.carrier || {}) };
+  if (!d.carrier.name && d.carrierName) d.carrier.name = d.carrierName; if (!d.carrier.email && d.carrierEmail) d.carrier.email = d.carrierEmail;
+  ['shipPO', 'cargoValue', 'description', 'miles', 'buyer', 'custContact', 'custPhone', 'custRef', 'fileComments', 'internalComments'].forEach(k => { if (d[k] === undefined) d[k] = ''; });
+  if (d.addlIns === undefined) d.addlIns = false;
+  if (!d.equip) d.equip = String(d.temp || '').trim() ? 'Refrigerated' : 'Dry Van';
+  if (!d.buyer) d.buyer = 'TBA -- DROP';
+  const stopX = s => { ['apptRequired', 'stopChecked'].forEach(k => { if (s[k] === undefined) s[k] = false; }); ['groundInspector', 'seal', 'internalNote', 'palletIn', 'palletOut', 'reason', 'arrival', 'stopStatus', 'inAt', 'outAt'].forEach(k => { if (s[k] === undefined) s[k] = ''; }); };
+  d.pickups.forEach(stopX); d.drops.forEach(stopX);
+  if (!Array.isArray(d.bills) || !d.bills.length) {
+    const cust = d.customer || 'TBA - TO BE ANNOUNCED';
+    d.bills = [{ billTo: cust, product: 'LINE HAUL', rate: d.linehaul || '', method: 'FLAT', qty: '1' }];
+    if (num(d.fuel)) d.bills.push({ billTo: cust, product: 'FUEL SURCHARGE', rate: d.fuel, method: 'FLAT', qty: '1' });
+    if (num(d.accessorial)) d.bills.push({ billTo: cust, product: 'ACCESSORIAL', rate: d.accessorial, method: 'FLAT', qty: '1' });
+    d.bills.push({ billTo: '', product: 'LINE HAUL', rate: d.truckPay || '', method: 'FLAT', qty: '1' });
+  }
+  if (!Array.isArray(d.advances)) d.advances = [];
+  return d;
+}
+const billAmt = b => num(b.rate) * (num(b.qty) || 1);
+function lgTotals(d) { const cust = (d.bills || []).filter(b => b.billTo), truck = (d.bills || []).filter(b => !b.billTo); return { file: cust.reduce((s, b) => s + billAmt(b), 0), truck: truck.reduce((s, b) => s + billAmt(b), 0), adv: (d.advances || []).reduce((s, a) => s + num(a.amount), 0) }; }
+function lgSyncBilling(d) { // the board still reads linehaul / fuel / accessorial, so the billing grid feeds them
+  const cust = (d.bills || []).filter(b => b.billTo);
+  const sum = f => cust.filter(f).reduce((s, b) => s + billAmt(b), 0);
+  d.linehaul = String(sum(b => b.product === 'LINE HAUL')); d.fuel = String(sum(b => b.product === 'FUEL SURCHARGE')); d.accessorial = String(sum(b => b.product !== 'LINE HAUL' && b.product !== 'FUEL SURCHARGE'));
+  d.truckPay = String(lgTotals(d).truck);
+  d.carrierName = (d.carrier.name || d.carrierName || '').trim(); d.carrierEmail = (d.carrier.email || d.carrierEmail || '').trim();
+  if (d.equip === 'Refrigerated' && !String(d.temp || '').trim()) d.temp = '34°F continuous'; if (d.equip !== 'Refrigerated') d.temp = '';
+}
+function lgRefresh() { // live numbers in the status bar and top row
+  const d = S.draft; if (!d) return; const t = lgTotals(d), w = loadTotals(d);
+  const put = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  put('lg-file-total', money(t.file).replace('$', '')); put('lg-truck-total', money(t.truck).replace('$', '')); put('lg-adv-total', money(t.adv).replace('$', ''));
+  put('tot-wt', fmt(w.wt)); put('tot-plt', fmt(w.plt));
+  (d.bills || []).forEach((b, i) => put('lg-sub-' + i, money(billAmt(b)).replace('$', '')));
+}
+function renderLegacyEditor(d) {
+  lgNormalize(d);
+  const isNew = !S.loads.some(l => l.id === d.id), locked = !!S.lgLocked, ro = locked ? ' readonly disabled' : '';
+  const t = lgTotals(d), w = loadTotals(d), c = d.carrier, tab = S.lgTab || 'loading';
+  const inp = (path, val, cls = '', extra = '') => `<input class="lg-in ${cls}" value="${esc(val ?? '')}" data-bind="${path}"${ro} ${extra}>`;
+  const sel = (path, val, opts, cls = '', extra = '') => `<select class="lg-in lg-sel ${cls}" data-act="lgSel" data-path="${path}"${ro} ${extra}>${opts.map(o => `<option value="${esc(o)}"${String(val) === String(o) ? ' selected' : ''}>${esc(o) || '&nbsp;'}</option>`).join('')}</select>`;
+  const chk = (path, val, label) => `<label class="lg-chk"><input type="checkbox" data-act="lgChk" data-path="${path}"${val ? ' checked' : ''}${ro}> ${label}</label>`;
+  const ico = (name, title, act = '', extra = '') => `<button class="lg-ico" title="${esc(title)}"${act ? ` data-act="${act}"` : ''} ${extra}>${name}</button>`;
+  const custs = customerNames(), carriers = S.carriers.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const dir = findCarrier(c.name);
+  const stopBlock = (kind, i, s) => {
+    const pu = kind === 'pickups', list = pu ? S.shippers : S.receivers, ln = pu ? (s.lines && s.lines[0]) || blankLine() : null;
+    const base = `draft.${kind}.${i}`;
+    return `<div class="lg-stop ${pu ? 'pu' : 'dl'}" data-kind="${kind}" data-i="${i}">
+      <div class="lg-stop-h">
+        <span class="lg-seq">${pu ? 'P' : 'D'}${i + 1}</span>${inp(base + '.date', s.date, 'lg-w90', 'type="date"')}${inp(base + '.time', s.time, 'lg-w70', 'type="time"')}
+        ${pu ? `<span class="lg-lbl">P/U#:</span>${inp(base + '.lines.0.no', ln.no, 'lg-grow')}<span class="lg-lbl">Appt:</span>${inp(base + '.po', s.po, 'lg-w150', 'placeholder="Appt / ref"')}` : `<span class="lg-lbl">PO #:</span>${inp(base + '.ref', s.ref, 'lg-grow lg-req')}<span class="lg-lbl">Deliver:</span>${inp(base + '.po', s.po, 'lg-w150', 'placeholder="Deliver by"')}`}
+        <span class="lg-stop-tools">${(pu ? d.pickups : d.drops).length > 1 ? `<button class="lg-link" data-act="rmStop" data-kind="${kind}" data-i="${i}" title="Remove this stop">remove</button>` : ''}<button class="lg-link" data-act="addStop" data-kind="${kind}" title="Add another ${pu ? 'pickup' : 'delivery'}">+ ${pu ? 'pickup' : 'delivery'}</button></span>
+      </div>
+      <div class="lg-stop-r">
+        <select class="lg-in lg-sel lg-facsel" data-act="facility" data-kind="${kind}" data-i="${i}"${ro}><option value="">Please select...</option>${list.map(x => `<option value="${esc(x.id)}"${x.id === s.facilityId ? ' selected' : ''}>${esc(x.name)} - ${esc(x.city)}, ${esc(x.st)}</option>`).join('')}</select>${ico('&#128269;', 'Shippers and receivers directory', 'goDirectory')}
+        ${pu ? `<span class="lg-lbl">Lbs:</span>${inp(base + '.lines.0.weight', ln.weight, 'lg-w80 lg-num', 'inputmode="numeric"')}` : ''}<span class="lg-lbl">Pallet In/Out:</span>${inp(base + '.palletIn', s.palletIn, 'lg-w60 lg-num')}${inp(base + '.palletOut', s.palletOut, 'lg-w60 lg-num')}<span class="lg-lbl">In/Out:</span>${inp(base + '.inAt', s.inAt, 'lg-w150', 'type="datetime-local"')}${inp(base + '.outAt', s.outAt, 'lg-w150', 'type="datetime-local"')}${pu ? '' : `<span class="lg-lbl">Seal #:</span>${inp(base + '.seal', s.seal, 'lg-w100')}`}
+      </div>
+      ${pu ? '' : `<div class="lg-stop-r"><span class="lg-lbl" style="margin-left:auto">Reason:</span>${inp(base + '.reason', s.reason, 'lg-grow')}<span class="lg-lbl">Arrival:</span>${inp(base + '.arrival', s.arrival, 'lg-w150', 'type="datetime-local"')}</div>`}
+      <div class="lg-stop-body">
+        <div class="lg-addr lg-stop-grid">
+          ${inp(base + '.name', s.name, 'lg-c2', 'placeholder="Facility name"')}${inp(base + '.address', s.address, 'lg-c2', 'placeholder="Street address"')}
+          ${inp(base + '.city', s.city, 'lg-req', `placeholder="City" autocomplete="off" data-ac="city" data-kind="${kind}" data-i="${i}"`)}<span class="lg-row2">${inp(base + '.st', s.st, 'lg-w40', 'placeholder="ST" maxlength="2"')}${inp(base + '.zip', s.zip, 'lg-w70', 'placeholder="ZIP"')}</span>
+          ${inp(base + '.contact', s.contact, '', 'placeholder="Contact"')}${inp(base + '.phone', s.phone, '', 'placeholder="Phone" type="tel"')}
+          ${pu ? `${inp(base + '.lines.0.commodity', ln.commodity, '', 'placeholder="Commodity"')}<span class="lg-row2">${inp(base + '.lines.0.pallets', ln.pallets, 'lg-w60 lg-num', 'placeholder="Plts"')}${inp(base + '.lines.0.cases', ln.cases, 'lg-w70 lg-num', 'placeholder="Pcs"')}${sel(base + '.lines.0.pos', ln.pos, ['', ...POSITIONS], 'lg-grow')}</span>` : `${sel(base + '.stopStatus', s.stopStatus, STOP_STATUSES, 'lg-c1')}<span class="lg-note-lbl">Status</span>`}
+        </div>
+        <textarea class="lg-in lg-notes" placeholder="Stop notes (print on the tender)" data-bind="${base}.notes"${ro}>${esc(s.notes || '')}</textarea>
+      </div>
+      <div class="lg-stop-r lg-gray">${chk(base + '.apptRequired', s.apptRequired, 'Appt. Required')}${pu ? `<span class="lg-lbl" style="margin-left:auto">Ground Inspector:</span>${sel(base + '.groundInspector', s.groundInspector, ['', ...GROUND_INSPECTORS], 'lg-w120')}<span class="lg-lbl">Seal #:</span>${inp(base + '.seal', s.seal, 'lg-w100')}` : ''}</div>
+      <div class="lg-stop-r lg-gray">${chk(base + '.stopChecked', s.stopChecked, 'Stop Checked')}<span class="lg-lbl" style="margin-left:auto">Internal Note:</span>${inp(base + '.internalNote', s.internalNote, 'lg-grow', 'placeholder="Never prints"')}</div>
+    </div>`;
+  };
+  const billRow = (b, i) => `<tr><td>${b.billTo !== '' || i === 0 ? sel(`draft.bills.${i}.billTo`, b.billTo, ['', 'TBA - TO BE ANNOUNCED', ...custs], 'lg-bill-to') : `<span class="lg-truck-tag" title="Carrier pay line">TRUCK PAY</span>`}</td><td>${sel(`draft.bills.${i}.product`, b.product, BILL_PRODUCTS)}</td><td>${inp(`draft.bills.${i}.rate`, b.rate, 'lg-num lg-w80', 'placeholder=".00" inputmode="decimal"')}</td><td>${sel(`draft.bills.${i}.method`, b.method, BILL_METHODS)}</td><td>${inp(`draft.bills.${i}.qty`, b.qty, 'lg-num lg-w50')}</td><td class="lg-num"><span id="lg-sub-${i}">${money(billAmt(b)).replace('$', '')}</span></td><td><button class="lg-link" data-act="lgRmBill" data-i="${i}" title="Remove line">x</button></td></tr>`;
+  const banner = isNew ? '<div class="lg-banner add">You are ADDING this File</div>' : `<div class="lg-banner edit">You are EDITING File ${esc(d.fileNo)}${locked ? ' (LOCKED)' : ''}</div>`;
+  const loading = `<div class="lg-body">
+    <div class="lg-left">
+      <div class="lg-group"><div class="lg-group-h">Originator</div>
+        <div class="lg-r">${inp('draft.fileIn', d.fileIn, 'lg-w30 lg-ini', 'maxlength="3" title="File IN"')}${inp('draft.trIn', d.trIn, 'lg-w30 lg-ini', 'maxlength="3" title="Tr IN"')}<input class="lg-in lg-grow" list="cust-list" value="${esc(d.customer)}" data-bind="draft.customer" placeholder="Originator / customer"${ro}>${ico('&#128269;', 'Find customer', 'lgFindCust')}</div>
+        <div class="lg-r"><span class="lg-in lg-w30 lg-static" title="Office">${esc(shortOffice(d.office).slice(0, 3).toUpperCase())}</span>${inp('draft.custContact', d.custContact, 'lg-grow', 'placeholder="Contact"')}${inp('draft.custPhone', d.custPhone, 'lg-grow', 'placeholder="Phone" type="tel"')}</div>
+        <div class="lg-r">${sel('draft.salesRep', d.salesRep, ['', ...REPS], 'lg-w70 lg-yellow', 'title="Sales rep"')}${inp('draft.customerEmail', d.customerEmail, 'lg-grow', 'placeholder="Customer email" type="email"')}</div>
+        <div class="lg-r">${inp('draft.custRef', d.custRef, 'lg-grow', 'placeholder="Customer reference / bill-to address"')}</div>
+        <div class="lg-r">${d.equip === 'Refrigerated' ? inp('draft.temp', d.temp, 'lg-w70 lg-yellow', 'placeholder="34°F" title="Temperature"') : '<span class="lg-in lg-w70 lg-static"></span>'}${sel('draft.equip', d.equip, EQUIP_TYPES, 'lg-grow')}</div>
+        <div class="lg-r"><span class="lg-lbl">Buyer:</span>${sel('draft.buyer', d.buyer, ['TBA -- DROP', ...S.receivers.map(r => r.name)], 'lg-grow lg-yellow')}${ico('&#128269;', 'Receivers', 'goDirectory')}</div>
+      </div>
+      <div class="lg-group"><div class="lg-group-h">Carrier</div>
+        <div class="lg-r">${inp('draft.carrier.code', c.code, 'lg-w30 lg-cyan', 'title="Carrier code"')}<span class="lg-in lg-w14 lg-static">.</span><select class="lg-in lg-sel lg-grow lg-cyan" data-act="lgCarrier"${ro}><option value="">${c.name ? esc(c.name) : 'Select carrier...'}</option>${carriers.map(x => `<option value="${esc(x.id)}"${carKey(x.name) === carKey(c.name) ? ' selected' : ''}>${esc(x.name)}${x.status === 'Do not use' ? ' - DO NOT USE' : ''}</option>`).join('')}</select>${ico('#', 'Type a carrier name', 'lgCarrierName')}${ico('&#128269;', 'Carrier directory', 'goCarriers')}</div>
+        <div class="lg-r"><span class="lg-lbl">MC #:</span>${inp('draft.carrier.mc', c.mc, 'lg-grow lg-cyan')}<span class="lg-lbl">DOT #:</span>${inp('draft.carrier.dot', c.dot, 'lg-grow lg-cyan')}</div>
+        <div class="lg-r"><span class="lg-in lg-w30 lg-cyan lg-static"></span>${ico('&#128269;', 'Look up carrier vetting profile', 'lgVetLookup')}${inp('draft.carrier.dispatchName', c.dispatchName, 'lg-grow lg-cyan', 'placeholder="Dispatch contact"')}</div>
+        <div class="lg-r">${ico('&#128203;', 'Copy carrier details from the directory', 'lgCarrierCopy')}${inp('draft.carrier.dispatchPhone', c.dispatchPhone, 'lg-grow lg-cyan', 'placeholder="(___) ___-____" type="tel"')}${inp('draft.carrier.email', c.email, 'lg-grow lg-cyan', 'placeholder="Dispatch email" type="email"')}</div>
+        <div class="lg-r"><span style="width:26px;flex:none"></span>${inp('draft.carrier.driverPhone', c.driverPhone, 'lg-w120 lg-cyan', 'placeholder="(___) ___-____" type="tel" title="Driver phone"')}</div>
+        <div class="lg-r"><span style="width:26px;flex:none"></span>${inp('draft.carrier.coDriver', c.coDriver, 'lg-grow lg-cyan', 'placeholder="Co-driver"')}</div>
+        <div class="lg-r"><span style="width:26px;flex:none"></span><span class="lg-contract${dir && dir.mc ? ' ok' : ''}">${dir && dir.mc ? 'Contract on file' : 'No Contract'}</span></div>
+        <div class="lg-r"><span class="lg-lbl lg-lw">ETA:</span>${inp('draft.carrier.eta', c.eta, 'lg-w90 lg-cyan')}<span class="lg-lbl">T/R:</span>${inp('draft.carrier.tr', c.tr, 'lg-w80 lg-cyan')}${ico('&#128337;', 'Now', 'lgEtaNow')}</div>
+        <div class="lg-r"><span class="lg-lbl lg-lw">Empty Loc:</span>${inp('draft.carrier.emptyLoc', c.emptyLoc, 'lg-grow lg-cyan')}</div>
+        <div class="lg-r"><span class="lg-lbl lg-lw">Driver:</span>${inp('draft.carrier.driver', c.driver, 'lg-grow lg-cyan')}</div>
+        <div class="lg-r"><span class="lg-lbl lg-lw">Driver Cell:</span>${inp('draft.carrier.driverPhone', c.driverPhone, 'lg-w90 lg-cyan', 'type="tel"')}</div>
+        <div class="lg-r"><span class="lg-v" title="Vetted">${vetOf(d) ? 'V' : ''}</span><span class="lg-lbl">Tractor:</span>${inp('draft.carrier.tractor', c.tractor, 'lg-w90 lg-cyan')}<span class="lg-lbl">Lic #:</span>${inp('draft.carrier.plate', c.plate, 'lg-w90 lg-cyan')}</div>
+        <div class="lg-r"><span class="lg-lbl lg-lw">Trailer/ Type:</span>${inp('draft.carrier.trailer', c.trailer, 'lg-w90 lg-cyan')}${sel('draft.carrier.trailerType', c.trailerType, ['', ...TRAILER_TYPES], 'lg-grow lg-cyan')}</div>
+        <div class="lg-r"><span class="lg-lbl lg-lw">Dispatch Req:</span>${inp('draft.carrier.dispatchReq', c.dispatchReq, 'lg-w90 lg-cyan')}<span class="lg-lbl">By:</span>${sel('draft.carrier.dispatchBy', c.dispatchBy, ['', ...S.users.map(u => u.initials || u.username)], 'lg-grow lg-cyan')}</div>
+        <div class="lg-r"><span class="lg-lbl lg-lw">Dispatch Loc:</span>${inp('draft.carrier.dispatchLoc', c.dispatchLoc, 'lg-grow lg-cyan')}</div>
+        <div class="lg-r"><span class="lg-lbl lg-lw">Dispatch Time:</span>${inp('draft.carrier.dispatchTime', c.dispatchTime, 'lg-w90 lg-cyan')}<span class="lg-lbl">By:</span>${inp('draft.carrier.dispatchTimeBy', c.dispatchTimeBy, 'lg-w40 lg-cyan')}</div>
+      </div>
+      <div class="lg-group lg-comments"><div class="lg-group-h">File Comments</div><textarea class="lg-in lg-ta" data-bind="draft.fileComments" placeholder="Prints on the tender"${ro}>${esc(d.fileComments)}</textarea></div>
+      <div class="lg-group lg-comments"><div class="lg-group-h">Internal Comments</div><textarea class="lg-in lg-ta" data-bind="draft.internalComments" placeholder="Internal only"${ro}>${esc(d.internalComments)}</textarea></div>
+    </div>
+    <div class="lg-main">
+      <div class="lg-top">
+        <div class="lg-r"><span class="lg-lbl">Ship Date:</span>${inp('draft.pickups.0.date', (d.pickups[0] || {}).date, 'lg-w110', 'type="date"')}<span class="lg-lbl">Commodity:</span><input class="lg-in lg-w180" list="comm-list" value="${esc(((d.pickups[0] || {}).lines || [{}])[0].commodity || '')}" data-bind="draft.pickups.0.lines.0.commodity"${ro}><span class="lg-lbl">Weight:</span><span class="lg-in lg-w60 lg-num lg-static" id="tot-wt">${fmt(w.wt)}</span><span class="lg-lbl">Pallets:</span><span class="lg-in lg-w50 lg-num lg-static" id="tot-plt">${fmt(w.plt)}</span><span class="lg-lbl">Miles:</span>${inp('draft.miles', d.miles, 'lg-w60 lg-num lg-req', 'inputmode="numeric"')}${ico('&#128207;', 'Calculate miles from the stops', 'lgMiles')}
+          <span class="lg-topbtns"><button class="lg-btn" data-act="lgCheck">Check</button><button class="lg-ico lg-dollar" title="Lane rates" data-act="lgRates">$</button><span class="lg-lbl">File:</span><span class="lg-fileno${isNew ? ' new' : ''}">${esc(d.fileNo)}</span></span></div>
+        <div class="lg-r"><span class="lg-lbl">Ship PO:</span>${inp('draft.shipPO', d.shipPO, 'lg-grow')}
+          <span class="lg-topbtns"><button class="lg-btn" data-act="cancel">Return</button><button class="lg-btn" data-act="lgDispatch" title="Save and mark Dispatched">Dispatch</button><button class="lg-btn" data-act="save" title="Save this file">Load</button><button class="lg-btn lg-active" data-act="lgActiveQ" title="Save and go to the board">Active Q</button></span></div>
+        <div class="lg-r"><span class="lg-lbl">Cargo Value:</span>${inp('draft.cargoValue', d.cargoValue, 'lg-w90 lg-num', 'inputmode="decimal"')}<span class="lg-lbl">Description:</span>${inp('draft.description', d.description, 'lg-w220')}${chk('draft.addlIns', d.addlIns, "Add'l Ins. Requested")}${ico('&#128737;', 'Insurance certificate', '')}</div>
+      </div>
+      <div class="lg-stops">${d.pickups.map((p, i) => stopBlock('pickups', i, p)).join('')}</div>
+      <div class="lg-split" title="Pickups above, deliveries below"></div>
+      <div class="lg-stops">${d.drops.map((dr, i) => stopBlock('drops', i, dr)).join('')}</div>
+      <div class="lg-billing">
+        <table class="lg-grid"><thead><tr><th>Bill To</th><th>Product</th><th class="lg-num">Rate</th><th>Method</th><th class="lg-num">Qty</th><th class="lg-num">Sub Total</th><th></th></tr></thead>
+        <tbody>${d.bills.map(billRow).join('')}</tbody></table>
+        <div class="lg-r" style="padding:2px 4px"><button class="lg-link" data-act="lgAddBill" data-truck="0">+ bill line</button><button class="lg-link" data-act="lgAddBill" data-truck="1">+ truck pay line</button></div>
+      </div>
+    </div>
+    ${renderLgSide(d)}
+  </div>`;
+  const accounting = `<div class="lg-body"><div class="lg-main" style="padding:10px">
+    <div class="lg-group"><div class="lg-group-h">Billing</div><table class="lg-grid"><thead><tr><th>Bill To</th><th>Product</th><th class="lg-num">Rate</th><th>Method</th><th class="lg-num">Qty</th><th class="lg-num">Sub Total</th><th></th></tr></thead><tbody>${d.bills.map(billRow).join('')}</tbody></table>
+      <div class="lg-r" style="padding:2px 4px"><button class="lg-link" data-act="lgAddBill" data-truck="0">+ bill line</button><button class="lg-link" data-act="lgAddBill" data-truck="1">+ truck pay line</button></div></div>
+    <div class="lg-group"><div class="lg-group-h">Advances</div><table class="lg-grid"><thead><tr><th>Date</th><th>To</th><th class="lg-num">Amount</th><th>Note</th><th></th></tr></thead><tbody>${(d.advances || []).map((a, i) => `<tr><td>${inp(`draft.advances.${i}.date`, a.date, 'lg-w110', 'type="date"')}</td><td>${inp(`draft.advances.${i}.to`, a.to, 'lg-w150')}</td><td>${inp(`draft.advances.${i}.amount`, a.amount, 'lg-num lg-w80', 'inputmode="decimal"')}</td><td>${inp(`draft.advances.${i}.note`, a.note, 'lg-grow')}</td><td><button class="lg-link" data-act="lgRmAdv" data-i="${i}">x</button></td></tr>`).join('')}</tbody></table><div class="lg-r" style="padding:2px 4px"><button class="lg-link" data-act="lgAddAdv">+ advance</button></div></div>
+    <div class="lg-group"><div class="lg-group-h">Summary</div><div class="lg-r"><span class="lg-lbl">File Total:</span><strong>${money(t.file)}</strong><span class="lg-lbl">Truck Total:</span><strong>${money(t.truck)}</strong><span class="lg-lbl">Margin:</span><strong>${money(t.file - t.truck)}</strong><span class="lg-lbl">Advances:</span><strong>${money(t.adv)}</strong></div>
+      <div class="lg-r">${isNew ? '<span class="text-muted" style="font-size:11px">Save the file to issue a rate confirmation.</span>' : `<button class="lg-btn" data-act="rcTab" data-id="${esc(d.id)}">Rate confirmation</button>`}</div></div>
+  </div>${renderLgSide(d)}</div>`;
+  const trace = `<div class="lg-body"><div class="lg-main" style="padding:10px"><div class="lg-group"><div class="lg-group-h">Trace</div>${isNew ? '<div class="text-muted" style="font-size:12px;padding:6px">Save the file first. Check calls, tracking and the customer update email live on the saved file.</div>' : `<div class="lg-r" style="padding:6px;gap:8px"><button class="lg-btn" data-act="viewTrack" data-id="${esc(d.id)}">Tracking and tracing</button><button class="lg-btn" data-act="lgCalls" data-id="${esc(d.id)}">Check calls</button><button class="lg-btn" data-act="view" data-id="${esc(d.id)}">Load tender</button></div>${(() => { const l = S.loads.find(x => x.id === d.id); const log = l ? trackOf(l).log.slice().reverse().slice(0, 12) : []; return log.length ? `<div class="log" style="padding:0 6px">${log.map(e => `<div><time>${fmtWhen(e.at)} · ${esc(e.by || '')}</time><div>${esc(e.text)}</div></div>`).join('')}</div>` : ''; })()}`}</div></div>${renderLgSide(d)}</div>`;
+  return `<main id="lgedit" class="lg${locked ? ' locked' : ''}">
+    <div class="lg-titlebar">${I.truckRed}<span>[${isNew ? 'New File' : 'File ' + esc(d.fileNo)}] Load Editor - (${esc(d.office || OFFICES[0])})</span></div>
+    <div class="lg-toolbar">
+      <button class="lg-ico" title="First file" data-act="lgNav" data-d="first">|&#9664;</button><button class="lg-ico" title="Previous file" data-act="lgNav" data-d="prev">&#9664;</button><button class="lg-ico" title="Next file" data-act="lgNav" data-d="next">&#9654;</button><button class="lg-ico" title="Last file" data-act="lgNav" data-d="last">&#9654;|</button>
+      <input class="lg-in lg-w80" id="lg-goto" placeholder="File #" data-enter="lg-goto-btn" title="Type a file number and press Enter"><button class="lg-ico" id="lg-goto-btn" data-act="lgGoto" style="display:none"></button><span class="lg-count">${fmt(S.loads.length)} Files</span>
+      <span class="lg-sep"></span>${ico('&#128196;', 'New file', 'newLoad')}${ico('&#9998;', locked ? 'Unlock for editing' : 'Editing', 'lgLock')}${ico('&#128190;', 'Save', 'save')}${ico('&#8630;', 'Undo changes', 'lgUndo')}${ico('&#10006;', 'Delete file', 'lgDelete')}${ico('&#128269;', 'Find file', 'lgFind')}${ico('&#128203;', 'Copy file', 'lgCopy')}${ico('&#128424;', 'Print tender', 'lgPrint')}
+      <span class="lg-sep"></span><button class="lg-btn${locked ? ' on' : ''}" data-act="lgLock">Lockdown</button>${banner}
+    </div>
+    <div class="lg-tabs">${[['loading', 'Loading <u>Z</u>'], ['accounting', 'Accounting <u>X</u>'], ['trace', 'Trace <u>C</u>']].map(([k, l]) => `<button class="lg-tab${tab === k ? ' on' : ''}" data-act="lgTab" data-v="${k}">${l}</button>`).join('')}</div>
+    ${tab === 'accounting' ? accounting : tab === 'trace' ? trace : loading}
+    <div class="lg-statusbar"><span>&#128100;</span><span>&#128666;</span><span class="lg-sep"></span><span>File Total:</span><strong id="lg-file-total">${money(t.file).replace('$', '')}</strong><span class="lg-sep"></span><span>Truck Total:</span><strong id="lg-truck-total">${money(t.truck).replace('$', '')}</strong><span>Adv Charge:</span><span class="lg-sep"></span><span>Advances:</span><strong id="lg-adv-total">${money(t.adv).replace('$', '')}</strong><button class="lg-link red" data-act="lgTab" data-v="accounting">Apply</button><span class="spacer"></span><button class="lg-link" data-act="lgRates">Client Rates/Quotes</button></div>
+    <datalist id="cust-list">${custs.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
+    <datalist id="comm-list">${['Produce - 34°F', 'Frozen - -10°F', 'Dry grocery', 'Paper products', 'Lumber', 'Machinery', 'Beverages', 'Packaging'].map(x => `<option value="${esc(x)}">`).join('')}</datalist>
+  </main>`;
+}
+function renderLgSide(d) {
+  const side = S.lgSide || '', o = orderOfLoad(d), t = lgTotals(d);
+  const panel = side === 'docs' ? `<div class="lg-group-h">Documents</div>${o ? renderOrderSource(o, true) : '<div class="text-muted" style="font-size:12px;padding:6px">No documents on this file. Orders that arrive through the New load browser carry their email and attachments here.</div>'}`
+    : side === 'adv' ? `<div class="lg-group-h">Advances</div><div style="padding:6px;font-size:12px">${(d.advances || []).length ? (d.advances || []).map(a => `<div>${esc(a.date || '')} ${esc(a.to || '')} <strong>${money(a.amount)}</strong> ${esc(a.note || '')}</div>`).join('') : 'No advances.'}<div style="margin-top:6px">Total <strong>${money(t.adv)}</strong></div><button class="lg-link" data-act="lgTab" data-v="accounting">Manage on Accounting</button></div>`
+    : side === 'res' ? `<div class="lg-group-h">Resources</div><div class="lg-res"><button class="lg-btn" data-act="lgRates">Lane rates</button><button class="lg-btn" data-act="goCarriers">Carrier directory</button><button class="lg-btn" data-act="goDirectory">Shippers and receivers</button><button class="lg-btn" data-act="lgMiles">Mileage calculator</button>${d.id && S.loads.some(l => l.id === d.id) ? `<button class="lg-btn" data-act="rcTab" data-id="${esc(d.id)}">Rate confirmation</button>` : ''}</div>` : '';
+  return `<div class="lg-side${side ? ' open' : ''}">${side ? `<div class="lg-side-panel">${panel}</div>` : ''}<div class="lg-vtabs">${[['docs', 'Documents'], ['adv', 'Advances'], ['res', 'Resources']].map(([k, l]) => `<button class="lg-vtab${side === k ? ' on' : ''}" data-act="lgSide" data-v="${k}">${l}</button>`).join('')}</div></div>`;
+}
+const LG_ACT = {
+  lgTab: el => { S.lgTab = el.dataset.v; render(); },
+  lgSide: el => { S.lgSide = S.lgSide === el.dataset.v ? '' : el.dataset.v; render(); },
+  lgSel: el => { setPath(S, el.dataset.path, el.value); if (/\.(billTo|product|method)$/.test(el.dataset.path) || el.dataset.path === 'draft.equip') render(); else lgRefresh(); },
+  lgChk: el => { setPath(S, el.dataset.path, !!el.checked); },
+  lgCarrier: el => { const c = S.carriers.find(x => x.id === el.value); if (!c) return; const d = S.draft; d.carrier.name = c.name; d.carrier.email = c.email || d.carrier.email; d.carrier.mc = c.mc || d.carrier.mc; d.carrier.dot = c.dot || d.carrier.dot; d.carrier.dispatchName = c.dispatchName || d.carrier.dispatchName; d.carrier.dispatchPhone = c.dispatchPhone || c.phone || d.carrier.dispatchPhone; d.carrierName = c.name; d.carrierEmail = d.carrier.email; render(); },
+  lgCarrierName: () => { dialog({ title: 'Carrier name', body: 'Type a carrier that is not in the directory yet. It joins the directory when the file is saved.', input: 'text', placeholder: 'Carrier name', okLabel: 'Use' }).then(v => { if (!v) return; S.draft.carrier.name = String(v).trim(); S.draft.carrierName = S.draft.carrier.name; render(); }); },
+  lgCarrierCopy: () => { const d = S.draft, c = findCarrier(d.carrier.name); if (!c) { notify('Not in the directory', 'Pick a carrier from the list first.'); return; } Object.assign(d.carrier, { mc: c.mc || d.carrier.mc, dot: c.dot || d.carrier.dot, dispatchName: c.dispatchName || d.carrier.dispatchName, dispatchPhone: c.dispatchPhone || c.phone || d.carrier.dispatchPhone, email: c.email || d.carrier.email }); render(); },
+  lgVetLookup: () => { const d = S.draft, p = vetProfile(d.carrier.mc); if (!p) { notify('No vetting profile', d.carrier.mc ? `Nothing on file for ${d.carrier.mc}. Vetting is done on the saved file under Add carrier.` : 'Enter the MC number first.'); return; } notify('Vetting profile', `${p.name || d.carrier.mc}: authority ${p.authority || 'not confirmed'}, insurance ${p.insCarrier || 'n/a'} expiring ${p.insExpiry ? fmtDate(p.insExpiry) : 'n/a'}, contact ${p.contactName || ''} ${p.contactPhone || ''}.`); },
+  lgEtaNow: () => { S.draft.carrier.eta = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }); render(); },
+  lgMiles: () => { const d = S.draft, p = d.pickups[0] || {}, dr = finalDrop(d); const a = geo(p.city, p.st, p.zip), b = geo(dr.city, dr.st, dr.zip); if (!a || !b) { notify('Need both ends', 'Enter a city and state on the first pickup and the last delivery, then try again.'); return; } d.miles = String(milesBetween(a, b) || ''); render(); },
+  lgCheck: () => { const d = S.draft, miss = []; if (!d.customer.trim()) miss.push('Originator'); if (!(d.pickups[0] || {}).date) miss.push('Ship date'); if (!(d.pickups[0] || {}).city) miss.push('Pickup city'); if (!(d.drops[0] || {}).city) miss.push('Delivery city'); if (!d.salesRep) miss.push('Sales rep'); if (!num(d.miles)) miss.push('Miles'); if (!lgTotals(d).file) miss.push('Bill line'); notify(miss.length ? 'Check: missing' : 'Check: OK', miss.length ? miss.join(', ') + '.' : 'Everything required is filled in.'); },
+  lgRates: () => { const d = S.draft, p0 = d.pickups[0] || {}, dN = finalDrop(d); openRates({ oGeo: geo(p0.city, p0.st, p0.zip), dGeo: geo(dN.city, dN.st, dN.zip), equip: d.equip === 'Refrigerated' ? 'reefer' : 'dry' }); },
+  lgDispatch: () => { S.draft.status = 'Dispatched'; saveDraft(); },
+  lgActiveQ: () => { if (HOT.includes(S.draft.status) || !S.draft.status) S.draft.status = 'Open'; saveDraft(); ACT.goBoard(); },
+  lgAddBill: el => { const d = S.draft; if (el.dataset.truck === '1') d.bills.push({ billTo: '', product: 'LINE HAUL', rate: '', method: 'FLAT', qty: '1' }); else { const k = d.bills.findIndex(b => !b.billTo); const row = { billTo: d.customer || 'TBA - TO BE ANNOUNCED', product: 'FUEL SURCHARGE', rate: '', method: 'FLAT', qty: '1' }; if (k < 0) d.bills.push(row); else d.bills.splice(k, 0, row); } render(); },
+  lgRmBill: el => { S.draft.bills.splice(+el.dataset.i, 1); if (!S.draft.bills.length) lgNormalize(S.draft); render(); },
+  lgAddAdv: () => { S.draft.advances.push({ date: todayISO(), to: S.draft.carrier.name || '', amount: '', note: '' }); render(); },
+  lgRmAdv: el => { S.draft.advances.splice(+el.dataset.i, 1); render(); },
+  lgLock: () => { S.lgLocked = !S.lgLocked; render(); },
+  lgUndo: () => { const d = S.draft; const orig = S.loads.find(l => l.id === d.id); confirmUI('Undo changes?', orig ? 'Reloads the file as last saved.' : 'Clears everything on this new file.', 'Undo').then(ok => { if (!ok) return; S.draft = orig ? normalizeDraft(clone(orig)) : blankDraft(); render(); }); },
+  lgDelete: () => { const d = S.draft; if (!S.loads.some(l => l.id === d.id)) { notify('Nothing to delete', 'This file has not been saved yet. Use Return to leave it.'); return; } confirmUI('Delete file ' + d.fileNo + '?', 'This removes the file from the board for everyone on this computer.').then(ok => { if (ok) set({ loads: S.loads.filter(x => x.id !== d.id), draft: null, view: 'board' }); }); },
+  lgFind: () => { dialog({ title: 'Find file', body: 'File number, customer or city.', input: 'text', placeholder: 'e.g. 2442380', okLabel: 'Find' }).then(q => { if (!q) return; q = String(q).trim().toLowerCase(); const l = S.loads.find(x => String(x.fileNo).toLowerCase() === q) || S.loads.find(x => [x.fileNo, x.customer, (x.pickups[0] || {}).city, finalDrop(x).city].join(' ').toLowerCase().includes(q)); if (!l) { notify('Not found', 'No file matches ' + q + '.'); return; } set({ draft: normalizeDraft(clone(l)), view: 'builder' }); }); },
+  lgGoto: () => { const inp = document.getElementById('lg-goto'); const q = (inp ? inp.value : '').trim(); if (!q) return; const l = S.loads.find(x => String(x.fileNo) === q); if (!l) { notify('Not found', 'No file ' + q + '.'); return; } set({ draft: normalizeDraft(clone(l)), view: 'builder' }); },
+  lgNav: el => { const sorted = S.loads.slice().sort((a, b) => String(a.fileNo).localeCompare(String(b.fileNo))); if (!sorted.length) return; const i = sorted.findIndex(x => x.id === S.draft.id); const j = el.dataset.d === 'first' ? 0 : el.dataset.d === 'last' ? sorted.length - 1 : el.dataset.d === 'prev' ? Math.max(0, i - 1) : Math.min(sorted.length - 1, i < 0 ? 0 : i + 1); set({ draft: normalizeDraft(clone(sorted[j])), view: 'builder' }); },
+  lgCopy: () => { const d = clone(S.draft); d.id = null; d.fileNo = nextFileNo(); d.status = 'Open'; d.createdAt = Date.now(); delete d.rateCon; delete d.checkCalls; delete d.vetting; d.pickups.forEach(p => { p.inAt = ''; p.outAt = ''; p.calls = []; }); d.drops.forEach(p => { p.inAt = ''; p.outAt = ''; p.calls = []; }); d.tracking = blankTracking(); set({ draft: d, view: 'builder' }); notify('File copied', `New file ${d.fileNo} started from ${S.draft.fileNo}. Save it with Load.`); },
+  lgPrint: () => { const d = S.draft; if (!S.loads.some(l => l.id === d.id)) { notify('Save first', 'Save the file with Load, then print the tender.'); return; } set({ tenderId: d.id, view: 'tender' }); S.fileTab = 'tender'; render(); setTimeout(() => window.print(), 300); },
+  lgFindCust: () => { const custs = customerNames(); dialog({ title: 'Find customer', body: custs.slice(0, 12).join(' · ') + (custs.length > 12 ? ' ...' : ''), input: 'text', placeholder: 'Start of the name', okLabel: 'Use' }).then(v => { if (!v) return; const m = custs.find(c => c.toLowerCase().startsWith(String(v).trim().toLowerCase())) || String(v).trim(); S.draft.customer = m; render(); }); },
+  lgCalls: el => { S.fileTab = 'calls'; set({ tenderId: el.dataset.id, view: 'tender' }); window.scrollTo(0, 0); }
+};
+const LG_CHANGE = ['lgSel', 'lgChk', 'lgCarrier'];
+
 // ── Carrier vetting · Rate confirmation · Check-call timeline ──────────────
 const JTS_NAVY = '#0B1F3A', JTS_GOLD = '#D4AF37';
 const fmtLong = ts => new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -33149,7 +33432,7 @@ function acPick(i) {
   } else if (input.dataset.ac === 'city') {
     const kind = input.dataset.kind, idx = +input.dataset.i, st = S.draft[kind][idx];
     st.city = p.name; st.st = p.st; if (!st.zip) st.zip = zip || p.zips.split(/[,-]/)[0];
-    const card = input.closest('.grid6');
+    const card = input.closest('.grid6, .lg-stop');
     card.querySelector(`[data-bind="draft.${kind}.${idx}.city"]`).value = st.city;
     card.querySelector(`[data-bind="draft.${kind}.${idx}.st"]`).value = st.st;
     card.querySelector(`[data-bind="draft.${kind}.${idx}.zip"]`).value = st.zip;
@@ -33669,7 +33952,8 @@ window.addEventListener('hashchange', () => { if (!S.user || !S.bv) return; if (
 I.doc12 = svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8"></path>', 12);
 I.clock18 = svg('<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>', 18);
 I.inbox18 = svg('<path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>', 18);
-Object.assign(ACT, ORDER_ACT);
+Object.assign(ACT, ORDER_ACT); Object.assign(ACT, LG_ACT); LG_CHANGE.forEach(a => CHANGE_ACTS.add(a));
+document.addEventListener('keydown', e => { if (!S.user || S.view !== 'builder' || !e.altKey || isMobile()) return; const k = e.key.toLowerCase(); const t = k === 'z' ? 'loading' : k === 'x' ? 'accounting' : k === 'c' ? 'trace' : ''; if (t) { e.preventDefault(); S.lgTab = t; render(); } });
 I.shield18 = svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path>', 18);
 
 const app = $('#app');
