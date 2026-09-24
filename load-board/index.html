@@ -32814,6 +32814,7 @@ function lgRefresh() { // live numbers in the status bar and top row
 function renderLegacyEditor(d) {
   lgNormalize(d);
   const isNew = !S.loads.some(l => l.id === d.id), locked = !!S.lgLocked, ro = locked ? ' readonly disabled' : '';
+  if (!isNew) S.tenderId = d.id; // rate con, vetting and tracking actions inside the editor act on this file
   const t = lgTotals(d), w = loadTotals(d), c = d.carrier, tab = S.lgTab || 'loading';
   const inp = (path, val, cls = '', extra = '') => `<input class="lg-in ${cls}" value="${esc(val ?? '')}" data-bind="${path}"${ro} ${extra}>`;
   const sel = (path, val, opts, cls = '', extra = '') => `<select class="lg-in lg-sel ${cls}" data-act="lgSel" data-path="${path}"${ro} ${extra}>${opts.map(o => `<option value="${esc(o)}"${String(val) === String(o) ? ' selected' : ''}>${esc(o) || '&nbsp;'}</option>`).join('')}</select>`;
@@ -33014,6 +33015,7 @@ const JTS_NAVY = '#0B1F3A', JTS_GOLD = '#D4AF37';
 const fmtLong = ts => new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 const fmtDur = m => { m = Math.max(0, Math.round(m)); const d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60; return d ? `${d}d ${h}h` : h ? `${h}h ${String(mm).padStart(2, '0')}m` : `${mm}m`; };
 const fileLoad = () => S.loads.find(x => x.id === S.tenderId);
+const refreshFile = () => { const l = fileLoad(); if (!l) return; if (!isMobile()) { render(); return; } const v = $('#view'); v.innerHTML = renderFile(l); }; // desktop shows every file inside the Load Editor, so a redraw goes through render()
 const noDash = t => String(t).replace(/\s*[\u2014\u2013]\s*/g, ' - ');
 function stripDashes(root) { // visible text only: text nodes, placeholders and titles
   if (!root) return;
@@ -33400,7 +33402,7 @@ const OPS_ACT = {
     copyText(text).then(ok => { render(); notify('Sent to Verified Pickup', `${p.carrier} · MC ${p.mc} · File ${p.fileNo} queued for Verified Pickup${ok ? ' and the handoff packet is on your clipboard.' : '.'}`); });
   },
   // rate con
-  rcSel: el => { S.rcDraft[el.dataset.k] = el.value; if (el.dataset.k === 'equipment') { const l = fileLoad(); if (l) { const v = $('#view'); v.innerHTML = renderFile(l); } } else { const l = fileLoad(); if (l) { const pv = document.querySelector('.rc-preview'); if (pv && !l.rateCon) pv.innerHTML = rcDocHtml(rcBuildDoc(l, S.rcDraft, 'RC-(next number on issue)')); } } },
+  rcSel: el => { S.rcDraft[el.dataset.k] = el.value; if (el.dataset.k === 'equipment') refreshFile(); else { const l = fileLoad(); if (l) { const pv = document.querySelector('.rc-preview'); if (pv && !l.rateCon) pv.innerHTML = rcDocHtml(rcBuildDoc(l, S.rcDraft, 'RC-(next number on issue)')); } } },
   rcTab: el => { S.fileTab = 'ratecon'; set({ tenderId: el.dataset.id || S.tenderId, view: 'tender' }); window.scrollTo(0, 0); },
   rcIssue: el => {
     const l = fileLoad(); if (!l || el.disabled) return;
@@ -33417,7 +33419,7 @@ const OPS_ACT = {
   // check calls
   ccCadence: el => { updateLoad(S.tenderId, l => { l.ccCadence = num(el.value); }); render(); },
   ccTol: el => { updateLoad(S.tenderId, l => { l.tempTol = el.value === '' ? '' : num(el.value); l.checkCalls = (l.checkCalls || []).map(c => c.temp !== '' && c.temp !== undefined ? { ...c, tempOk: ccTempCheck(l, c.temp) } : c); }); },
-  ccType: el => { S.ccDraft.type = el.value; const l = fileLoad(); if (l) { const v = $('#view'); v.innerHTML = renderFile(l); const n = document.querySelector('[data-bind="ccDraft.note"]'); if (n) n.focus(); } },
+  ccType: el => { S.ccDraft.type = el.value; refreshFile(); const n = document.querySelector('[data-bind="ccDraft.note"]'); if (n) n.focus(); },
   ccLog: () => {
     const d = S.ccDraft, l0 = fileLoad(); if (!l0) return;
     if (d.type === 'Temp Reading' && (d.temp === '' || isNaN(parseFloat(d.temp)))) { notify('Reading needed', 'Enter the temperature reading in °F.'); return; }
