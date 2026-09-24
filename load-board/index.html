@@ -508,7 +508,11 @@ body.m #users .fac { flex-wrap: wrap; }
 .lg-btn.lg-board { font-weight: 700; }
 .lg-btn.lg-active { background: #4f8fe0; color: #fff; border-color: #2b5fa8; border-radius: 10px; }
 .lg-banner { flex: 1; min-width: 200px; text-align: right; padding: 3px 10px; font-weight: 700; font-size: 12px; }
-.lg-banner.add { background: #5cff5c; } .lg-banner.edit { background: #ffe680; }
+.lg-banner.add { background: #5cff5c; } .lg-banner.edit { background: #ffe680; } .lg-banner.view { background: #cfe3ff; }
+.lg-ico.on { border-color: #b08900; background: #ffe680; } .lg-ico.save { color: #0a2fbd; }
+.lg-times { background: #fff4d6; border-top: 1px solid #e8d9a8; } .lg-times.alert { background: #ff6a00; } .lg-times.alert .lg-lbl { color: #1b1d1e; }
+.lg-times .lg-dwell { margin-left: auto; font-weight: 700; font-size: 11px; white-space: nowrap; } .lg-times .lg-link { margin-right: 6px; }
+.lg.locked .lg-times .lg-in { background: #fff; color: #000; }
 .lg-tabs { display: flex; gap: 2px; padding: 4px 6px 0; background: #f0f0f0; }
 .lg-tab { font: inherit; font-size: 11px; padding: 3px 8px; border: 1px solid #a0a0a0; border-bottom: none; background: #e8e8e8; cursor: pointer; color: #000; }
 .lg-tab.on { background: #fff; font-weight: 700; position: relative; top: 1px; }
@@ -31230,7 +31234,8 @@ function stopFields(kind, i, s) {
 }
 function renderBuilder() {
   const d = S.draft; if (!d.id && !d.draftKey) d.draftKey = uid(); const key = d.id || 'new:' + d.draftKey;
-  if (S.lgDraftId !== key) { S.lgDraftId = key; S.lgTab = 'loading'; S.lgLocked = false; S.lgSide = orderOfLoad(d) ? 'docs' : ''; }
+  if (S.lgDraftId !== key) { S.lgDraftId = key; S.lgTab = 'loading'; S.lgLocked = !S.lgEditOnOpen && S.loads.some(l => l.id === d.id); S.lgSide = orderOfLoad(d) ? 'docs' : ''; }
+  S.lgEditOnOpen = false;
   return isMobile() ? renderBuilderCards() : renderLegacyEditor(d);
 }
 function renderBuilderCards() {
@@ -31345,7 +31350,7 @@ function saveDraft(opts = {}) {
   d.pickups.forEach(p => { shippers = addFac(shippers, p); });
   d.drops.forEach(p => { receivers = addFac(receivers, p); });
   if (opts.stay) { S.loads = loads; S.shippers = shippers; S.receivers = receivers; S.tenderId = d.id; persist(); return d; }
-  if (!isMobile()) { S.loads = loads; S.shippers = shippers; S.receivers = receivers; S.tenderId = d.id; S.draft = normalizeDraft(clone(d)); S.lgTab = S.lgTab || 'loading'; persist(); render(); toast(`File ${esc(d.fileNo)} saved`); return d; }
+  if (!isMobile()) { S.loads = loads; S.shippers = shippers; S.receivers = receivers; S.tenderId = d.id; S.draft = normalizeDraft(clone(d)); S.lgTab = S.lgTab || 'loading'; if (opts.lock) S.lgLocked = true; persist(); render(); toast(`File ${esc(d.fileNo)} saved`); return d; }
   set({ loads, shippers, receivers, draft: null, tenderId: d.id, view: 'tender' });
   window.scrollTo(0, 0);
   return d;
@@ -32813,9 +32818,14 @@ function renderLegacyEditor(d) {
   const inp = (path, val, cls = '', extra = '') => `<input class="lg-in ${cls}" value="${esc(val ?? '')}" data-bind="${path}"${ro} ${extra}>`;
   const sel = (path, val, opts, cls = '', extra = '') => `<select class="lg-in lg-sel ${cls}" data-act="lgSel" data-path="${path}"${ro} ${extra}>${opts.map(o => `<option value="${esc(o)}"${String(val) === String(o) ? ' selected' : ''}>${esc(o) || '&nbsp;'}</option>`).join('')}</select>`;
   const chk = (path, val, label) => `<label class="lg-chk"><input type="checkbox" data-act="lgChk" data-path="${path}"${val ? ' checked' : ''}${ro}> ${label}</label>`;
-  const ico = (name, title, act = '', extra = '') => `<button class="lg-ico" title="${esc(title)}"${act ? ` data-act="${act}"` : ''} ${extra}>${name}</button>`;
+  const ico = (name, title, act = '', extra = '', cls = '') => `<button class="lg-ico${cls ? ' ' + cls : ''}" title="${esc(title)}"${act ? ` data-act="${act}"` : ''} ${extra}>${name}</button>`;
   const custs = customerNames(), carriers = S.carriers.slice().sort((a, b) => a.name.localeCompare(b.name));
   const dir = findCarrier(c.name);
+  const timesRow = (kind, i, s) => { // check-in / check-out for this stop; works in view mode too, logs to history and moves the status
+    const id = `${kind}-${i}`, live = dwellMins(s), dw = dwell(s.inAt, s.outAt), alert = !s.outAt && live >= DWELL_ALERT_MIN;
+    const ctl = (f, label) => `<span class="lg-lbl">${label}:</span><input class="lg-in lg-w150" type="datetime-local" id="lg-${f}-${id}" value="${esc(s[f] || '')}" data-enter="lg-times-${id}"><button class="lg-link" data-act="fillNow" data-target="lg-${f}-${id}" title="Fill with the current time">now</button>`;
+    return `<div class="lg-stop-r lg-times${alert ? ' alert' : ''}">${ctl('inAt', 'Checked in')}${ctl('outAt', 'Checked out')}<button class="lg-btn" id="lg-times-${id}" data-act="lgTimes" data-kind="${kind}" data-i="${i}" title="Save the check-in and check-out times. Logged to history with your name and moves the load status.">Save times</button><span class="lg-dwell">${dw ? 'Dwell ' + dw : s.inAt ? (alert ? 'Detention ' : 'On site ') + fmtMins(live) : ''}</span></div>`;
+  };
   const stopBlock = (kind, i, s) => {
     const pu = kind === 'pickups', list = pu ? S.shippers : S.receivers, ln = pu ? (s.lines && s.lines[0]) || blankLine() : null;
     const base = `draft.${kind}.${i}`;
@@ -32827,8 +32837,9 @@ function renderLegacyEditor(d) {
       </div>
       <div class="lg-stop-r">
         <select class="lg-in lg-sel lg-facsel" data-act="facility" data-kind="${kind}" data-i="${i}"${ro}><option value="">Please select...</option>${list.map(x => `<option value="${esc(x.id)}"${x.id === s.facilityId ? ' selected' : ''}>${esc(x.name)} - ${esc(x.city)}, ${esc(x.st)}</option>`).join('')}</select>${ico('&#128269;', 'Shippers and receivers directory', 'goDirectory')}
-        ${pu ? `<span class="lg-lbl">Lbs:</span>${inp(base + '.lines.0.weight', ln.weight, 'lg-w80 lg-num', 'inputmode="numeric"')}` : ''}<span class="lg-lbl">Pallet In/Out:</span>${inp(base + '.palletIn', s.palletIn, 'lg-w60 lg-num')}${inp(base + '.palletOut', s.palletOut, 'lg-w60 lg-num')}<span class="lg-lbl">In/Out:</span>${inp(base + '.inAt', s.inAt, 'lg-w150', 'type="datetime-local"')}${inp(base + '.outAt', s.outAt, 'lg-w150', 'type="datetime-local"')}${pu ? '' : `<span class="lg-lbl">Seal #:</span>${inp(base + '.seal', s.seal, 'lg-w100')}`}
+        ${pu ? `<span class="lg-lbl">Lbs:</span>${inp(base + '.lines.0.weight', ln.weight, 'lg-w80 lg-num', 'inputmode="numeric"')}` : ''}<span class="lg-lbl">Pallet In/Out:</span>${inp(base + '.palletIn', s.palletIn, 'lg-w60 lg-num')}${inp(base + '.palletOut', s.palletOut, 'lg-w60 lg-num')}${pu ? '' : `<span class="lg-lbl">Seal #:</span>${inp(base + '.seal', s.seal, 'lg-w100')}`}
       </div>
+      ${timesRow(kind, i, s)}
       ${pu ? '' : `<div class="lg-stop-r"><span class="lg-lbl" style="margin-left:auto">Reason:</span>${inp(base + '.reason', s.reason, 'lg-grow')}<span class="lg-lbl">Arrival:</span>${inp(base + '.arrival', s.arrival, 'lg-w150', 'type="datetime-local"')}</div>`}
       ${(S.lgAddrOpen || {})[kind + '-' + i] ? `<div class="lg-stop-body">
         <div class="lg-addr lg-stop-grid">
@@ -32847,7 +32858,7 @@ function renderLegacyEditor(d) {
     </div>`;
   };
   const billRow = (b, i) => `<tr><td>${b.billTo !== '' || i === 0 ? sel(`draft.bills.${i}.billTo`, b.billTo, ['', 'TBA - TO BE ANNOUNCED', ...custs], 'lg-bill-to') : `<span class="lg-truck-tag" title="Carrier pay line">TRUCK PAY</span>`}</td><td>${sel(`draft.bills.${i}.product`, b.product, BILL_PRODUCTS)}</td><td>${inp(`draft.bills.${i}.rate`, b.rate, 'lg-num lg-w80', 'placeholder=".00" inputmode="decimal"')}</td><td>${sel(`draft.bills.${i}.method`, b.method, BILL_METHODS)}</td><td>${inp(`draft.bills.${i}.qty`, b.qty, 'lg-num lg-w50')}</td><td class="lg-num"><span id="lg-sub-${i}">${money(billAmt(b)).replace('$', '')}</span></td><td><button class="lg-link" data-act="lgRmBill" data-i="${i}" title="Remove line">x</button></td></tr>`;
-  const banner = isNew ? '<div class="lg-banner add">You are ADDING this File</div>' : `<div class="lg-banner edit">You are EDITING File ${esc(d.fileNo)}${locked ? ' (LOCKED)' : ''}</div>`;
+  const banner = isNew ? '<div class="lg-banner add">You are ADDING this File</div>' : locked ? `<div class="lg-banner view">Viewing File ${esc(d.fileNo)}. Click the pencil to edit.</div>` : `<div class="lg-banner edit">You are EDITING File ${esc(d.fileNo)}</div>`;
   const loading = `<div class="lg-body">
     <div class="lg-left">
       <div class="lg-group"><div class="lg-group-h">Originator</div>
@@ -32912,7 +32923,7 @@ function renderLegacyEditor(d) {
     <div class="lg-toolbar">
       <button class="lg-btn lg-board" data-act="lgLeave" title="Back to the load board">&#9664; Board</button><span class="lg-sep"></span><button class="lg-ico" title="First file" data-act="lgNav" data-d="first">|&#9664;</button><button class="lg-ico" title="Previous file" data-act="lgNav" data-d="prev">&#9664;</button><button class="lg-ico" title="Next file" data-act="lgNav" data-d="next">&#9654;</button><button class="lg-ico" title="Last file" data-act="lgNav" data-d="last">&#9654;|</button>
       <input class="lg-in lg-w80" id="lg-goto" placeholder="File #" data-enter="lg-goto-btn" title="Type a file number and press Enter"><button class="lg-ico" id="lg-goto-btn" data-act="lgGoto" style="display:none"></button><span class="lg-count">${fmt(S.loads.length)} Files</span>
-      <span class="lg-sep"></span>${ico('&#128196;', 'New file', 'newLoad')}${ico('&#9998;', locked ? 'Unlock for editing' : 'Edit (this file is open for editing). Click Board or Return to leave.', 'lgEdit')}${ico('&#128190;', 'Save', 'save')}${ico('&#8630;', 'Undo changes', 'lgUndo')}${ico('&#10006;', isNew ? 'Discard this new file and go back to the board' : 'Delete this file', 'lgDelete')}${ico('&#128269;', 'Find file', 'lgFind')}${ico('&#128203;', 'Copy file', 'lgCopy')}${ico('&#128424;', 'Print tender', 'lgPrint')}
+      <span class="lg-sep"></span>${ico('&#128196;', 'New file', 'newLoad')}${ico('&#9998;', locked ? 'Edit this file' : 'Editing this file. The floppy disk saves it.', 'lgEdit', '', locked ? '' : 'on')}${ico('&#128190;', locked ? 'Save (click the pencil to edit first)' : 'Save this file', 'lgSave', '', isNew || !locked ? 'save' : '')}${ico('&#8630;', 'Undo changes', 'lgUndo')}${ico('&#10006;', isNew ? 'Discard this new file and go back to the board' : 'Delete this file', 'lgDelete')}${ico('&#128269;', 'Find file', 'lgFind')}${ico('&#128203;', 'Copy file', 'lgCopy')}${ico('&#128424;', 'Print tender', 'lgPrint')}
       <span class="lg-sep"></span><button class="lg-btn${locked ? ' on' : ''}" data-act="lgLock">Lockdown</button>${banner}
     </div>
     <div class="lg-tabs">${[['loading', 'Loading <u>Z</u>'], ['accounting', 'Accounting <u>X</u>'], ['trace', 'Trace <u>C</u>'], ['tender', 'Tender'], ['carrier', 'Carrier']].map(([k, l]) => `<button class="lg-tab${tab === k ? ' on' : ''}" data-act="lgTab" data-v="${k}">${l}</button>`).join('')}</div>
@@ -32939,6 +32950,8 @@ function renderLgSide(d) {
     : side === 'res' ? `<div class="lg-group-h">Resources</div><div class="lg-res"><button class="lg-btn" data-act="lgRates">Lane rates</button><button class="lg-btn" data-act="goCarriers">Carrier directory</button><button class="lg-btn" data-act="goDirectory">Shippers and receivers</button><button class="lg-btn" data-act="lgMiles">Mileage calculator</button>${d.id && S.loads.some(l => l.id === d.id) ? `<button class="lg-btn" data-act="rcTab" data-id="${esc(d.id)}">Rate confirmation</button>` : ''}</div>` : '';
   return `<div class="lg-side${side ? ' open' : ''}">${side ? `<div class="lg-side-panel">${panel}</div>` : ''}<div class="lg-vtabs">${[['docs', 'Documents'], ['adv', 'Advances'], ['res', 'Resources']].map(([k, l]) => `<button class="lg-vtab${side === k ? ' on' : ''}" data-act="lgSide" data-v="${k}">${l}</button>`).join('')}</div></div>`;
 }
+function lgDirty() { const d = S.draft, saved = d && S.loads.find(l => l.id === d.id); if (!saved) return true; const cmp = x => { const c = clone(x); delete c.tracking; delete c.checkCalls; delete c.vetting; delete c.rateCon; return JSON.stringify(c); }; return cmp(d) !== cmp(saved); }
+const LG_EDIT_ACTS = new Set(['addStop', 'rmStop', 'lgAddBill', 'lgRmBill', 'lgAddAdv', 'lgRmAdv', 'lgUndo', 'lgCarrierCopy', 'lgEtaNow', 'lgMiles']);
 const LG_ACT = {
   lgTab: el => { const to = el.dataset.v, d = S.draft, saved = S.loads.find(l => l.id === d.id);
     if (S.lgTab === 'loading' && to !== 'loading' && saved) { const cmp = x => { const c = clone(x); delete c.tracking; delete c.checkCalls; delete c.vetting; delete c.rateCon; return JSON.stringify(c); }; if (cmp(d) !== cmp(saved)) { saveDraft({ stay: true }); toast(`File ${esc(d.fileNo)} saved`); } }
@@ -32963,11 +32976,27 @@ const LG_ACT = {
   lgRmBill: el => { S.draft.bills.splice(+el.dataset.i, 1); if (!S.draft.bills.length) lgNormalize(S.draft); render(); },
   lgAddAdv: () => { S.draft.advances.push({ date: todayISO(), to: S.draft.carrier.name || '', amount: '', note: '' }); render(); },
   lgRmAdv: el => { S.draft.advances.splice(+el.dataset.i, 1); render(); },
-  lgLock: () => { S.lgLocked = !S.lgLocked; render(); },
+  lgLock: () => { const d = S.draft, saved = S.loads.find(l => l.id === d.id); if (!saved) { toast('Save the new file first. Lockdown applies to saved files.'); return; }
+    if (S.lgLocked) { S.lgLocked = false; render(); return; }
+    if (!lgDirty()) { S.lgLocked = true; render(); return; }
+    confirmUI('Lock without saving?', 'Unsaved changes on this file are discarded.', 'Discard').then(ok => { if (!ok) return; S.draft = normalizeDraft(clone(saved)); S.lgLocked = true; render(); }); },
+  lgSave: () => { if (S.lgLocked) { toast('Click the pencil to edit this file first.'); return; } saveDraft({ lock: true }); },
+  lgTimes: el => {
+    const kind = el.dataset.kind, i = +el.dataset.i, id = `${kind}-${i}`, g = k => { const n = document.getElementById(k); return n ? n.value : ''; };
+    const inV = g('lg-inAt-' + id), outV = g('lg-outAt-' + id);
+    if (inV && outV && parseLocal(outV) < parseLocal(inV)) { notify('Check the times', 'Check-out is earlier than check-in. Fix one of them and save again.'); return; }
+    const d = S.draft, st = d[kind][i]; if (!st) return;
+    const saved = S.loads.find(l => l.id === d.id), sst = saved && saved[kind][i];
+    if (!sst) { st.inAt = inV; st.outAt = outV; render(); toast('Times set. Save the file to keep them.'); return; }
+    let changed = false;
+    if ((sst.inAt || '') !== inV) { setStopTime(kind, i, 'inAt', inV, false, d.id); changed = true; }
+    if ((sst.outAt || '') !== outV) { setStopTime(kind, i, 'outAt', outV, false, d.id); changed = true; }
+    const fresh = S.loads.find(l => l.id === d.id); st.inAt = inV; st.outAt = outV; d.status = fresh.status; d.tracking = clone(fresh.tracking);
+    render(); toast(changed ? `Times saved for ${kind === 'pickups' ? 'pickup' : 'delivery'} ${i + 1}. Status: ${fresh.status}` : 'No change to the times'); },
   lgUndo: () => { const d = S.draft; const orig = S.loads.find(l => l.id === d.id); confirmUI('Undo changes?', orig ? 'Reloads the file as last saved.' : 'Clears everything on this new file.', 'Undo').then(ok => { if (!ok) return; S.draft = orig ? normalizeDraft(clone(orig)) : blankDraft(); render(); }); },
   lgDelete: () => { const d = S.draft; if (!S.loads.some(l => l.id === d.id)) { confirmUI('Discard new file ' + d.fileNo + '?', 'Nothing has been saved. You go back to the load board.', 'Discard').then(ok => { if (ok) { S.lgLocked = false; set({ draft: null, view: 'board' }); window.scrollTo(0, 0); } }); return; } confirmUI('Delete file ' + d.fileNo + '?', 'This removes the file from the board for everyone on this computer.').then(ok => { if (ok) { S.lgLocked = false; set({ loads: S.loads.filter(x => x.id !== d.id), draft: null, view: 'board' }); window.scrollTo(0, 0); } }); },
   lgLeave: () => { S.lgLocked = false; set({ draft: null, view: 'board' }); window.scrollTo(0, 0); },
-  lgEdit: () => { if (S.lgLocked) { S.lgLocked = false; render(); toast('File unlocked for editing'); } else toast('This file is already open for editing. Use Load to save, or Board / Return to leave.'); },
+  lgEdit: () => { if (S.lgLocked) { S.lgLocked = false; render(); toast(`Editing file ${esc(S.draft.fileNo)}. Click the floppy disk to save.`); } else toast('Already editing. Click the floppy disk to save.'); },
   lgFind: () => { dialog({ title: 'Find file', body: 'File number, customer or city.', input: 'text', placeholder: 'e.g. 2442380', okLabel: 'Find' }).then(q => { if (!q) return; q = String(q).trim().toLowerCase(); const l = S.loads.find(x => String(x.fileNo).toLowerCase() === q) || S.loads.find(x => [x.fileNo, x.customer, (x.pickups[0] || {}).city, finalDrop(x).city].join(' ').toLowerCase().includes(q)); if (!l) { notify('Not found', 'No file matches ' + q + '.'); return; } set({ draft: normalizeDraft(clone(l)), view: 'builder' }); }); },
   lgGoto: () => { const inp = document.getElementById('lg-goto'); const q = (inp ? inp.value : '').trim(); if (!q) return; const l = S.loads.find(x => String(x.fileNo) === q); if (!l) { notify('Not found', 'No file ' + q + '.'); return; } set({ draft: normalizeDraft(clone(l)), view: 'builder' }); },
   lgNav: el => { const sorted = S.loads.slice().sort((a, b) => String(a.fileNo).localeCompare(String(b.fileNo))); if (!sorted.length) return; const i = sorted.findIndex(x => x.id === S.draft.id); const j = el.dataset.d === 'first' ? 0 : el.dataset.d === 'last' ? sorted.length - 1 : el.dataset.d === 'prev' ? Math.max(0, i - 1) : Math.min(sorted.length - 1, i < 0 ? 0 : i + 1); set({ draft: normalizeDraft(clone(sorted[j])), view: 'builder' }); },
@@ -33620,8 +33649,7 @@ function customerUpdateMail(l, ev, stopEntry, note) {
   s.push('', 'Thank you,', S.user ? S.user.name : '', COMPANY.name, `${COMPANY.phone} · ${COMPANY.email}`);
   return `mailto:${l.customerEmail || ''}?subject=${encodeURIComponent(`Load update — File ${l.fileNo} — ${ev[1]} — ${route(l)}`)}&body=${encodeURIComponent(s.join('\n'))}`;
 }
-function setStopTime(kind, i, f, value, rerender = true) {
-  const id = S.tenderId;
+function setStopTime(kind, i, f, value, rerender = true, id = S.tenderId) {
   updateLoad(id, l => {
     const st = l[kind][i]; if (!st) return; st[f] = value;
     const label = `${kind === 'pickups' ? 'Pickup' : 'Delivery'} ${i + 1} — ${st.name || st.city || 'stop'}`;
@@ -33764,7 +33792,7 @@ function render() {
   login.classList.add('hidden'); strip.classList.remove('hidden'); nav.classList.remove('hidden');
   if (S.view === 'builder' && !S.draft) S.view = 'board';
   if (S.view === 'tender' && !S.loads.some(l => l.id === S.tenderId)) S.view = 'board';
-  if (S.view === 'tender' && !isMobile()) { const l = S.loads.find(x => x.id === S.tenderId); const map = { tender: 'tender', carrier: 'carrier', tracking: 'trace', ratecon: 'accounting', source: 'loading', calls: 'trace' }; const key = l.id; if (S.lgDraftId !== key || !S.draft || S.draft.id !== l.id) { S.draft = normalizeDraft(clone(l)); S.lgDraftId = key; S.lgLocked = false; S.lgSide = orderOfLoad(l) && (S.fileTab === 'source' || !S.lgTabSet) ? 'docs' : (S.lgSide || ''); } S.lgTab = map[S.fileTab] || 'loading'; S.lgTabSet = true; S.view = 'builder'; }
+  if (S.view === 'tender' && !isMobile()) { const l = S.loads.find(x => x.id === S.tenderId); const map = { tender: 'tender', carrier: 'carrier', tracking: 'trace', ratecon: 'accounting', source: 'loading', calls: 'trace' }; const key = l.id; if (S.lgDraftId !== key || !S.draft || S.draft.id !== l.id) { S.draft = normalizeDraft(clone(l)); S.lgDraftId = key; S.lgLocked = true; S.lgSide = orderOfLoad(l) && (S.fileTab === 'source' || !S.lgTabSet) ? 'docs' : (S.lgSide || ''); } S.lgTab = map[S.fileTab] || 'loading'; S.lgTabSet = true; S.view = 'builder'; }
   renderShell();
   const v = $('#view');
   try {
@@ -33811,7 +33839,7 @@ const ACT = {
   chipDelayed: () => { S.onlyDelayed = !S.onlyDelayed; renderBoardBody(); },
   sort: el => { const k = el.dataset.key; S.sortDir = S.sortKey === k ? -S.sortDir : 1; S.sortKey = k; renderBoardBody(); },
   view: el => { S.fileTab = el.dataset.tab || 'tender'; S.lgTabSet = false; set({ tenderId: el.dataset.id, view: 'tender' }); window.scrollTo(0, 0); },
-  edit: el => { const l = S.loads.find(x => x.id === el.dataset.id); if (l) { S.lgTab = 'loading'; S.lgTabSet = true; set({ draft: normalizeDraft(clone(l)), view: 'builder' }); window.scrollTo(0, 0); } },
+  edit: el => { const l = S.loads.find(x => x.id === el.dataset.id); if (l) { S.lgTab = 'loading'; S.lgTabSet = true; S.lgEditOnOpen = true; set({ draft: normalizeDraft(clone(l)), view: 'builder' }); window.scrollTo(0, 0); } },
   delete: el => { const l = S.loads.find(x => x.id === el.dataset.id); if (!l) return; confirmUI('Delete file ' + l.fileNo + '?', 'This removes the file from the board for everyone on this computer.').then(ok => { if (ok) set({ loads: S.loads.filter(x => x.id !== l.id) }); }); },
   print: () => window.print(),
   // builder
@@ -34029,6 +34057,7 @@ app.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
   if (!el || CHANGE_ACTS.has(el.dataset.act)) return;
   if (el.tagName === 'BUTTON' && el.disabled) return;
+  if (S.view === 'builder' && S.lgLocked && LG_EDIT_ACTS.has(el.dataset.act)) { e.stopPropagation(); toast('Click the pencil to edit this file.'); return; }
   e.stopPropagation();
   ACT[el.dataset.act](el, e);
 });
