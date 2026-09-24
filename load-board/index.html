@@ -270,6 +270,7 @@ html.dwell-alert, html.dwell-alert body, body.dwell-alert { background: #ffe600 
 body.dwell-alert #nav, body.dwell-alert #strip, body.dwell-alert #tabbar, body.dwell-alert .rail button:not(.on), body.dwell-alert .stepper { background: #ffe600; }
 body.dwell-alert #menubar { background: #ffec4d; }
 body.dwell-alert .card, body.dwell-alert #tender-sheet { background: #fff8b8; }
+body.dwell-alert .lg, body.dwell-alert .lg-body, body.dwell-alert .lg-left, body.dwell-alert .lg-main, body.dwell-alert .lg-toolbar, body.dwell-alert .lg-tabs, body.dwell-alert .lg-statusbar, body.dwell-alert .lg-titlebar { background: #fff8b8; }
 .dwell-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #ff6a00; color: #1b1d1e; border: 2px solid #1b1d1e; padding: 10px 14px; margin-bottom: var(--space-4); font-family: var(--font-heading); font-weight: 700; font-size: 16px; letter-spacing: 0.03em; text-transform: uppercase; }
 .dwell-banner .dwell-tag { background: #1b1d1e; color: #ff6a00; padding: 2px 10px; font-size: 13px; }
 .grid td.status.delayed, .lc .st.delayed { background: #ff6a00 !important; color: #1b1d1e !important; font-weight: 800 !important; text-transform: uppercase; letter-spacing: 0.02em; }
@@ -33757,7 +33758,8 @@ function render() {
     return;
   }
   document.body.classList.toggle('m', isMobile());
-  const cur = S.view === 'tender' ? S.loads.find(l => l.id === S.tenderId) : null;
+  const curId = S.view === 'tender' ? S.tenderId : (S.view === 'builder' && S.draft && S.draft.id && !isMobile()) ? S.draft.id : null;
+  const cur = curId ? S.loads.find(l => l.id === curId) : null;
   const alertOn = !!(cur && delayAt(cur)); document.body.classList.toggle('dwell-alert', alertOn); document.documentElement.classList.toggle('dwell-alert', alertOn);
   login.classList.add('hidden'); strip.classList.remove('hidden'); nav.classList.remove('hidden');
   if (S.view === 'builder' && !S.draft) S.view = 'board';
@@ -34095,7 +34097,7 @@ setInterval(() => {
   if (!S.user) return;
   const k = alertSignature(); if (k === alertKey) return; alertKey = k;
   if (S.view === 'board') { renderBoardBody(); renderShell(); }
-  else if (S.view === 'tender' && !document.activeElement.matches('input, select, textarea')) render();
+  else if ((S.view === 'tender' || (S.view === 'builder' && S.draft && S.draft.id)) && !document.activeElement.matches('input, select, textarea')) render();
   else renderShell();
 }, 60000);
 applySkin(S.skin);
