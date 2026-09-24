@@ -587,7 +587,9 @@ body.m #users .fac { flex-wrap: wrap; }
 .lg-res { display: flex; flex-direction: column; gap: 4px; padding: 6px; }
 .lg-statusbar { display: flex; align-items: center; gap: 6px; padding: 3px 8px; background: #f0f0f0; border-top: 1px solid #c8c8c8; font-size: 11px; }
 .lg.locked .lg-in { background: #f0f0f0; color: #555; }
-@media print { #lgedit { display: none; } }
+@media print { #lgedit .lg-titlebar, #lgedit .lg-toolbar, #lgedit .lg-tabs, #lgedit .lg-left, #lgedit .lg-side, #lgedit .lg-statusbar { display: none !important; } #lgedit, #lgedit .lg-body, #lgedit .lg-main { display: block !important; background: #fff !important; padding: 0 !important; border: 0 !important; min-height: 0 !important; } }
+.lg-embed { font-family: var(--font-body); font-size: 14px; }
+.lg-embed #tender-sheet { max-width: 1100px; }
 
 /* ── New load browser (order inbox) ───────────────────────────────────── */
 #orders { max-width: 1100px; padding: var(--space-6) var(--space-6) var(--space-8); }
@@ -31132,7 +31134,7 @@ function renderBoardBody() {
     const driven = /DRIVEN/.test(r.originator);
     const H = hot ? ' hot' : '';
     return `<tr class="${ccRowClass(l).trim()}">
-      <td class="c pale file${H}" style="border-left:4px solid ${officeColor(l.office)}" title="Open load tender · ${esc(l.office || '')}" data-act="view" data-id="${esc(l.id)}">${esc(r.fileNo)}</td>
+      <td class="c pale file${H}" style="border-left:4px solid ${officeColor(l.office)}" title="Open this file · ${esc(l.office || '')}" data-act="view" data-tab="loading" data-id="${esc(l.id)}">${esc(r.fileNo)}</td>
       <td class="c pale${H}">${esc(r.fileIn)}</td>
       <td class="c trin">${esc(r.trIn)}</td>
       <td class="c pale${H}">${dt}</td>
@@ -31226,7 +31228,7 @@ function stopFields(kind, i, s) {
   </div>`;
 }
 function renderBuilder() {
-  const d = S.draft; const key = d.id || 'new:' + d.fileNo;
+  const d = S.draft; if (!d.id && !d.draftKey) d.draftKey = uid(); const key = d.id || 'new:' + d.draftKey;
   if (S.lgDraftId !== key) { S.lgDraftId = key; S.lgTab = 'loading'; S.lgLocked = false; S.lgSide = orderOfLoad(d) ? 'docs' : ''; }
   return isMobile() ? renderBuilderCards() : renderLegacyEditor(d);
 }
@@ -31326,11 +31328,11 @@ function builderDerived() {
   d.drops.forEach((dr, i) => { const at = assignedTotals(d, i); const el = document.querySelector(`[data-assigned="${i}"]`); if (el) el.textContent = `Receives ${fmt(at.plt)} plt · ${fmt(at.cs)} pcs · ${fmt(at.wt)} lbs`; });
   document.querySelectorAll('select[data-dropsel]').forEach(sel => { const v = sel.value; sel.innerHTML = dropOptions(d, parseInt(v) || 0); });
 }
-function saveDraft() {
+function saveDraft(opts = {}) {
   const d = clone(S.draft);
   if (d.bills) lgSyncBilling(d);
   const was = S.loads.find(l => l.id === d.id);
-  if (COVERED.includes(d.status) && (!was || HOT.includes(was.status)) && vetBlocked(d)) { vetGateDialog(was || d, () => { if (was) { const ov = (S.loads.find(l => l.id === d.id) || {}).vetting; if (ov) S.draft.vetting = ov; } else S.draft.vetting = d.vetting; saveDraft(); }); return; }
+  if (COVERED.includes(d.status) && (!was || HOT.includes(was.status)) && vetBlocked(d)) { vetGateDialog(was || d, () => { if (was) { const ov = (S.loads.find(l => l.id === d.id) || {}).vetting; if (ov) S.draft.vetting = ov; } else S.draft.vetting = d.vetting; saveDraft(opts); }); return; }
   d.pickups.forEach(p => { p.lines.forEach(l => { l.no = (l.no || '').trim(); }); delete p.refs; p.ref = refText(p); });
   if (!d.id) { d.id = uid(); d.createdAt = Date.now(); }
   const exists = S.loads.some(l => l.id === d.id);
@@ -31341,8 +31343,11 @@ function saveDraft() {
   let shippers = S.shippers, receivers = S.receivers;
   d.pickups.forEach(p => { shippers = addFac(shippers, p); });
   d.drops.forEach(p => { receivers = addFac(receivers, p); });
+  if (opts.stay) { S.loads = loads; S.shippers = shippers; S.receivers = receivers; S.tenderId = d.id; persist(); return d; }
+  if (!isMobile()) { S.loads = loads; S.shippers = shippers; S.receivers = receivers; S.tenderId = d.id; S.draft = normalizeDraft(clone(d)); S.lgTab = S.lgTab || 'loading'; persist(); render(); toast(`File ${esc(d.fileNo)} saved`); return d; }
   set({ loads, shippers, receivers, draft: null, tenderId: d.id, view: 'tender' });
   window.scrollTo(0, 0);
+  return d;
 }
 
 // ── Tender ─────────────────────────────────────────────────────────────────
@@ -32897,9 +32902,10 @@ function renderLegacyEditor(d) {
       <div class="lg-r" style="padding:2px 4px"><button class="lg-link" data-act="lgAddBill" data-truck="0">+ bill line</button><button class="lg-link" data-act="lgAddBill" data-truck="1">+ truck pay line</button></div></div>
     <div class="lg-group"><div class="lg-group-h">Advances</div><table class="lg-grid"><thead><tr><th>Date</th><th>To</th><th class="lg-num">Amount</th><th>Note</th><th></th></tr></thead><tbody>${(d.advances || []).map((a, i) => `<tr><td>${inp(`draft.advances.${i}.date`, a.date, 'lg-w110', 'type="date"')}</td><td>${inp(`draft.advances.${i}.to`, a.to, 'lg-w150')}</td><td>${inp(`draft.advances.${i}.amount`, a.amount, 'lg-num lg-w80', 'inputmode="decimal"')}</td><td>${inp(`draft.advances.${i}.note`, a.note, 'lg-grow')}</td><td><button class="lg-link" data-act="lgRmAdv" data-i="${i}">x</button></td></tr>`).join('')}</tbody></table><div class="lg-r" style="padding:2px 4px"><button class="lg-link" data-act="lgAddAdv">+ advance</button></div></div>
     <div class="lg-group"><div class="lg-group-h">Summary</div><div class="lg-r"><span class="lg-lbl">File Total:</span><strong>${money(t.file)}</strong><span class="lg-lbl">Truck Total:</span><strong>${money(t.truck)}</strong><span class="lg-lbl">Margin:</span><strong>${money(t.file - t.truck)}</strong><span class="lg-lbl">Advances:</span><strong>${money(t.adv)}</strong></div>
-      <div class="lg-r">${isNew ? '<span class="text-muted" style="font-size:11px">Save the file to issue a rate confirmation.</span>' : `<button class="lg-btn" data-act="rcTab" data-id="${esc(d.id)}">Rate confirmation</button>`}</div></div>
+      <div class="lg-r">${isNew ? '<span class="text-muted" style="font-size:11px">Save the file to issue a rate confirmation.</span>' : ''}</div></div>
+    ${isNew ? '' : `<div class="lg-embed">${(() => { const l = S.loads.find(x => x.id === d.id); return l ? renderRateConTab(l) : ''; })()}</div>`}
   </div>${renderLgSide(d)}</div>`;
-  const trace = `<div class="lg-body"><div class="lg-main" style="padding:10px"><div class="lg-group"><div class="lg-group-h">Trace</div>${isNew ? '<div class="text-muted" style="font-size:12px;padding:6px">Save the file first. Check calls, tracking and the customer update email live on the saved file.</div>' : `<div class="lg-r" style="padding:6px;gap:8px"><button class="lg-btn" data-act="viewTrack" data-id="${esc(d.id)}">Tracking and tracing</button><button class="lg-btn" data-act="view" data-id="${esc(d.id)}">Load tender</button></div>${(() => { const l = S.loads.find(x => x.id === d.id); const log = l ? trackOf(l).log.slice().reverse().slice(0, 12) : []; return log.length ? `<div class="log" style="padding:0 6px">${log.map(e => `<div><time>${fmtWhen(e.at)} · ${esc(e.by || '')}</time><div>${esc(e.text)}</div></div>`).join('')}</div>` : ''; })()}`}</div></div>${renderLgSide(d)}</div>`;
+  const trace = lgFileTab(d, 'trace');
   return `<main id="lgedit" class="lg${locked ? ' locked' : ''}">
     <div class="lg-titlebar">${I.truckRed}<span>[${isNew ? 'New File' : 'File ' + esc(d.fileNo)}] Load Editor - (${esc(d.office || OFFICES[0])})</span></div>
     <div class="lg-toolbar">
@@ -32908,12 +32914,22 @@ function renderLegacyEditor(d) {
       <span class="lg-sep"></span>${ico('&#128196;', 'New file', 'newLoad')}${ico('&#9998;', locked ? 'Unlock for editing' : 'Edit (this file is open for editing). Click Board or Return to leave.', 'lgEdit')}${ico('&#128190;', 'Save', 'save')}${ico('&#8630;', 'Undo changes', 'lgUndo')}${ico('&#10006;', isNew ? 'Discard this new file and go back to the board' : 'Delete this file', 'lgDelete')}${ico('&#128269;', 'Find file', 'lgFind')}${ico('&#128203;', 'Copy file', 'lgCopy')}${ico('&#128424;', 'Print tender', 'lgPrint')}
       <span class="lg-sep"></span><button class="lg-btn${locked ? ' on' : ''}" data-act="lgLock">Lockdown</button>${banner}
     </div>
-    <div class="lg-tabs">${[['loading', 'Loading <u>Z</u>'], ['accounting', 'Accounting <u>X</u>'], ['trace', 'Trace <u>C</u>']].map(([k, l]) => `<button class="lg-tab${tab === k ? ' on' : ''}" data-act="lgTab" data-v="${k}">${l}</button>`).join('')}</div>
-    ${tab === 'accounting' ? accounting : tab === 'trace' ? trace : loading}
+    <div class="lg-tabs">${[['loading', 'Loading <u>Z</u>'], ['accounting', 'Accounting <u>X</u>'], ['trace', 'Trace <u>C</u>'], ['tender', 'Tender'], ['carrier', 'Carrier']].map(([k, l]) => `<button class="lg-tab${tab === k ? ' on' : ''}" data-act="lgTab" data-v="${k}">${l}</button>`).join('')}</div>
+    ${tab === 'accounting' ? accounting : tab === 'trace' ? trace : tab === 'tender' ? lgFileTab(d, 'tender') : tab === 'carrier' ? lgFileTab(d, 'carrier') : loading}
     <div class="lg-statusbar"><span>&#128100;</span><span>&#128666;</span><span class="lg-sep"></span><span>File Total:</span><strong id="lg-file-total">${money(t.file).replace('$', '')}</strong><span class="lg-sep"></span><span>Truck Total:</span><strong id="lg-truck-total">${money(t.truck).replace('$', '')}</strong><span>Adv Charge:</span><span class="lg-sep"></span><span>Advances:</span><strong id="lg-adv-total">${money(t.adv).replace('$', '')}</strong><button class="lg-link red" data-act="lgTab" data-v="accounting">Apply</button><span class="spacer"></span><button class="lg-link" data-act="lgRates">Client Rates/Quotes</button></div>
     <datalist id="cust-list">${custs.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
     <datalist id="comm-list">${['Produce - 34°F', 'Frozen - -10°F', 'Dry grocery', 'Paper products', 'Lumber', 'Machinery', 'Beverages', 'Packaging'].map(x => `<option value="${esc(x)}">`).join('')}</datalist>
   </main>`;
+}
+function lgFileTab(d, which) { // the saved file's screens (tender sheet, carrier + vetting, tracking) inside the editor chrome
+  const l = S.loads.find(x => x.id === d.id);
+  if (!l) return `<div class="lg-body"><div class="lg-main" style="padding:10px"><div class="lg-group"><div class="lg-group-h">${which === 'tender' ? 'Load tender' : which === 'carrier' ? 'Carrier' : 'Trace'}</div><div class="text-muted" style="font-size:12px;padding:6px">Save the file first with Load. The tender, carrier assignment and tracking live on the saved file.</div></div></div>${renderLgSide(d)}</div>`;
+  ensureDrafts(l); S.tenderId = l.id;
+  const dl = delayAt(l);
+  const banner = dl ? `<div class="dwell-banner no-print">Detention alert · ${esc(dl.label)}: ${dl.onSite ? 'on site' : 'was on site'} ${fmtMins(dl.mins)}<span class="spacer"></span><span class="dwell-tag">${delayText(dl)}</span></div>` : '';
+  const body = which === 'tender' ? `<div class="ctl-row no-print" style="margin-bottom:8px"><span class="tag ${tagFor(l.status)}" style="font-size:12px">FILE ${esc(l.fileNo)} · ${esc(l.status)}</span><div class="spacer"></div><button class="btn btn-secondary btn-sm" data-act="laneRates" data-id="${esc(l.id)}">${I.chart18}Lane rates</button>${COVERED.includes(l.status) && l.carrierName ? `<button class="btn btn-secondary btn-sm" data-act="rcQuick" data-id="${esc(l.id)}">${I.print}${l.rateCon ? 'Rate con ' + esc(l.rateCon.no) : 'Rate con PDF'}</button>` : ''}<a class="btn btn-secondary btn-sm" href="${tenderEmail(l)}">${I.mail}Email to carrier</a><button class="btn btn-primary btn-sm" data-act="print">${I.print}Print / PDF</button></div>${renderTender(l)}`
+    : which === 'carrier' ? renderCarrierTab(l) : renderTrackingTab(l);
+  return `<div class="lg-body"><div class="lg-main lg-embed" style="padding:10px">${banner}${body}</div>${renderLgSide(d)}</div>`;
 }
 function renderLgSide(d) {
   const side = S.lgSide || '', o = orderOfLoad(d), t = lgTotals(d);
@@ -32923,7 +32939,10 @@ function renderLgSide(d) {
   return `<div class="lg-side${side ? ' open' : ''}">${side ? `<div class="lg-side-panel">${panel}</div>` : ''}<div class="lg-vtabs">${[['docs', 'Documents'], ['adv', 'Advances'], ['res', 'Resources']].map(([k, l]) => `<button class="lg-vtab${side === k ? ' on' : ''}" data-act="lgSide" data-v="${k}">${l}</button>`).join('')}</div></div>`;
 }
 const LG_ACT = {
-  lgTab: el => { S.lgTab = el.dataset.v; render(); },
+  lgTab: el => { const to = el.dataset.v, d = S.draft, saved = S.loads.find(l => l.id === d.id);
+    if (S.lgTab === 'loading' && to !== 'loading' && saved) { const cmp = x => { const c = clone(x); delete c.tracking; delete c.checkCalls; delete c.vetting; delete c.rateCon; return JSON.stringify(c); }; if (cmp(d) !== cmp(saved)) { saveDraft({ stay: true }); toast(`File ${esc(d.fileNo)} saved`); } }
+    if (to === 'loading' && saved) { const fresh = S.loads.find(l => l.id === d.id); if (fresh) S.draft = normalizeDraft(clone(fresh)); }
+    S.lgTab = to; S.lgTabSet = true; render(); if (to === 'trace') refreshDistances(); },
   lgAddr: el => { S.lgAddrOpen = S.lgAddrOpen || {}; S.lgAddrOpen[el.dataset.k] = !S.lgAddrOpen[el.dataset.k]; render(); },
   lgNote: el => { const k = el.dataset.kind, i = +el.dataset.i, inp = document.getElementById(`lgnote-${k}-${i}`); const text = (inp ? inp.value : '').trim(); if (!text) { if (inp) inp.focus(); return; } const st = S.draft[k][i]; st.calls = st.calls || []; st.calls.push({ at: Date.now(), by: S.user.name, who: '', text }); render(); const n = document.getElementById(`lgnote-${k}-${i}`); if (n) n.focus(); },
   lgSide: el => { S.lgSide = S.lgSide === el.dataset.v ? '' : el.dataset.v; render(); },
@@ -33743,11 +33762,12 @@ function render() {
   login.classList.add('hidden'); strip.classList.remove('hidden'); nav.classList.remove('hidden');
   if (S.view === 'builder' && !S.draft) S.view = 'board';
   if (S.view === 'tender' && !S.loads.some(l => l.id === S.tenderId)) S.view = 'board';
+  if (S.view === 'tender' && !isMobile()) { const l = S.loads.find(x => x.id === S.tenderId); const map = { tender: 'tender', carrier: 'carrier', tracking: 'trace', ratecon: 'accounting', source: 'loading', calls: 'trace' }; const key = l.id; if (S.lgDraftId !== key || !S.draft || S.draft.id !== l.id) { S.draft = normalizeDraft(clone(l)); S.lgDraftId = key; S.lgLocked = false; S.lgSide = orderOfLoad(l) && (S.fileTab === 'source' || !S.lgTabSet) ? 'docs' : (S.lgSide || ''); } S.lgTab = map[S.fileTab] || 'loading'; S.lgTabSet = true; S.view = 'builder'; }
   renderShell();
   const v = $('#view');
   try {
   if (S.view === 'board') { v.innerHTML = renderBoard(); renderBoardBody(); }
-  else if (S.view === 'builder') v.innerHTML = renderBuilder();
+  else if (S.view === 'builder') { v.innerHTML = renderBuilder(); if (S.lgTab === 'trace' && !isMobile()) refreshDistances(); }
   else if (S.view === 'tender') { v.innerHTML = renderFile(S.loads.find(l => l.id === S.tenderId)); if (S.fileTab === 'tracking') refreshDistances(); }
   else if (S.view === 'directory') v.innerHTML = renderDirectory();
   else if (S.view === 'orders') v.innerHTML = renderOrders();
@@ -33788,8 +33808,8 @@ const ACT = {
   chipUnc: () => { const on = HOT.every(h => S.statusFilter.includes(h)) && S.statusFilter.length === HOT.length; S.statusFilter = on ? [] : [...HOT]; renderBoardBody(); },
   chipDelayed: () => { S.onlyDelayed = !S.onlyDelayed; renderBoardBody(); },
   sort: el => { const k = el.dataset.key; S.sortDir = S.sortKey === k ? -S.sortDir : 1; S.sortKey = k; renderBoardBody(); },
-  view: el => { S.fileTab = 'tender'; set({ tenderId: el.dataset.id, view: 'tender' }); window.scrollTo(0, 0); },
-  edit: el => { const l = S.loads.find(x => x.id === el.dataset.id); if (l) { set({ draft: normalizeDraft(clone(l)), view: 'builder' }); window.scrollTo(0, 0); } },
+  view: el => { S.fileTab = el.dataset.tab || 'tender'; S.lgTabSet = false; set({ tenderId: el.dataset.id, view: 'tender' }); window.scrollTo(0, 0); },
+  edit: el => { const l = S.loads.find(x => x.id === el.dataset.id); if (l) { S.lgTab = 'loading'; S.lgTabSet = true; set({ draft: normalizeDraft(clone(l)), view: 'builder' }); window.scrollTo(0, 0); } },
   delete: el => { const l = S.loads.find(x => x.id === el.dataset.id); if (!l) return; confirmUI('Delete file ' + l.fileNo + '?', 'This removes the file from the board for everyone on this computer.').then(ok => { if (ok) set({ loads: S.loads.filter(x => x.id !== l.id) }); }); },
   print: () => window.print(),
   // builder
