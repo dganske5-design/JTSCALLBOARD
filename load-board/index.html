@@ -726,6 +726,18 @@ body.m #view-line { font-size: 12px; }
 
 /* ── Carrier vetting · rate con · check calls ───────────────────────────── */
 :root { --jts-navy: #0B1F3A; --jts-gold: #D4AF37; }
+.ask-mode { font-size: 11px; padding: 1px 7px; border-radius: 10px; background: #eef2f7; color: #5b6878; }
+.ask-mode.on { background: var(--jts-navy, #0B1F3A); color: var(--jts-gold, #D4AF37); font-weight: 700; }
+.ask-mode .lg-link { font-size: 11px; }
+.ask-dot.live { background: #1baf7a; box-shadow: 0 0 0 3px rgba(27,175,122,.25); }
+.ask-p { margin: 0; font-size: 13px; line-height: 1.45; }
+.ask-a code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; background: #eef2f7; padding: 0 4px; border-radius: 3px; }
+.ask-meta { font-size: 10.5px; color: #8a96a6; margin-top: 2px; }
+.ask-think { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #5b6878; }
+.ask-dots i { display: inline-block; width: 6px; height: 6px; margin-right: 3px; border-radius: 50%; background: var(--jts-gold, #D4AF37); animation: askdot 1.2s infinite ease-in-out; }
+.ask-dots i:nth-child(2) { animation-delay: .2s; } .ask-dots i:nth-child(3) { animation-delay: .4s; }
+@keyframes askdot { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+
 /* Ask the board */
 .ask { background: #fff; border: 1px solid #c9d3e0; border-top: 3px solid var(--jts-navy, #0B1F3A); border-radius: 6px; padding: 8px 10px 10px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(11,31,58,.08); }
 .ask-bar { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--jts-navy, #0B1F3A); flex-wrap: wrap; }
@@ -33793,7 +33805,7 @@ function renderUsers() {
         ${f('password', 3, 'Password', 'type="password" autocomplete="new-password"')}
         <button class="btn btn-primary blueprint" style="grid-column:span 6" data-act="addUser">${CORNERS}${I.plus}Add user</button>
       </div>
-    </div>${renderRepPins()}${(() => { const c = intakeCfg(); return `<div class="card blueprint">${CORNERS}
+    </div>${renderAiSettings()}${renderRepPins()}${(() => { const c = intakeCfg(); return `<div class="card blueprint">${CORNERS}
       <div class="card-kicker">Email intake</div>
       <div class="text-muted" style="font-size:12.5px;margin-top:-4px">Orders forwarded to the inbox address show up in the New load browser. Demo mode delivers sample emails so the flow can be shown before the mailbox is connected.</div>
       <div class="grid6">
@@ -34298,26 +34310,30 @@ function askMatchReport(q) {
 function askReportInline(key) { const r = REPORTS[key]; if (!r) return '<div>No such report.</div>'; let body = ''; try { body = r.body(); } catch (e) { body = '<div class="text-muted">This report could not run inline.</div>'; } return `<div class="ask-h">${esc(r.title)}</div><div class="text-muted" style="font-size:12px">${esc(r.sub || '')}</div><div class="ask-tbl ask-report">${body}</div><div class="ask-acts">${askBtn('Open full report', 'askReport', { key })}</div>`; }
 function askRun(raw) {
   const text = String(raw || '').trim(); if (!text) return;
-  let html; try { html = askAnswer(text); } catch (e) { html = `<div class="down">That one tripped over something: ${esc(e.message)}</div>`; }
-  S.ai = S.ai || { msgs: [], open: true }; S.ai.msgs.push({ q: text, a: html, at: Date.now() }); if (S.ai.msgs.length > 12) S.ai.msgs.shift(); S.ai.open = true; S.aiFocus = true;
+  S.ai = S.ai || { msgs: [], open: true }; if (S.ai.msgs.some(m => m.pending)) { toast('Still working on the last question.'); return; }
+  const entry = { q: text, a: '', at: Date.now(), pending: false };
+  if (aiOn()) { entry.pending = true; entry.status = 'Thinking'; }
+  else { try { entry.a = askAnswer(text); } catch (e) { entry.a = `<div class="down">That one tripped over something: ${esc(e.message)}</div>`; } }
+  S.ai.msgs.push(entry); if (S.ai.msgs.length > 12) S.ai.msgs.shift(); S.ai.open = true; S.aiFocus = true;
   render(); const box = document.getElementById('ask-log'); if (box) box.scrollTop = box.scrollHeight; const inp = document.getElementById('ask-q'); if (inp && !isMobile()) inp.focus();
+  if (entry.pending) aiAsk(text, entry);
 }
 function renderAsk() {
   S.ai = S.ai || { msgs: [], open: true }; const msgs = S.ai.msgs;
   return `<section id="ask" class="ask no-print${S.ai.open ? '' : ' closed'}">
     <div class="ask-bar">
-      <span class="ask-dot"></span><strong>Ask the board</strong><span class="ask-hint">Late files, check calls, carrier history, rep and customer numbers, lane rates, any report.</span>
+      <span class="ask-dot${aiOn() ? ' live' : ''}"></span><strong>Ask the board</strong>${aiOn() ? `<span class="ask-mode on" title="Answers come from Claude reading the live board">${esc(aiModelLabel())}</span>` : `<span class="ask-mode" title="Add an Anthropic API key in Settings for full AI answers">Offline mode · <button class="lg-link" data-act="goUsers">add AI key</button></span>`}<span class="ask-hint">Late files, check calls, carrier history, rep and customer numbers, lane rates, any report.</span>
       <span class="spacer"></span>${msgs.length ? `<button class="lg-link ask-clear" data-act="askClear">Clear</button>` : ''}<button class="lg-link ask-toggle" data-act="askToggle">${S.ai.open ? 'Hide' : 'Show'}</button>
     </div>
     ${S.ai.open ? `<div class="ask-row"><input class="input ask-in" id="ask-q" placeholder="Ask me anything" autocomplete="off" data-enter="ask-go"><button class="btn btn-primary ask-go" id="ask-go" data-act="askGo">Ask</button></div>
     <div class="ask-chips">${ASK_CHIPS.map(c => `<button class="chip" data-act="askText" data-q="${esc(c)}">${esc(c)}</button>`).join('')}</div>
-    ${msgs.length ? `<div class="ask-log" id="ask-log">${msgs.map(m => `<div class="ask-q">${esc(m.q)}<span class="ask-when">${fmtWhen(m.at)}</span></div><div class="ask-a">${m.a}</div>`).join('')}</div>` : ''}` : ''}
+    ${msgs.length ? `<div class="ask-log" id="ask-log">${msgs.map(m => `<div class="ask-q">${esc(m.q)}<span class="ask-when">${fmtWhen(m.at)}</span></div><div class="ask-a${m.pending ? ' pending' : ''}">${m.pending ? `<div class="ask-think"><span class="ask-dots"><i></i><i></i><i></i></span><span class="ask-status">${esc(m.status || 'Thinking')}</span></div>` : m.a}</div>`).join('')}</div>` : ''}` : ''}
   </section>`;
 }
 const ASK_ACT = {
   askGo: () => { const i = document.getElementById('ask-q'); askRun(i ? i.value : ''); },
   askText: el => askRun(el.dataset.q),
-  askClear: () => { S.ai.msgs = []; render(); },
+  askClear: () => { S.ai.msgs = []; S.ai.thread = []; render(); },
   askToggle: () => { S.ai.open = !S.ai.open; render(); },
   askReport: el => { R(el.dataset.key)(); },
   askBoard: el => { // apply a slice to the board under the chat
@@ -34328,6 +34344,283 @@ const ASK_ACT = {
     set({ view: 'board' }); const g = document.getElementById('board-body'); if (g) g.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
 };
 Object.assign(ACT, ASK_ACT);
+// ── Ask the board, full AI mode ─────────────────────────────────────────────────────────────────────────────
+// With an Anthropic API key saved in Settings, questions go to Claude with tools that read the live board data.
+// The key stays in this browser's localStorage and the browser talks to the API directly. Without a key the
+// offline matcher above answers instead.
+const AI_CFG_KEY = 'jts_ai_cfg_v1';
+const AI_MODELS = [['claude-opus-5-5', 'Claude Opus 5.5 (best answers)'], ['claude-sonnet-5-5', 'Claude Sonnet 5.5 (faster, cheaper)'], ['claude-haiku-4-5', 'Claude Haiku 4.5 (cheapest)']];
+const aiCfg = () => { try { const c = JSON.parse(localStorage.getItem(AI_CFG_KEY) || '{}'); return { key: c.key || '', model: AI_MODELS.some(m => m[0] === c.model) ? c.model : 'claude-opus-5-5', effort: c.effort || 'medium' }; } catch (e) { return { key: '', model: 'claude-opus-5-5', effort: 'medium' }; } };
+const aiSave = patch => { const c = { ...aiCfg(), ...patch }; try { localStorage.setItem(AI_CFG_KEY, JSON.stringify(c)); } catch (e) {} return c; };
+const aiOn = () => !!aiCfg().key;
+const aiModelLabel = () => (AI_MODELS.find(m => m[0] === aiCfg().model) || [,'Claude'])[1].replace(/ \(.*$/, '');
+const aiPlain = h => String(h || '').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim();
+const aiIso = ts => ts ? new Date(ts).toISOString().slice(0, 16).replace('T', ' ') + 'Z' : null;
+const aiJson = v => JSON.stringify(v, (k, x) => (x === null || x === undefined || x === '' || (Array.isArray(x) && !x.length)) ? undefined : x);
+const aiLoadByFile = f => S.loads.find(l => String(l.fileNo) === String(f).trim());
+function aiRow(l) { // the compact shape every list tool returns
+  const t = trackOf(l), cr = carrierOf(l), p = l.pickups[0] || {}, d = finalDrop(l), cc = ccStatus(l), dl = delayAt(l);
+  return { file: String(l.fileNo), status: l.status, customer: l.customer, rep: l.salesRep, office: l.office, equipment: l.equip, temp: l.temp,
+    carrier: cr.name || null, driver: cr.driver || null, driver_phone: cr.driverPhone || null,
+    origin: [p.name, [p.city, p.st].filter(Boolean).join(', ')].filter(Boolean).join(' · '), ship_date: p.date, ship_time: p.time,
+    destination: [d.name, [d.city, d.st].filter(Boolean).join(', ')].filter(Boolean).join(' · '), deliver_date: d.date, deliver_time: d.time,
+    stops: `${l.pickups.length} pickup${l.pickups.length === 1 ? '' : 's'} / ${l.drops.length} drop${l.drops.length === 1 ? '' : 's'}`,
+    pu_numbers: refsOf(p).filter(r => r.no).map(r => r.no).join(', ') || null, del_numbers: l.drops.map(x => x.ref).filter(Boolean).join(', ') || null,
+    rate: rateTotal(l), truck_pay: num(l.truckPay), margin: Math.round(askMargin(l)), rate_con: l.rateCon ? l.rateCon.no : null,
+    last_location: t.location || null, miles_to_next_stop: t.miles ? num(t.miles) : null, eta: t.eta || null, condition: t.condition || null, last_update: aiIso(t.updatedAt),
+    last_check_call: cc && cc.lastAt ? aiIso(cc.lastAt) : null, check_call_overdue_minutes: cc && cc.state === 'overdue' ? Math.round(cc.overdueMins) : null,
+    detention: dl ? `${dl.label} ${dl.onSite ? 'still on site' : 'dwelled'} ${fmtMins(dl.mins)}` : null,
+    pickup_checked_in: p.inAt || null, pickup_checked_out: p.outAt || null, delivery_checked_in: d.inAt || null, delivery_checked_out: d.outAt || null,
+    flags: askLateReason(l).map(aiPlain), on_time: isOnTime(l) };
+}
+function aiFilter(a) { // shared filter for search and summarize
+  const has = v => v !== undefined && v !== null && v !== '';
+  const ci = v => String(v || '').toLowerCase();
+  const txt = has(a.text) ? ci(a.text) : '';
+  const late = askLateLoads().map(x => x.l.id);
+  return S.loads.filter(l => {
+    const p = l.pickups[0] || {}, d = finalDrop(l);
+    if (!a.include_cancelled && l.status === 'Cancelled') return false;
+    if (Array.isArray(a.statuses) && a.statuses.length && !a.statuses.includes(l.status)) return false;
+    if (a.group === 'uncovered' && !HOT.includes(l.status)) return false;
+    if (a.group === 'moving' && !ACTIVE.includes(l.status)) return false;
+    if (a.group === 'open' && !OPENISH.includes(l.status)) return false;
+    if (a.group === 'delivered' && !['Delivered', 'Invoiced'].includes(l.status)) return false;
+    if (has(a.rep) && !ci(l.salesRep).includes(ci(a.rep))) return false;
+    if (has(a.office) && !ci(l.office).includes(ci(a.office)) && !ci(shortOffice(l.office)).includes(ci(a.office))) return false;
+    if (has(a.customer) && !ci(l.customer).includes(ci(a.customer))) return false;
+    if (has(a.carrier) && !ci(l.carrierName).includes(ci(a.carrier))) return false;
+    if (has(a.equipment) && !ci(l.equip).includes(ci(a.equipment))) return false;
+    if (has(a.ship_from) && (p.date || '') < a.ship_from) return false;
+    if (has(a.ship_to) && (p.date || '') > a.ship_to) return false;
+    if (has(a.deliver_from) && (d.date || '') < a.deliver_from) return false;
+    if (has(a.deliver_to) && (d.date || '') > a.deliver_to) return false;
+    if (has(a.origin_city) && !ci(p.city).startsWith(ci(a.origin_city))) return false;
+    if (has(a.origin_state) && ci(p.st) !== ci(a.origin_state)) return false;
+    if (has(a.dest_city) && !ci(d.city).startsWith(ci(a.dest_city))) return false;
+    if (has(a.dest_state) && ci(d.st) !== ci(a.dest_state)) return false;
+    if (a.only_late && !late.includes(l.id)) return false;
+    if (a.only_overdue_check_calls && !ccOverdue(l)) return false;
+    if (a.only_detention && !delayAt(l)) return false;
+    if (has(a.min_rate) && rateTotal(l) < num(a.min_rate)) return false;
+    if (txt && ![l.fileNo, l.customer, l.carrierName, l.salesRep, l.office, p.name, p.city, d.name, d.city, l.fileComments, l.internalComments, ...l.pickups.map(x => x.ref), ...l.drops.map(x => x.ref), ...refsOf(p).map(r => r.no)].join(' ').toLowerCase().includes(txt)) return false;
+    return true;
+  });
+}
+function aiSort(rows, key) {
+  const k = key || 'ship_date';
+  return rows.slice().sort((a, b) => k === 'rate' ? rateTotal(b) - rateTotal(a) : k === 'margin' ? askMargin(b) - askMargin(a) : k === 'last_check_call' ? (ccLastAt(a) || 0) - (ccLastAt(b) || 0) : (askShipDate(a) || '').localeCompare(askShipDate(b) || ''));
+}
+function aiTotals(rows) { const t = askTotals(rows), ot = onTimeOf(rows); return { loads: rows.length, revenue: Math.round(t.rev), truck_pay: Math.round(t.truck), margin: Math.round(t.margin), margin_pct: t.pct, on_time_pct: ot.pct, on_time_judged: ot.n, uncovered: rows.filter(l => HOT.includes(l.status)).length, moving: rows.filter(l => ACTIVE.includes(l.status)).length, late_or_at_risk: rows.filter(l => askLateReason(l).length).length }; }
+function aiTableText(html) { // report HTML to plain rows the model can read
+  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html'), out = [];
+  const walk = n => { n.childNodes.forEach(c => { if (c.nodeType !== 1) { const t = (c.textContent || '').trim(); if (t) out.push(t); return; }
+    if (c.tagName === 'TABLE') { c.querySelectorAll('tr').forEach(tr => out.push([...tr.children].map(td => (td.textContent || '').replace(/\s+/g, ' ').trim()).join(' | '))); return; }
+    if (c.tagName === 'INPUT' || c.tagName === 'BUTTON' || c.tagName === 'SELECT' || c.tagName === 'STYLE') return;
+    if (!c.querySelector('table') && c.children.length < 3) { const t = (c.textContent || '').replace(/\s+/g, ' ').trim(); if (t) out.push(t); return; }
+    walk(c); }); };
+  walk(doc.body);
+  let s = out.join('\n'); if (s.length > 14000) s = s.slice(0, 14000) + '\n[truncated; narrow the question or use search_loads for detail]';
+  return s;
+}
+const AI_FILTER_PROPS = {
+  text: { type: 'string', description: 'Free text matched against file number, customer, carrier, rep, office, facility names, cities, PU and DEL numbers, comments' },
+  statuses: { type: 'array', items: { type: 'string', enum: STATUSES }, description: 'Only these statuses' },
+  group: { type: 'string', enum: ['uncovered', 'moving', 'open', 'delivered', 'all'], description: 'uncovered = Open, Quoted, Tendered (no carrier yet). moving = Booked, Dispatched, In Transit. open = everything not yet delivered. delivered = Delivered or Invoiced.' },
+  rep: { type: 'string' }, office: { type: 'string' }, customer: { type: 'string' }, carrier: { type: 'string' }, equipment: { type: 'string' },
+  ship_from: { type: 'string', description: 'YYYY-MM-DD, pickup date on or after' }, ship_to: { type: 'string', description: 'YYYY-MM-DD, pickup date on or before' },
+  deliver_from: { type: 'string', description: 'YYYY-MM-DD' }, deliver_to: { type: 'string', description: 'YYYY-MM-DD' },
+  origin_city: { type: 'string' }, origin_state: { type: 'string' }, dest_city: { type: 'string' }, dest_state: { type: 'string' },
+  only_late: { type: 'boolean', description: 'Only files that are late or at risk: running late, breakdown, detention, overdue check call, missed appointment' },
+  only_overdue_check_calls: { type: 'boolean' }, only_detention: { type: 'boolean' }, min_rate: { type: 'number' }, include_cancelled: { type: 'boolean' },
+};
+const AI_TOOLS = [
+  { name: 'board_overview', description: 'Snapshot of the whole board right now: counts, late and at-risk files with reasons, overdue check calls, uncovered loads today and tomorrow, pickups and deliveries today, revenue and margin this week and this month. Start here for broad questions such as how are we doing, morning brief, what needs attention.', input_schema: { type: 'object', properties: {}, additionalProperties: false } },
+  { name: 'search_loads', description: 'Find files (loads) with filters and get a compact row per file including status, people, carrier and driver, stops, dates, money, tracking, check-call and detention state and late flags. Use it for any list question. Returns totals for the whole match plus up to limit rows.', input_schema: { type: 'object', properties: { ...AI_FILTER_PROPS, sort: { type: 'string', enum: ['ship_date', 'rate', 'margin', 'last_check_call'] }, limit: { type: 'integer', description: 'Max rows to return, default 40, max 150' } }, additionalProperties: false } },
+  { name: 'get_load', description: 'Everything on one file: every stop with address, contact, appointment, check-in and check-out times, dwell, commodity lines, stop notes and the internal call log; carrier and driver details; tracking history; check-call timeline; rate con; billing lines; advances; comments; vetting flags.', input_schema: { type: 'object', properties: { file: { type: 'string', description: 'File number' } }, required: ['file'], additionalProperties: false } },
+  { name: 'carrier_profile', description: 'Carrier history and performance: directory record, standing, MC and DOT, dispatch contact, loads hauled, on-time percent, late deliveries, breakdowns, detention incidents, dollars paid, lanes, last load, vetting flags, and the recent loads. Use for any carrier review, history or should-we-use-them question.', input_schema: { type: 'object', properties: { name: { type: 'string', description: 'Carrier name, partial is fine' } }, required: ['name'], additionalProperties: false } },
+  { name: 'summarize_loads', description: 'Group files and total them: count, revenue, truck pay, margin, margin percent, on-time percent, late count, uncovered count per group. Accepts the same filters as search_loads. Use for rankings, leaderboards, performance by rep, office, customer, carrier, lane, status, equipment or month.', input_schema: { type: 'object', properties: { group_by: { type: 'string', enum: ['rep', 'office', 'customer', 'carrier', 'status', 'lane', 'month', 'equipment', 'origin_state', 'dest_state'] }, ...AI_FILTER_PROPS }, required: ['group_by'], additionalProperties: false } },
+  { name: 'run_report', description: 'Run one of the built-in reports and return it as text rows. Call with no key to get the list of report keys and what each covers.', input_schema: { type: 'object', properties: { key: { type: 'string', description: 'Report key from the list' } }, additionalProperties: false } },
+  { name: 'lane_rates', description: 'Rate history for a lane: loads run, average, low and high customer rate, average truck pay, miles and dollars per mile.', input_schema: { type: 'object', properties: { origin_city: { type: 'string' }, origin_state: { type: 'string' }, dest_city: { type: 'string' }, dest_state: { type: 'string' } }, required: ['origin_city', 'dest_city'], additionalProperties: false } },
+  { name: 'check_calls_due', description: 'Moving loads whose check call is overdue or due soon, with last call time, dispatch and driver phones.', input_schema: { type: 'object', properties: {}, additionalProperties: false } },
+  { name: 'directory', description: 'Look up reference lists: carriers (with standing, MC, equipment, rep), shippers, receivers, customers, reps, offices, users. Optional text filter.', input_schema: { type: 'object', properties: { kind: { type: 'string', enum: ['carriers', 'shippers', 'receivers', 'customers', 'reps', 'offices', 'users'] }, text: { type: 'string' } }, required: ['kind'], additionalProperties: false } },
+  { name: 'show_on_board', description: 'Filter the Load board under the chat so the user sees the files you are talking about. Use when the user asks to see or show something, or when a list is long. Takes effect after your answer.', input_schema: { type: 'object', properties: { statuses: { type: 'array', items: { type: 'string', enum: STATUSES } }, search: { type: 'string' }, rep: { type: 'string', description: 'Exact rep name' }, office: { type: 'string', description: 'Exact office name' }, only_delayed: { type: 'boolean' }, only_overdue_check_calls: { type: 'boolean' }, date: { type: 'string', description: 'YYYY-MM-DD to show one day, omit for all dates' } }, additionalProperties: false } },
+  { name: 'open_report', description: 'Open a built-in report on screen after your answer. Prefer this over pasting a huge table.', input_schema: { type: 'object', properties: { key: { type: 'string' } }, required: ['key'], additionalProperties: false } },
+  { name: 'open_file', description: 'Open a file in the Load Editor after your answer.', input_schema: { type: 'object', properties: { file: { type: 'string' }, tab: { type: 'string', enum: ['loading', 'tracking', 'ratecon', 'carrier', 'tender'] } }, required: ['file'], additionalProperties: false } },
+];
+function aiTool(name, a, ui) {
+  a = a || {};
+  if (name === 'board_overview') {
+    const live = S.loads.filter(askLive), t = todayISO(), [wa, wb] = askWeek();
+    const by = {}; STATUSES.forEach(s => { by[s] = live.filter(l => l.status === s).length; });
+    return { today: t, now: new Date().toString(), user: S.user.name, counts_by_status: by, total_files: S.loads.length,
+      late_or_at_risk: askLateLoads().slice(0, 25).map(({ l, why }) => ({ file: String(l.fileNo), why: why.map(aiPlain), status: l.status, customer: l.customer, carrier: l.carrierName || null, rep: l.salesRep, route: route(l) })),
+      overdue_check_calls: S.loads.filter(ccOverdue).map(l => ({ file: String(l.fileNo), overdue_minutes: Math.round(ccStatus(l).overdueMins), carrier: l.carrierName, rep: l.salesRep })),
+      uncovered_today_tomorrow: live.filter(l => HOT.includes(l.status) && askShipDate(l) >= t && askShipDate(l) <= shift(t, 1)).map(aiRow),
+      pickups_today: live.filter(l => askShipDate(l) === t).length, deliveries_today: live.filter(l => finalDrop(l).date === t).length,
+      this_week: aiTotals(live.filter(l => askShipDate(l) >= wa && askShipDate(l) <= wb)), this_month: aiTotals(live.filter(l => askShipDate(l).slice(0, 7) === t.slice(0, 7))), all_time: aiTotals(live) };
+  }
+  if (name === 'search_loads') { const rows = aiSort(aiFilter(a), a.sort), lim = Math.min(150, Math.max(1, +a.limit || 40)); return { matched: rows.length, totals: aiTotals(rows), rows: rows.slice(0, lim).map(aiRow), truncated: rows.length > lim }; }
+  if (name === 'get_load') {
+    const l = aiLoadByFile(a.file); if (!l) return { error: `No file ${a.file} on this board` };
+    const stop = (s, kind) => ({ kind, name: s.name, address: [s.address, s.city, s.st, s.zip].filter(Boolean).join(', '), contact: s.contact, phone: s.phone, appt_date: s.date, appt_time: s.time, appt_required: !!s.apptRequired, pu_numbers: kind === 'pickup' ? refsOf(s).filter(r => r.no).map(refLabel) : undefined, del_number: kind === 'delivery' ? s.ref : undefined, ref_or_po: s.po, lines: (s.lines || []).map(x => ({ pu: x.no, commodity: x.commodity, pallets: num(x.pallets), pieces: num(x.cases), weight: num(x.weight) })), checked_in: s.inAt, checked_out: s.outAt, dwell_minutes: s.inAt ? dwellMins(s) : undefined, pallets_in_out: [s.palletIn, s.palletOut].filter(Boolean).join('/'), seal: s.seal, ground_inspector: s.groundInspector, stop_status: s.stopStatus, notes_on_tender: s.notes, internal_log: (s.calls || []).slice(-15).map(c => ({ at: aiIso(c.at), by: c.by, spoke_to: c.who, note: c.text })) });
+    const cr = carrierOf(l), rec = findCarrier(cr.name) || {}, t = trackOf(l), mc = String(rec.mc || '').replace(/\D/g, ''), vp = mc ? S.vetProfiles[mc] : null;
+    return { ...aiRow(l), created: aiIso(l.createdAt), customer_contact: l.custContact, customer_phone: l.custPhone, customer_email: l.customerEmail, customer_ref: l.custRef, buyer: l.buyer,
+      pickups: l.pickups.map(s => stop(s, 'pickup')), deliveries: l.drops.map(s => stop(s, 'delivery')),
+      carrier_detail: cr.name ? { ...cr, mc: rec.mc, dot: rec.dot, standing: rec.status, dispatch: rec.dispatchName, dispatch_phone: rec.dispatchPhone || cr.dispatchPhone, vetting_flags: vp ? vetFlags(vp) : (vetOf(l) ? vetFlags(vetOf(l)) : ['Not vetted on this file']) } : null,
+      tracking: { ...t, log: undefined, history: (t.log || []).slice(-25).map(e => ({ at: aiIso(e.at), by: e.by, kind: e.kind, text: e.text })) },
+      check_calls: ccList(l).slice(-25).map(c => ({ at: aiIso(c.at), by: c.by, type: c.type, location: c.location, note: c.note, temp: c.temp })), check_call_cadence_hours: ccCadence(l),
+      rate_con: l.rateCon ? { no: l.rateCon.no, issued_at: aiIso(l.rateCon.issuedAt), total: l.rateCon.total, to: l.rateCon.carrier && l.rateCon.carrier.name } : null,
+      billing: (l.bills || []).map(b => ({ bill_to: b.billTo || 'TRUCK PAY', product: b.product, rate: num(b.rate), method: b.method, qty: num(b.qty), amount: billAmt(b) })), advances: l.advances || [],
+      linehaul: num(l.linehaul), fuel: num(l.fuel), accessorial: num(l.accessorial), file_comments: l.fileComments, internal_comments: l.internalComments };
+  }
+  if (name === 'carrier_profile') {
+    const names = [...new Set([...S.carriers.map(c => c.name), ...S.loads.map(l => l.carrierName)].filter(Boolean))];
+    const n = askFindName(String(a.name || '').toLowerCase(), names, x => S.loads.filter(l => carKey(l.carrierName) === carKey(x)).length) || names.find(x => carKey(x).includes(carKey(a.name)));
+    if (!n) return { error: `No carrier matching ${a.name}`, known_carriers: names.slice(0, 60) };
+    const st = carrierStats(n), rec = findCarrier(n) || {}, loads = st.loads, live = loads.filter(askLive), mc = String(rec.mc || '').replace(/\D/g, ''), vp = mc ? S.vetProfiles[mc] : null;
+    return { carrier: n, standing: rec.status || 'Not in directory', mc: rec.mc, dot: rec.dot, phone: rec.phone, dispatch: rec.dispatchName, dispatch_phone: rec.dispatchPhone, email: rec.email, owner: rec.ownerName, equipment: rec.equipment, power_units: rec.powerUnits, trailers: rec.trailerUnits, home: [rec.city, rec.st].filter(Boolean).join(', '), jts_rep: rec.salesRep, offices_used: rec.offices, contract_on_file: !!rec.mc,
+      loads_total: loads.length, moving_now: loads.filter(l => ACTIVE.includes(l.status)).length, delivered: st.delivered, on_time_judged: st.judged, on_time_pct: st.onTimePct, late_deliveries: loads.filter(l => isOnTime(l) === false).length, breakdowns: loads.filter(l => (l.tracking || {}).condition === 'Breakdown').length, detention_incidents: loads.filter(l => l.pickups.concat(l.drops).some(s => s.inAt && s.outAt && dwellMins(s) >= DWELL_ALERT_MIN)).length,
+      paid_total: Math.round(live.reduce((s, l) => s + num(l.truckPay), 0)), avg_truck_pay: live.length ? Math.round(live.reduce((s, l) => s + num(l.truckPay), 0) / live.length) : 0, revenue_on_their_loads: Math.round(live.reduce((s, l) => s + rateTotal(l), 0)), by_office: st.byOffice,
+      lanes: Object.entries(groupBy(loads, route)).sort((x, y) => y[1].length - x[1].length).slice(0, 8).map(([k, v]) => ({ lane: k, loads: v.length, avg_truck_pay: Math.round(v.reduce((s, l) => s + num(l.truckPay), 0) / v.length) })),
+      first_load: loads.length ? askShipDate(loads[loads.length - 1]) : null, last_load: loads.length ? askShipDate(loads[0]) : null, vetting: vp ? { authority: vp.authority, authority_date: vp.authorityDate, insurance_expiry: vp.insExpiry, flags: vetFlags(vp), history: (vp.history || []).slice(-10) } : { flags: ['No vetting profile on file'] },
+      recent_loads: loads.slice(0, 12).map(aiRow) };
+  }
+  if (name === 'summarize_loads') {
+    const rows = aiFilter(a), g = a.group_by;
+    const keyOf = l => g === 'rep' ? (l.salesRep || 'Unassigned') : g === 'office' ? (l.office || 'Unassigned') : g === 'customer' ? (l.customer || 'Unknown') : g === 'carrier' ? (l.carrierName || 'UNCOVERED') : g === 'status' ? l.status : g === 'lane' ? route(l) : g === 'month' ? askShipDate(l).slice(0, 7) : g === 'equipment' ? (l.equip || 'n/a') : g === 'origin_state' ? ((l.pickups[0] || {}).st || '?') : (finalDrop(l).st || '?');
+    const groups = Object.entries(groupBy(rows, keyOf)).map(([k, arr]) => ({ group: k, ...aiTotals(arr), late_files: arr.filter(l => askLateReason(l).length).map(l => String(l.fileNo)).slice(0, 10) })).sort((x, y) => y.revenue - x.revenue);
+    return { group_by: g, matched: rows.length, totals: aiTotals(rows), groups: groups.slice(0, 50), note: groups.length > 50 ? `${groups.length - 50} smaller groups omitted` : undefined };
+  }
+  if (name === 'run_report') {
+    if (!a.key || !REPORTS[a.key]) return { reports: Object.entries(REPORTS).map(([k, r]) => ({ key: k, title: aiPlain(r.title), covers: aiPlain(r.sub || '') })), note: a.key ? `No report ${a.key}` : 'Pick a key and call again' };
+    const r = REPORTS[a.key]; let body = ''; try { body = r.body(); } catch (e) { return { error: 'Report failed: ' + e.message }; }
+    return { key: a.key, title: aiPlain(r.title), covers: aiPlain(r.sub || ''), rows: aiTableText(body) };
+  }
+  if (name === 'lane_rates') {
+    const ci = v => String(v || '').toLowerCase(), hits = S.loads.filter(l => askLive(l) && ci((l.pickups[0] || {}).city).startsWith(ci(a.origin_city)) && ci(finalDrop(l).city).startsWith(ci(a.dest_city)) && (!a.origin_state || ci((l.pickups[0] || {}).st) === ci(a.origin_state)) && (!a.dest_state || ci(finalDrop(l).st) === ci(a.dest_state)));
+    if (!hits.length) return { loads: 0, note: 'No files on this lane. Suggest the Rate trends screen.' };
+    const rates = hits.map(rateTotal), pays = hits.map(l => num(l.truckPay)).filter(Boolean), p0 = hits[0].pickups[0], d0 = finalDrop(hits[0]), mi = milesBetween(geo(p0.city, p0.st, p0.zip), geo(d0.city, d0.st, d0.zip)), avg = rates.reduce((s, r) => s + r, 0) / rates.length;
+    return { lane: route(hits[0]), loads: hits.length, miles: mi, avg_rate: Math.round(avg), low_rate: Math.min(...rates), high_rate: Math.max(...rates), rate_per_mile: mi ? +(avg / mi).toFixed(2) : null, avg_truck_pay: pays.length ? Math.round(pays.reduce((s, r) => s + r, 0) / pays.length) : null, truck_pay_per_mile: mi && pays.length ? +((pays.reduce((s, r) => s + r, 0) / pays.length) / mi).toFixed(2) : null, by_carrier: Object.entries(groupBy(hits.filter(l => l.carrierName), l => l.carrierName)).map(([k, v]) => ({ carrier: k, loads: v.length, avg_truck_pay: Math.round(v.reduce((s, l) => s + num(l.truckPay), 0) / v.length) })), recent: aiSort(hits, 'ship_date').reverse().slice(0, 10).map(aiRow) };
+  }
+  if (name === 'check_calls_due') return S.loads.filter(l => ACTIVE.includes(l.status)).map(l => ({ l, cc: ccStatus(l) })).filter(x => x.cc && x.cc.state !== 'ok').sort((x, y) => x.cc.minsToDue - y.cc.minsToDue).map(({ l, cc }) => { const cr = carrierOf(l), rec = findCarrier(cr.name) || {}; return { file: String(l.fileNo), state: cc.state, overdue_minutes: cc.state === 'overdue' ? Math.round(cc.overdueMins) : null, due_in_minutes: cc.state === 'soon' ? Math.round(cc.minsToDue) : null, last_call: aiIso(cc.lastAt), carrier: cr.name, dispatch_phone: rec.dispatchPhone || cr.dispatchPhone, driver: cr.driver, driver_phone: cr.driverPhone, route: route(l), last_location: trackOf(l).location, rep: l.salesRep, customer: l.customer }; });
+  if (name === 'directory') {
+    const ci = v => String(v || '').toLowerCase(), t = ci(a.text), pick = (arr, f) => arr.filter(x => !t || ci(JSON.stringify(f(x))).includes(t)).slice(0, 60).map(f);
+    if (a.kind === 'carriers') return pick(S.carriers, c => ({ name: c.name, standing: c.status, mc: c.mc, dot: c.dot, equipment: c.equipment, home: [c.city, c.st].filter(Boolean).join(', '), dispatch: c.dispatchName, dispatch_phone: c.dispatchPhone, rep: c.salesRep, offices: c.offices, loads: S.loads.filter(l => carKey(l.carrierName) === carKey(c.name)).length }));
+    if (a.kind === 'shippers' || a.kind === 'receivers') return pick(S[a.kind], x => ({ name: x.name, address: [x.address, x.city, x.st, x.zip].filter(Boolean).join(', '), contact: x.contact, phone: x.phone }));
+    if (a.kind === 'customers') return pick(customerNames(), n => ({ customer: n, loads: S.loads.filter(l => l.customer === n).length }));
+    if (a.kind === 'reps') return REPS.map(r => ({ rep: r, loads: S.loads.filter(l => l.salesRep === r).length }));
+    if (a.kind === 'offices') return OFFICE_META.map(o => ({ office: o[0], short: o[1], loads: S.loads.filter(l => l.office === o[0]).length }));
+    if (a.kind === 'users') return S.users.map(u => ({ name: u.name, initials: u.initials, role: u.role, office: u.office }));
+    return { error: 'unknown kind' };
+  }
+  if (name === 'show_on_board') { ui.push({ kind: 'board', a }); return 'Queued. The board under the chat will show that slice when the answer is delivered.'; }
+  if (name === 'open_report') { if (!REPORTS[a.key]) return { error: 'No such report', keys: Object.keys(REPORTS) }; ui.push({ kind: 'report', key: a.key }); return `Queued. ${aiPlain(REPORTS[a.key].title)} opens when the answer is delivered.`; }
+  if (name === 'open_file') { const l = aiLoadByFile(a.file); if (!l) return { error: `No file ${a.file}` }; ui.push({ kind: 'file', id: l.id, tab: a.tab || 'loading' }); return `Queued. File ${l.fileNo} opens when the answer is delivered.`; }
+  return { error: 'Unknown tool ' + name };
+}
+function aiRunUi(ui) {
+  const u = ui[ui.length - 1]; if (!u) return;
+  if (u.kind === 'report') { R(u.key)(); return; }
+  if (u.kind === 'file') { S.fileTab = { tracking: 'tracking', ratecon: 'ratecon', carrier: 'carrier', tender: 'tender' }[u.tab] || 'source'; S.lgTabSet = false; set({ tenderId: u.id, view: 'tender' }); window.scrollTo(0, 0); return; }
+  const a = u.a || {}; S.statusFilter = Array.isArray(a.statuses) ? a.statuses.filter(s => STATUSES.includes(s)) : []; S.search = a.search || ''; S.onlyDelayed = !!a.only_delayed; S.onlyOverdueCC = !!a.only_overdue_check_calls;
+  S.dateScope = 'all'; if (a.date && /^\d{4}-\d{2}-\d{2}$/.test(a.date)) { S.dateScope = 'day'; S.boardDate = a.date; }
+  const rep = REPS.find(r => r.toLowerCase() === String(a.rep || '').toLowerCase()), off = OFFICES.find(o => o.toLowerCase() === String(a.office || '').toLowerCase());
+  if (rep || off) bvSet({ rep: rep || '', offices: off ? [off] : 'all' });
+  set({ view: 'board' }); const g = document.getElementById('board-body'); if (g) g.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function aiSystem() {
+  return `You are the operations analyst inside the JTS Load Board, the dispatch system for Johanson Transportation Service (JTS), a freight brokerage with five offices: ${OFFICE_META.map(o => o[0]).join('; ')}. Sales reps: ${REPS.join(', ')}. You answer questions for brokers, dispatchers and sales leadership using tools that read the live board. Never guess numbers: call tools, then answer from what they return. Call several tools at once when a question needs more than one.
+
+Data model. A "file" is a load, identified by its file number. Statuses in order: Open, Quoted, Tendered (these three are "uncovered", no carrier yet), Booked, Dispatched, In Transit (these three are "moving"), Delivered, Invoiced, Cancelled. Rate is what the customer pays (linehaul + fuel + accessorial); truck pay is what the carrier gets; margin is the difference. Ship date is the first pickup appointment. On-time is judged at the final delivery against its appointment; detention is three hours or more at a stop; check calls are due every four hours by default while a load is moving. "Late or at risk" flags mean: running late, breakdown, detention, overdue check call, or an appointment that has passed without the stop being completed. Dates are YYYY-MM-DD; times in tool output marked Z are UTC, every other time is local.
+
+How to answer. Lead with the answer, then the detail. Be concise and concrete: file numbers, names, dollars, minutes. Use a markdown table whenever you list more than three items; keep tables to the columns that matter. Use **bold** for the key number or verdict. When asked for a review, performance or recommendation, give a clear verdict and the reasoning behind it, then the next action a dispatcher should take. When the user wants to see files or a report, call show_on_board or open_report as well as answering. If the data cannot answer something, say exactly what is missing. Write file numbers as plain digits so they turn into links. Do not use em dashes or en dashes anywhere; use commas, periods or hyphens. No preamble, no sign-off.`;
+}
+async function aiCall(cfg, messages, opts = {}) {
+  const body = { model: cfg.model, max_tokens: opts.maxTokens || 8000, system: [{ type: 'text', text: aiSystem(), cache_control: { type: 'ephemeral' } }], messages };
+  if (!opts.noTools) body.tools = AI_TOOLS;
+  if (!/haiku/.test(cfg.model)) body.output_config = { effort: cfg.effort || 'medium' };
+  const headers = { 'content-type': 'application/json', 'x-api-key': cfg.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' };
+  if (/opus-5-5|sonnet-5-5|fable/.test(cfg.model)) { body.fallbacks = 'default'; headers['anthropic-beta'] = 'server-side-fallback-2026-07-01'; }
+  let r; try { r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers, body: JSON.stringify(body) }); }
+  catch (e) { throw new Error('Could not reach api.anthropic.com from this page. If the app is open inside the Claude artifact viewer, run it from the saved HTML file or a Netlify link instead; the viewer blocks outside calls.'); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const m = (j.error && j.error.message) || ('HTTP ' + r.status); throw new Error(r.status === 401 ? 'The API key was rejected. Check it in Settings.' : r.status === 429 ? 'Rate limited by the API. Try again in a moment.' : m); }
+  return j;
+}
+function mdToHtml(md) {
+  const files = new Map(S.loads.map(l => [String(l.fileNo), l]));
+  const inline = s => { s = esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>').replace(/(^|[^*\w])\*([^*\n]+)\*(?!\w)/g, '$1<em>$2</em>'); return s.replace(/\b(\d{5,8})\b/g, (m, f) => files.has(f) ? fileLink(files.get(f)) : m); };
+  const lines = String(md || '').replace(/\r/g, '').split('\n'), out = []; let i = 0, list = null;
+  const closeList = () => { if (list) { out.push(list === 'ul' ? '</ul>' : '</ol>'); list = null; } };
+  while (i < lines.length) {
+    const ln = lines[i];
+    if (/^\s*\|.*\|\s*$/.test(ln)) { closeList(); const rows = []; while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) { const cells = lines[i].trim().slice(1, -1).split('|').map(c => c.trim()); if (!cells.every(c => /^:?-{2,}:?$/.test(c))) rows.push(cells); i++; }
+      if (rows.length) { const [h, ...b] = rows; out.push(`<div class="ask-tbl"><div class="grid-wrap"><table class="grid rep"><thead><tr>${h.map(c => `<th class="l nosort">${inline(c)}</th>`).join('')}</tr></thead><tbody>${b.map(r => `<tr>${r.map(c => `<td class="${/^[\s$%\d,.()-]+%?$/.test(c) && /\d/.test(c) ? 'r' : 'l'}">${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`); } continue; }
+    let m;
+    if ((m = ln.match(/^\s*(#{1,3})\s+(.*)$/))) { closeList(); out.push(m[1].length === 1 ? `<div class="ask-h">${inline(m[2])}</div>` : `<div class="ask-sub">${inline(m[2])}</div>`); i++; continue; }
+    if ((m = ln.match(/^\s*[-*•]\s+(.*)$/))) { if (list !== 'ul') { closeList(); out.push('<ul class="ask-list">'); list = 'ul'; } out.push(`<li>${inline(m[1])}</li>`); i++; continue; }
+    if ((m = ln.match(/^\s*\d+[.)]\s+(.*)$/))) { if (list !== 'ol') { closeList(); out.push('<ol class="ask-list">'); list = 'ol'; } out.push(`<li>${inline(m[1])}</li>`); i++; continue; }
+    if (!ln.trim()) { closeList(); i++; continue; }
+    closeList(); const para = [ln]; i++; while (i < lines.length && lines[i].trim() && !/^\s*(\||#{1,3}\s|[-*•]\s|\d+[.)]\s)/.test(lines[i])) { para.push(lines[i]); i++; }
+    out.push(`<p class="ask-p">${para.map(inline).join('<br>')}</p>`);
+  }
+  closeList(); return out.join('');
+}
+async function aiAsk(text, entry) {
+  const cfg = aiCfg(); S.ai.thread = S.ai.thread || []; if (S.ai.thread.length > 24) S.ai.thread = [];
+  const thread = S.ai.thread, ui = [];
+  thread.push({ role: 'user', content: [{ type: 'text', text: `[Now ${new Date().toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}, today is ${todayISO()}. Signed in: ${S.user.name}, ${S.user.role}, ${S.user.office || ''}]\n${text}` }] });
+  let final = null, calls = 0, tokens = { i: 0, o: 0 };
+  try {
+    for (let round = 0; round < 12; round++) {
+      const res = await aiCall(cfg, thread);
+      tokens.i += (res.usage || {}).input_tokens || 0; tokens.o += (res.usage || {}).output_tokens || 0;
+      thread.push({ role: 'assistant', content: res.content });
+      if (res.stop_reason === 'tool_use') {
+        const uses = res.content.filter(b => b.type === 'tool_use'); calls += uses.length;
+        entry.status = `Checking ${uses.map(u => u.name.replace(/_/g, ' ')).join(', ')}`; renderAskLive();
+        const results = uses.map(u => { try { const out = aiTool(u.name, u.input || {}, ui); return { type: 'tool_result', tool_use_id: u.id, content: typeof out === 'string' ? out : aiJson(out) }; } catch (e) { return { type: 'tool_result', tool_use_id: u.id, content: 'Tool error: ' + e.message, is_error: true }; } });
+        thread.push({ role: 'user', content: results }); continue;
+      }
+      final = res; break;
+    }
+    if (!final) throw new Error('The assistant kept researching without answering. Ask a narrower question.');
+    const txt = final.content.filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+    let html = mdToHtml(txt || 'No answer came back.');
+    if (final.stop_reason === 'refusal') html = `<div class="down">The model declined to answer that one.</div>` + html;
+    if (final.stop_reason === 'max_tokens') html += `<div class="text-muted" style="font-size:12px">The answer was cut off. Ask for the next part.</div>`;
+    entry.a = html + `<div class="ask-meta">${aiModelLabel()} · ${calls} lookup${calls === 1 ? '' : 's'} · ${fmt(tokens.i + tokens.o)} tokens</div>`;
+  } catch (e) {
+    S.ai.thread = []; // a failed turn leaves the thread out of step; start clean next time
+    let offline = ''; try { offline = askAnswer(text); } catch (x) {}
+    entry.a = `<div class="down" style="font-size:12.5px"><strong>AI mode failed:</strong> ${esc(e.message)}</div><div class="text-muted" style="font-size:12px">Offline answer instead:</div>${offline}`;
+  }
+  entry.pending = false; entry.status = ''; render(); const box = document.getElementById('ask-log'); if (box) box.scrollTop = box.scrollHeight;
+  if (ui.length) setTimeout(() => aiRunUi(ui), 150);
+}
+function renderAskLive() { const box = document.getElementById('ask-log'); if (!box) return; const last = box.querySelector('.ask-a.pending .ask-status'); const m = S.ai.msgs[S.ai.msgs.length - 1]; if (last && m) last.textContent = m.status || 'Thinking'; }
+function renderAiSettings() {
+  const c = aiCfg();
+  return `<div class="card blueprint" style="margin-bottom:var(--space-4)">${CORNERS}
+    <div class="card-kicker">Ask the board (AI)</div>
+    <div class="text-muted" style="font-size:12.5px;margin-top:-4px">With an Anthropic API key the question box on the Load board uses Claude, which reads the live board through tools and answers anything: late files, carrier reviews, rep numbers, any report. The key is saved only in this browser. Without a key the box runs in offline mode with canned lookups.</div>
+    <div class="grid6">
+      <div class="field" style="grid-column:span 3"><label>Anthropic API key</label><input class="input" type="password" id="ai-key" value="${esc(c.key)}" placeholder="sk-ant-..." autocomplete="off" data-act="aiCfg" data-k="key"></div>
+      <div class="field" style="grid-column:span 2"><label>Model</label><select class="input" data-act="aiCfg" data-k="model">${AI_MODELS.map(([v, l]) => `<option value="${v}"${c.model === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+      <div class="field" style="grid-column:span 1"><label>Depth</label><select class="input" data-act="aiCfg" data-k="effort">${[['low', 'Quick'], ['medium', 'Balanced'], ['high', 'Thorough']].map(([v, l]) => `<option value="${v}"${c.effort === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+    </div>
+    <div class="ctl-row" style="margin-top:8px"><button class="btn btn-secondary btn-sm" data-act="aiTest">Test connection</button>${c.key ? '<button class="btn btn-ghost btn-sm" data-act="aiForget">Remove key</button>' : ''}<span class="text-muted" style="font-size:12px" id="ai-test-out">${c.key ? 'Key saved. AI mode is on.' : 'No key. Offline mode.'}</span></div>
+    <div class="text-muted" style="font-size:11.5px;margin-top:6px">Keys come from console.anthropic.com. Each question costs a few cents on Opus, less on Sonnet or Haiku. The page must be opened from a file or a web link, not inside the Claude artifact viewer, for the API call to go through.</div>
+  </div>`;
+}
+const AI_ACT = {
+  aiCfg: el => { aiSave({ [el.dataset.k]: el.value.trim ? el.value.trim() : el.value }); if (el.dataset.k !== 'key') render(); else { const o = document.getElementById('ai-test-out'); if (o) o.textContent = el.value.trim() ? 'Key saved. Click Test connection.' : 'No key. Offline mode.'; } },
+  aiForget: () => { aiSave({ key: '' }); S.ai.thread = []; render(); toast('API key removed. Ask the board is back in offline mode.'); },
+  aiTest: async () => { const o = document.getElementById('ai-test-out'), cfg = aiCfg(); if (!cfg.key) { if (o) o.textContent = 'Paste a key first.'; return; } if (o) o.textContent = 'Testing...';
+    try { const r = await aiCall(cfg, [{ role: 'user', content: 'Reply with the single word OK.' }], { noTools: true, maxTokens: 50 }); const t = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim(); if (o) o.textContent = `Connected. ${aiModelLabel()} answered: ${t.slice(0, 40)}`; toast('AI mode is live on the Load board.'); } catch (e) { if (o) o.textContent = 'Failed: ' + e.message; } },
+};
+Object.assign(ACT, AI_ACT); CHANGE_ACTS.add('aiCfg');
 Object.assign(ACT, ORDER_ACT); Object.assign(ACT, LG_ACT); LG_CHANGE.forEach(a => CHANGE_ACTS.add(a));
 document.addEventListener('dblclick', e => { if (S.view !== 'builder') return; const st = e.target.closest && e.target.closest('.lg-stop'); if (!st) return; if (!(e.target.closest('.lg-facsel, .lg-name, .lg-stop-h, .lg-compact'))) return; e.preventDefault(); const k = st.dataset.kind + '-' + st.dataset.i; S.lgAddrOpen = S.lgAddrOpen || {}; S.lgAddrOpen[k] = !S.lgAddrOpen[k]; render(); });
 document.addEventListener('keydown', e => { if (!S.user || S.view !== 'builder' || e.key !== 'Escape' || isMobile() || document.querySelector('.dialog-backdrop')) return; if (e.target && e.target.matches && e.target.matches('input, select, textarea')) { e.target.blur(); return; } confirmUI('Leave the load editor?', 'Unsaved changes on this file are lost.', 'Leave').then(ok => { if (ok) ACT.lgLeave(); }); });
