@@ -444,7 +444,7 @@ body.m .stepper input { width: 130px; }
 body.m .ctl-row[style*="nowrap"] { flex-wrap: nowrap !important; }
 body.m .search-wrap { min-width: 0; }
 body.m .stats { font-size: 11.5px; gap: 2px 12px; }
-body.m .grid-wrap { display: none; }
+body.m .grid-wrap { display: none; } body.m .ask .grid-wrap { display: block; }
 .cards { display: none; }
 body.m .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 6px; }
 .lc { background: #fff; border: 1px solid #808080; border-left: 4px solid #8cef8c; padding: 5px 8px 4px; display: flex; flex-direction: column; gap: 1px; font-size: 12.5px; font-weight: 600; color: #1b1d1e; line-height: 1.3; }
@@ -726,6 +726,39 @@ body.m #view-line { font-size: 12px; }
 
 /* ── Carrier vetting · rate con · check calls ───────────────────────────── */
 :root { --jts-navy: #0B1F3A; --jts-gold: #D4AF37; }
+/* Ask the board */
+.ask { background: #fff; border: 1px solid #c9d3e0; border-top: 3px solid var(--jts-navy, #0B1F3A); border-radius: 6px; padding: 8px 10px 10px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(11,31,58,.08); }
+.ask-bar { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--jts-navy, #0B1F3A); flex-wrap: wrap; }
+.ask-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--jts-gold, #D4AF37); box-shadow: 0 0 0 3px rgba(212,175,55,.25); flex: none; }
+.ask-hint { color: #5b6878; font-size: 12px; }
+.ask-row { display: flex; gap: 6px; margin-top: 8px; }
+.ask-in { flex: 1; min-width: 0; font-size: 14px; }
+.ask-go { flex: none; background: var(--jts-navy, #0B1F3A); border-color: var(--jts-navy, #0B1F3A); color: #fff; }
+.ask-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.ask-chips .chip { font-size: 11.5px; }
+.ask-log { margin-top: 10px; max-height: 60vh; overflow: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }
+.ask-log > * { flex: none; }
+.ask-q { align-self: flex-end; background: var(--jts-navy, #0B1F3A); color: #fff; padding: 6px 10px; border-radius: 12px 12px 2px 12px; font-size: 13px; max-width: 80%; }
+.ask-q .ask-when { color: rgba(255,255,255,.6); font-size: 11px; margin-left: 8px; }
+.ask-a { background: #f7f9fc; border-left: 3px solid var(--jts-gold, #D4AF37); border-radius: 2px 8px 8px 2px; padding: 8px 10px; font-size: 13px; display: flex; flex-direction: column; gap: 6px; max-width: 100%; overflow: hidden; }
+.ask-h { font-weight: 700; font-size: 14px; color: var(--jts-navy, #0B1F3A); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ask-sub { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #5b6878; margin-top: 4px; }
+.ask-kpis { display: flex; flex-wrap: wrap; gap: 6px; }
+.ask-kpi { background: #fff; border: 1px solid #dde4ee; border-radius: 4px; padding: 4px 8px; min-width: 84px; }
+.ask-k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: #5b6878; }
+.ask-v { font-size: 14px; font-weight: 700; color: var(--jts-navy, #0B1F3A); }
+.ask-tbl { overflow: auto; max-width: 100%; }
+.ask-tbl .table { font-size: 12px; margin: 0; }
+.ask-tbl .table td, .ask-tbl .table th { padding: 3px 6px; white-space: nowrap; }
+.ask-report { max-height: 50vh; }
+.ask-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.ask-list { margin: 0; padding-left: 18px; font-size: 12.5px; display: flex; flex-direction: column; gap: 3px; }
+.ask.closed { padding-bottom: 8px; }
+body.m .ask-hint { display: none; }
+body.m .ask-q { max-width: 95%; }
+body.m .ask-kpi { min-width: 0; flex: 1 1 30%; }
+@media print { .ask { display: none !important; } }
+
 .vet .vet-calc { display: flex; align-items: center; min-height: 36px; font-size: 13px; font-weight: 600; background: color-mix(in srgb, var(--color-surface) 70%, transparent); }
 .vet .vet-calc.bad { color: #c40000; }
 .vet-flags { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -31077,6 +31110,7 @@ function renderBoard() {
       <h1 style="font-size:28px">Load board</h1>
       <span class="text-muted" style="font-size:13px">Click any column header to sort · red = uncovered file · click a file number to open its tender</span>
     </div>
+    ${renderAsk()}
     <div class="ctl-row no-print" style="margin-bottom:8px">
       <div class="stepper">
         <button class="btn btn-ghost" title="Previous" data-act="datePrev">${I.chevL}</button>
@@ -34045,6 +34079,255 @@ window.addEventListener('hashchange', () => { if (!S.user || !S.bv) return; if (
 I.doc12 = svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8"></path>', 12);
 I.clock18 = svg('<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>', 18);
 I.inbox18 = svg('<path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>', 18);
+// ── Ask the board: a question box on the Load board that answers from the data already in the system ──────
+// No backend, no key. Questions are matched to intents and answered with the same helpers the reports use.
+S.ai = S.ai || { msgs: [], open: true };
+const ASK_CHIPS = ['What is running late?', 'Who needs a check call?', 'Uncovered today', 'Best carriers', 'Revenue this month', 'Morning brief'];
+const askNorm = q => String(q || '').toLowerCase().replace(/[^\w\s#$./,'-]/g, ' ').replace(/\s+/g, ' ').trim();
+const askHas = (q, ...words) => words.some(w => (w instanceof RegExp ? w.test(q) : q.includes(w)));
+const askMoney = v => money(v).replace(/\.00$/, '');
+const askMargin = l => rateTotal(l) - num(l.truckPay);
+const askDate = iso => iso ? fmtDate(iso) : 'no date';
+const askWeek = () => { const d = new Date(); const dow = (d.getDay() + 6) % 7; const mon = shift(localISO(d), -dow); return [mon, shift(mon, 6)]; };
+const askPeriod = q => { // which stretch of ship dates a question means
+  const t = todayISO();
+  if (askHas(q, 'yesterday')) return { a: shift(t, -1), b: shift(t, -1), label: 'yesterday' };
+  if (askHas(q, 'tomorrow')) return { a: shift(t, 1), b: shift(t, 1), label: 'tomorrow' };
+  if (askHas(q, 'today', 'tonight')) return { a: t, b: t, label: 'today' };
+  if (askHas(q, 'last week')) { const [m] = askWeek(); return { a: shift(m, -7), b: shift(m, -1), label: 'last week' }; }
+  if (askHas(q, 'this week', 'week')) { const [a, b] = askWeek(); return { a, b, label: 'this week' }; }
+  if (askHas(q, 'last month')) { const m = shiftMonths(t, -1).slice(0, 7); return { a: m + '-01', b: m + '-31', label: 'last month' }; }
+  if (askHas(q, 'this month', 'month', 'mtd')) { const m = t.slice(0, 7); return { a: m + '-01', b: m + '-31', label: 'this month' }; }
+  if (askHas(q, 'this year', 'ytd', 'year')) return { a: t.slice(0, 4) + '-01-01', b: t.slice(0, 4) + '-12-31', label: 'this year' };
+  return null;
+};
+const askShipDate = l => (l.pickups[0] || {}).date || '';
+const askInPeriod = (l, p) => { if (!p) return true; const d = askShipDate(l); return d >= p.a && d <= p.b; };
+const askLive = l => !['Cancelled'].includes(l.status);
+const askRows = (cols, rows, empty = 'Nothing to show.') => rows.length ? `<div class="ask-tbl">${tbl(cols, rows)}</div>` : `<div class="text-muted" style="font-size:12.5px">${empty}</div>`;
+const askBtn = (label, act, data = {}) => `<button class="btn btn-secondary btn-sm ask-act" data-act="${act}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}>${esc(label)}</button>`;
+const askLoadRow = l => { const t = trackOf(l), cr = carrierOf(l); return [fileLink(l), esc(l.customer || ''), esc(route(l)), esc(l.status), esc(cr.name || 'UNCOVERED'), esc(l.salesRep || ''), askDate(askShipDate(l)), esc(t.location || '')]; };
+const ASK_LOAD_COLS = [{ h: 'File #', a: 'c' }, { h: 'Customer' }, { h: 'Route' }, { h: 'Status', a: 'c' }, { h: 'Carrier' }, { h: 'Rep' }, { h: 'Ship' }, { h: 'Last location' }];
+const askLoadTable = (loads, empty) => askRows(ASK_LOAD_COLS, loads.slice(0, 40).map(askLoadRow), empty) + (loads.length > 40 ? `<div class="text-muted" style="font-size:12px">Showing 40 of ${loads.length}.</div>` : '');
+const askTotals = loads => { const live = loads.filter(askLive); const rev = live.reduce((s, l) => s + rateTotal(l), 0), truck = live.reduce((s, l) => s + num(l.truckPay), 0); return { n: live.length, rev, truck, margin: rev - truck, pct: rev ? Math.round(100 * (rev - truck) / rev) : 0 }; };
+const askKpis = items => `<div class="ask-kpis">${items.map(([k, v]) => `<div class="ask-kpi"><div class="ask-k">${k}</div><div class="ask-v">${v}</div></div>`).join('')}</div>`;
+const askLateReason = l => { // why a moving load counts as late or at risk
+  const t = trackOf(l), dl = delayAt(l), cc = ccStatus(l), r = [];
+  if (t.condition === 'Breakdown') r.push('<span class="down">BREAKDOWN</span>');
+  if (t.condition === 'Running late') r.push('<span class="late">RUNNING LATE</span>');
+  if (dl) r.push(`<span class="down">Detention: ${dl.label} ${dl.onSite ? 'on site' : 'dwelled'} ${fmtMins(dl.mins)}</span>`);
+  if (cc && cc.state === 'overdue') r.push(`Check call overdue ${fmtMins(Math.round(cc.overdueMins))}`);
+  const d = finalDrop(l), appt = d.date ? parseLocal(d.date + 'T' + (d.time || '23:59')) : null;
+  if (appt && appt < new Date() && !['Delivered', 'Invoiced', 'Cancelled'].includes(l.status)) r.push(`Delivery appt passed ${fmtWhen(appt.getTime())}`);
+  const p = l.pickups[0] || {}, pappt = p.date ? parseLocal(p.date + 'T' + (p.time || '23:59')) : null;
+  if (pappt && pappt < new Date() && !p.outAt && ['Open', 'Quoted', 'Tendered', 'Booked', 'Dispatched'].includes(l.status)) r.push(`Pickup appt passed ${fmtWhen(pappt.getTime())}`);
+  return r;
+};
+const askLateLoads = () => S.loads.filter(l => OPENISH.includes(l.status)).map(l => ({ l, why: askLateReason(l) })).filter(x => x.why.length).sort((a, b) => b.why.length - a.why.length);
+function askFindName(q, names, weight = () => 0) { // best matching name mentioned in the question: full name beats first word, then the busier name wins
+  const c = []; names.forEach(n => { const k = String(n || '').toLowerCase().trim(); if (!k) return; const first = k.split(/\s+/)[0], short = k.replace(/[.,]/g, '').replace(/\s+(inc|llc|logistics|transport|trucking|express|freight|lines|co)\b.*$/, '');
+    if (q.includes(k) || (short.length > 4 && q.includes(short))) c.push({ n, s: 2, len: k.length }); else if (first.length > 3 && new RegExp(`\\b${first.replace(/[^a-z0-9]/g, '')}\\b`).test(q)) c.push({ n, s: 1, len: k.length }); });
+  c.sort((a, b) => b.s - a.s || weight(b.n) - weight(a.n) || b.len - a.len); return c.length ? c[0].n : null;
+}
+function askCarrierCard(name) {
+  const st = carrierStats(name), rec = findCarrier(name) || {}, loads = st.loads, live = loads.filter(askLive);
+  const active = loads.filter(l => ACTIVE.includes(l.status)), paid = live.reduce((s, l) => s + num(l.truckPay), 0);
+  const late = loads.filter(l => isOnTime(l) === false).length, brk = loads.filter(l => (l.tracking || {}).condition === 'Breakdown').length;
+  const det = loads.filter(l => l.pickups.concat(l.drops).some(s => s.inAt && s.outAt && dwellMins(s) >= DWELL_ALERT_MIN)).length;
+  const lanes = Object.entries(groupBy(loads, route)).sort((a, b) => b[1].length - a[1].length).slice(0, 3).map(([k, v]) => `${esc(k)} (${v.length})`).join(' · ');
+  const last = loads[0] ? askDate(askShipDate(loads[0])) : 'never';
+  const mc = String(rec.mc || '').replace(/\D/g, ''), vp = mc ? S.vetProfiles[mc] : null, flags = vp ? vetFlags(vp) : [];
+  const grade = st.onTimePct == null ? 'Not enough delivered freight to grade yet' : st.onTimePct >= 95 ? 'Strong. Keep them on the list.' : st.onTimePct >= 85 ? 'Solid, watch the misses.' : st.onTimePct >= 70 ? 'Shaky. Trace them tighter.' : 'Poor. Think twice before the next tender.';
+  return `<div class="ask-h">${esc(name)} <span class="tag ${rec.status === 'Do not use' ? 'tag-neutral down' : 'tag-accent'}">${esc(rec.status || 'Not in directory')}</span></div>
+    <div class="text-muted" style="font-size:12.5px">${rec.mc ? esc(rec.mc) + ' · ' : ''}${rec.dispatchName ? 'Dispatch ' + esc(rec.dispatchName) + ' ' : ''}${esc(rec.dispatchPhone || rec.phone || '')}${rec.salesRep ? ' · JTS rep ' + esc(rec.salesRep) : ''}${rec.equipment ? ' · ' + esc(rec.equipment) : ''}</div>
+    ${askKpis([['Loads', fmt(loads.length)], ['Moving now', fmt(active.length)], ['Delivered', fmt(st.delivered)], ['On-time', st.onTimePct == null ? 'n/a' : st.onTimePct + '%'], ['Late', fmt(late)], ['Breakdowns', fmt(brk)], ['Detention', fmt(det)], ['Paid to carrier', askMoney(paid)], ['Avg truck pay', live.length ? askMoney(paid / live.length) : '$0'], ['Last load', last]])}
+    <div style="font-size:12.5px"><strong>Review:</strong> ${grade}${flags.length ? ` <span class="down">Vetting flags: ${flags.map(esc).join('; ')}</span>` : ' No open vetting flags.'}</div>
+    ${lanes ? `<div style="font-size:12.5px"><strong>Top lanes:</strong> ${lanes}</div>` : ''}
+    ${active.length ? `<div class="ask-sub">Moving right now</div>${askLoadTable(active)}` : ''}
+    <div class="ask-acts">${rec.id ? askBtn('Open carrier profile', 'carOpen', { id: rec.id }) : ''}${askBtn('Show their files on the board', 'askBoard', { search: name })}${askBtn('Carrier on-time report', 'askReport', { key: 'carrier_ontime' })}</div>`;
+}
+function askFileCard(l) {
+  const t = trackOf(l), cr = carrierOf(l), cc = ccStatus(l), dl = delayAt(l), p = l.pickups[0] || {}, d = finalDrop(l);
+  const stop = s => `${esc(s.name || s.city || '')}${s.date ? ' · ' + askDate(s.date) + (s.time ? ' ' + s.time : '') : ''}${s.inAt ? ' · in ' + fmtLocal(s.inAt) : ''}${s.outAt ? ' · out ' + fmtLocal(s.outAt) : ''}`;
+  const why = askLateReason(l);
+  return `<div class="ask-h">File ${fileLink(l)} <span class="tag ${tagFor(l.status)}">${esc(l.status)}</span> ${why.length ? why.join(' ') : '<span class="pct good">On plan</span>'}</div>
+    <div style="font-size:12.5px">${esc(l.customer || 'No customer')} · ${esc(route(l))} · ${esc(l.office || '')} · Rep ${esc(l.salesRep || 'unassigned')}</div>
+    ${askKpis([['Rate', askMoney(rateTotal(l))], ['Truck pay', askMoney(num(l.truckPay))], ['Margin', askMoney(askMargin(l))], ['Rate con', l.rateCon ? esc(l.rateCon.no || 'Issued') : 'Not issued'], ['Last check call', cc && cc.lastAt ? fmtWhen(cc.lastAt) : (t.updatedAt ? fmtWhen(t.updatedAt) : 'none')], ['ETA', t.eta ? fmtLocal(t.eta) : 'n/a']])}
+    <div style="font-size:12.5px"><strong>Carrier:</strong> ${cr.name ? `${esc(cr.name)}${cr.driver ? ' · Driver ' + esc(cr.driver) : ''}${cr.driverPhone ? ' ' + esc(cr.driverPhone) : ''}${cr.coDriver ? ' · Co-driver ' + esc(cr.coDriver) + (cr.coDriverPhone ? ' ' + esc(cr.coDriverPhone) : '') : ''}` : '<span class="late">UNCOVERED</span>'}</div>
+    <div style="font-size:12.5px"><strong>Pickup:</strong> ${stop(p)}</div><div style="font-size:12.5px"><strong>Delivery:</strong> ${stop(d)}</div>
+    ${t.location || t.notes ? `<div style="font-size:12.5px"><strong>Tracking:</strong> ${esc(t.location || '')}${t.miles ? ' · ' + fmt(num(t.miles)) + ' mi to next stop' : ''} · ${esc(t.condition || 'On time')}${t.notes ? ' · ' + esc(t.notes) : ''}</div>` : ''}
+    ${dl ? `<div class="down" style="font-size:12.5px">Detention: ${dl.label} ${dl.onSite ? 'still on site' : 'dwelled'} ${fmtMins(dl.mins)}</div>` : ''}
+    <div class="ask-acts">${askBtn('Open file', 'view', { id: l.id })}${askBtn('Tracking', 'viewTrack', { id: l.id })}${askBtn('Rate con', 'rcTab', { id: l.id })}</div>`;
+}
+function askGroupTable(loads, keyFn, keyLabel) {
+  const rows = Object.entries(groupBy(loads.filter(askLive), keyFn)).map(([k, arr]) => { const t = askTotals(arr); const ot = onTimeOf(arr); return { k, arr, t, ot }; }).sort((a, b) => b.t.rev - a.t.rev);
+  return askRows([{ h: keyLabel }, { h: 'Loads', a: 'r' }, { h: 'Uncovered', a: 'r' }, { h: 'Moving', a: 'r' }, { h: 'Revenue', a: 'r' }, { h: 'Margin', a: 'r' }, { h: 'Margin %', a: 'r' }, { h: 'On-time', a: 'c' }],
+    rows.map(({ k, arr, t, ot }) => [esc(k || 'Unassigned'), fmt(arr.length), fmt(arr.filter(l => HOT.includes(l.status)).length), fmt(arr.filter(l => ACTIVE.includes(l.status)).length), askMoney(t.rev), askMoney(t.margin), t.pct + '%', pctCell(ot.pct)]));
+}
+function askBrief() {
+  const live = S.loads.filter(askLive), t = todayISO(), late = askLateLoads(), cc = S.loads.filter(ccOverdue);
+  const puToday = live.filter(l => askShipDate(l) === t), unc = live.filter(l => HOT.includes(l.status) && askShipDate(l) >= t && askShipDate(l) <= shift(t, 1));
+  const delToday = live.filter(l => finalDrop(l).date === t), moving = live.filter(l => ACTIVE.includes(l.status));
+  const [wa, wb] = askWeek(), wk = askTotals(live.filter(l => askShipDate(l) >= wa && askShipDate(l) <= wb)), mo = askTotals(live.filter(l => askShipDate(l).slice(0, 7) === t.slice(0, 7)));
+  return `<div class="ask-h">Board brief · ${fmtDate(t)}</div>
+    ${askKpis([['Moving', fmt(moving.length)], ['Late or at risk', `<span class="${late.length ? 'late' : ''}">${late.length}</span>`], ['Check calls overdue', `<span class="${cc.length ? 'late' : ''}">${cc.length}</span>`], ['Uncovered today + tomorrow', `<span class="${unc.length ? 'late' : ''}">${unc.length}</span>`], ['Pickups today', fmt(puToday.length)], ['Deliveries today', fmt(delToday.length)], ['Revenue this week', askMoney(wk.rev)], ['Margin this week', `${askMoney(wk.margin)} (${wk.pct}%)`], ['Revenue this month', askMoney(mo.rev)]])}
+    ${late.length ? `<div class="ask-sub">Needs attention first</div>${askRows([{ h: 'File #', a: 'c' }, { h: 'Why' }, { h: 'Customer' }, { h: 'Carrier' }, { h: 'Rep' }], late.slice(0, 8).map(({ l, why }) => [fileLink(l), why.join(' · '), esc(l.customer || ''), esc(l.carrierName || 'UNCOVERED'), esc(l.salesRep || '')]))}` : '<div class="pct good" style="font-size:12.5px">Nothing is flagged late. Enjoy it while it lasts.</div>'}
+    ${unc.length ? `<div class="ask-sub">Uncovered, today and tomorrow</div>${askLoadTable(unc)}` : ''}
+    <div class="ask-acts">${askBtn('Trace console', 'askReport', { key: 'trace_console' })}${askBtn('Pickup console', 'askReport', { key: 'pickup_console' })}${askBtn('Load summary', 'askReport', { key: 'load_summary' })}</div>`;
+}
+function askAnswer(raw) {
+  const q = askNorm(raw), live = S.loads.filter(askLive), period = askPeriod(q);
+  const statusWord = STATUSES.find(s => askHas(q, new RegExp(`\\b${s.toLowerCase()}\\b`)));
+  // 1. help
+  if (!q || askHas(q, 'help', 'what can you', 'how do i use', 'commands')) return `<div class="ask-h">What you can ask</div><ul class="ask-list">
+    <li><strong>Late and at risk:</strong> what is running late, breakdowns, detention, missed appointments</li>
+    <li><strong>Tracing:</strong> who needs a check call, where is file 2440855, trace console</li>
+    <li><strong>Carriers:</strong> how is Ganske Truck doing, carrier history for Peach State, best carriers, worst carriers</li>
+    <li><strong>People:</strong> how is Alicia doing, rep ranking, Fresno Dry office, Mosqueda loads</li>
+    <li><strong>Money:</strong> revenue this week, margin this month, high value loads</li>
+    <li><strong>Board slices:</strong> uncovered today, in transit, deliveries tomorrow, ready to invoice</li>
+    <li><strong>Lanes:</strong> rate from Fresno to Philadelphia</li>
+    <li><strong>Reports:</strong> run the carrier on-time report, open the monthly report, end of day pickups</li>
+    <li><strong>Brief:</strong> morning brief, what is going on</li></ul>`;
+  // 2. a file number
+  const fm = q.match(/\b(?:file\s*#?\s*)?(\d{5,8})\b/); if (fm) { const l = S.loads.find(x => String(x.fileNo) === fm[1]); if (l) return askFileCard(l); if (askHas(q, 'file')) return `<div>No file ${esc(fm[1])} on this board.</div>`; }
+  // 3. brief
+  if (askHas(q, 'brief', 'morning', 'what is going on', "what's going on", 'summary of the board', 'how are we', 'how is the board', 'overview', 'status of the board')) return askBrief();
+  // 4. late / at risk
+  if (askHas(q, 'late', 'behind', 'delayed', 'at risk', 'detention', 'dwell', 'breakdown', 'broke down', 'missed', 'problem', 'issue', 'trouble', 'fire')) {
+    let rows = askLateLoads();
+    if (askHas(q, 'detention', 'dwell')) rows = rows.filter(x => delayAt(x.l));
+    if (askHas(q, 'breakdown', 'broke down')) rows = rows.filter(x => (x.l.tracking || {}).condition === 'Breakdown');
+    const who = askFindName(q, REPS); if (who) rows = rows.filter(x => x.l.salesRep === who);
+    return `<div class="ask-h">${rows.length ? `${rows.length} file${rows.length === 1 ? '' : 's'} late or at risk${who ? ' for ' + esc(who) : ''}` : 'Nothing is late or at risk right now'}</div>
+      ${askRows([{ h: 'File #', a: 'c' }, { h: 'Why' }, { h: 'Customer' }, { h: 'Route' }, { h: 'Carrier · driver' }, { h: 'Last location' }, { h: 'ETA' }], rows.map(({ l, why }) => { const cr = carrierOf(l), t = trackOf(l); return [fileLink(l), why.join(' · '), esc(l.customer || ''), esc(route(l)), esc(cr.name || 'UNCOVERED') + (cr.driver ? ' · ' + esc(cr.driver) + (cr.driverPhone ? ' ' + esc(cr.driverPhone) : '') : ''), esc(t.location || ''), t.eta ? fmtLocal(t.eta) : '']; }), 'Every moving load is on plan.')}
+      <div class="ask-acts">${askBtn('Trace console', 'askReport', { key: 'trace_console' })}${askBtn('Show delayed on the board', 'askBoard', { delayed: '1' })}</div>`;
+  }
+  // 5. check calls / tracing
+  if (askHas(q, 'check call', 'checkcall', 'check-call', 'needs a call', 'who do i call', 'trace', 'tracing', 'stale', 'no update', 'heard from')) {
+    if (askHas(q, 'report', 'console')) return askReportInline(askHas(q, 'originator', 'customer') ? 'tracing_originator' : askHas(q, 'receiver') ? 'tracing_receiver' : askHas(q, 'carrier') ? 'tracing_carrier' : askHas(q, 'internal', 'log') ? 'tracing_internal' : 'trace_console');
+    const rows = S.loads.filter(l => ACTIVE.includes(l.status)).map(l => ({ l, cc: ccStatus(l) })).filter(x => x.cc && x.cc.state !== 'ok').sort((a, b) => a.cc.minsToDue - b.cc.minsToDue);
+    return `<div class="ask-h">${rows.length ? `${rows.length} load${rows.length === 1 ? '' : 's'} need a check call` : 'Every moving load has a fresh check call'}</div>
+      ${askRows([{ h: 'File #', a: 'c' }, { h: 'Due', a: 'c' }, { h: 'Last call' }, { h: 'Carrier · dispatch' }, { h: 'Driver' }, { h: 'Route' }, { h: 'Last location' }], rows.map(({ l, cc }) => { const cr = carrierOf(l), rec = findCarrier(cr.name) || {}, t = trackOf(l); return [fileLink(l), cc.state === 'overdue' ? `<span class="down">OVERDUE ${fmtMins(Math.round(cc.overdueMins))}</span>` : `<span class="late">due in ${Math.round(cc.minsToDue)} min</span>`, fmtWhen(cc.lastAt), esc(cr.name || '') + (rec.dispatchPhone ? ' · ' + esc(rec.dispatchPhone) : ''), esc(cr.driver || '') + (cr.driverPhone ? ' ' + esc(cr.driverPhone) : ''), esc(route(l)), esc(t.location || '')]; }), 'Nothing is due.')}
+      <div class="ask-acts">${askBtn('Filter the board to overdue check calls', 'askBoard', { cc: '1' })}${askBtn('Trace console', 'askReport', { key: 'trace_console' })}${askBtn('Trace request by carrier', 'askReport', { key: 'trace_req_carrier' })}</div>`;
+  }
+  // 6. reports by name
+  if (askHas(q, 'report', 'run the', 'open the', 'show me the', 'console', 'browser', 'end of day', 'eod', 'monthly')) { const key = askMatchReport(q); if (key) return askReportInline(key); }
+  // 7. carriers
+  const carrierNames = [...new Set([...S.carriers.map(c => c.name), ...S.loads.map(l => l.carrierName)].filter(Boolean))];
+  const carrier = askFindName(q, carrierNames, n => S.loads.filter(l => carKey(l.carrierName) === carKey(n)).length);
+  if (carrier) return askCarrierCard(carrier);
+  if (askHas(q, 'carrier')) {
+    const stats = Object.keys(groupBy(S.loads.filter(l => l.carrierName), l => l.carrierName)).map(n => ({ n, st: carrierStats(n) }));
+    const graded = stats.filter(x => x.st.judged), worst = askHas(q, 'worst', 'bad', 'avoid', 'do not use', 'problem');
+    graded.sort((a, b) => worst ? (a.st.onTimePct - b.st.onTimePct) || (b.st.judged - a.st.judged) : (b.st.onTimePct - a.st.onTimePct) || (b.st.judged - a.st.judged));
+    const dnu = S.carriers.filter(c => c.status === 'Do not use');
+    return `<div class="ask-h">${worst ? 'Weakest' : 'Best'} carriers by on-time delivery</div>
+      ${askRows([{ h: 'Carrier' }, { h: 'Loads', a: 'r' }, { h: 'Delivered', a: 'r' }, { h: 'On-time', a: 'c' }, { h: 'Moving now', a: 'r' }, { h: 'Standing' }], graded.slice(0, 12).map(({ n, st }) => { const rec = findCarrier(n) || {}; return [esc(n), fmt(st.loads.length), fmt(st.delivered), pctCell(st.onTimePct), fmt(st.loads.filter(l => ACTIVE.includes(l.status)).length), esc(rec.status || '')]; }), 'No carrier has graded deliveries yet.')}
+      ${dnu.length && worst ? `<div style="font-size:12.5px"><strong>Do not use:</strong> ${dnu.map(c => esc(c.name)).join(', ')}</div>` : ''}
+      <div class="text-muted" style="font-size:12px">Ask about one by name for the full history and review.</div>
+      <div class="ask-acts">${askBtn('Carrier on-time report', 'askReport', { key: 'carrier_ontime' })}${askBtn('Carrier activity', 'askReport', { key: 'carrier_activity' })}</div>`;
+  }
+  // 8. reps
+  const rep = askFindName(q, REPS);
+  if (rep && !askHas(q, 'customer', 'client')) {
+    const mine = live.filter(l => l.salesRep === rep && askInPeriod(l, period)), t = askTotals(mine), ot = onTimeOf(mine), late = askLateLoads().filter(x => x.l.salesRep === rep);
+    const custs = Object.entries(groupBy(mine, l => l.customer || 'Unknown')).sort((a, b) => b[1].length - a[1].length).slice(0, 5).map(([k, v]) => `${esc(k)} (${v.length})`).join(' · ');
+    return `<div class="ask-h">${esc(rep)}${period ? ' · ' + period.label : ''}</div>
+      ${askKpis([['Loads', fmt(mine.length)], ['Uncovered', fmt(mine.filter(l => HOT.includes(l.status)).length)], ['Moving', fmt(mine.filter(l => ACTIVE.includes(l.status)).length)], ['Revenue', askMoney(t.rev)], ['Margin', `${askMoney(t.margin)} (${t.pct}%)`], ['On-time', ot.pct == null ? 'n/a' : ot.pct + '%'], ['Late or at risk', fmt(late.length)]])}
+      ${custs ? `<div style="font-size:12.5px"><strong>Customers:</strong> ${custs}</div>` : ''}
+      ${late.length ? `<div class="ask-sub">Needs attention</div>${askRows([{ h: 'File #', a: 'c' }, { h: 'Why' }, { h: 'Customer' }, { h: 'Carrier' }], late.map(({ l, why }) => [fileLink(l), why.join(' · '), esc(l.customer || ''), esc(l.carrierName || 'UNCOVERED')]))}` : ''}
+      <div class="ask-acts">${askBtn(`Show ${rep.split(' ')[0]}'s board`, 'askBoard', { rep })}${askBtn('Rep ranking', 'askText', { q: 'rep ranking' })}</div>`;
+  }
+  if (askHas(q, 'rep', 'sales', 'who has the most', 'ranking', 'leaderboard', 'top producer')) return `<div class="ask-h">Reps${period ? ' · ' + period.label : ''}</div>${askGroupTable(live.filter(l => askInPeriod(l, period)), l => l.salesRep || 'Unassigned', 'Rep')}`;
+  // 9. offices
+  const office = OFFICE_META.find(o => askHas(q, o[0].toLowerCase(), o[1].toLowerCase(), o[2].toLowerCase().replace(/-/g, ' ')));
+  if (office && askHas(q, 'office', 'branch', office[1].toLowerCase())) { const mine = live.filter(l => l.office === office[0] && askInPeriod(l, period)); const t = askTotals(mine), ot = onTimeOf(mine); return `<div class="ask-h">${esc(office[0])}${period ? ' · ' + period.label : ''}</div>${askKpis([['Loads', fmt(mine.length)], ['Uncovered', fmt(mine.filter(l => HOT.includes(l.status)).length)], ['Moving', fmt(mine.filter(l => ACTIVE.includes(l.status)).length)], ['Revenue', askMoney(t.rev)], ['Margin', `${askMoney(t.margin)} (${t.pct}%)`], ['On-time', ot.pct == null ? 'n/a' : ot.pct + '%']])}<div class="ask-sub">By rep</div>${askGroupTable(mine, l => l.salesRep || 'Unassigned', 'Rep')}<div class="ask-acts">${askBtn('Show this office', 'askBoard', { office: office[0] })}</div>`; }
+  if (askHas(q, 'offices', 'by office', 'each office', 'branches')) return `<div class="ask-h">Offices${period ? ' · ' + period.label : ''}</div>${askGroupTable(live.filter(l => askInPeriod(l, period)), l => l.office || 'Unassigned', 'Office')}`;
+  // 10. customers
+  const cust = askFindName(q, customerNames(), n => live.filter(l => l.customer === n).length);
+  if (cust) { const mine = live.filter(l => l.customer === cust && askInPeriod(l, period)), t = askTotals(mine), ot = onTimeOf(mine); const lanes = Object.entries(groupBy(mine, route)).sort((a, b) => b[1].length - a[1].length).slice(0, 4).map(([k, v]) => `${esc(k)} (${v.length}, avg ${askMoney(v.reduce((s, l) => s + rateTotal(l), 0) / v.length)})`).join(' · '); const open = mine.filter(l => OPENISH.includes(l.status)); return `<div class="ask-h">${esc(cust)}${period ? ' · ' + period.label : ''}</div>${askKpis([['Loads', fmt(mine.length)], ['Open now', fmt(open.length)], ['Revenue', askMoney(t.rev)], ['Margin', `${askMoney(t.margin)} (${t.pct}%)`], ['Avg rate', mine.length ? askMoney(t.rev / mine.length) : '$0'], ['On-time', ot.pct == null ? 'n/a' : ot.pct + '%']])}${lanes ? `<div style="font-size:12.5px"><strong>Lanes:</strong> ${lanes}</div>` : ''}${open.length ? `<div class="ask-sub">Open files</div>${askLoadTable(open)}` : ''}<div class="ask-acts">${askBtn('Show on the board', 'askBoard', { search: cust })}${askBtn('Client performance report', 'askReport', { key: 'client_perf' })}</div>`; }
+  if (askHas(q, 'customers', 'clients', 'top customer', 'biggest customer', 'by customer')) return `<div class="ask-h">Customers${period ? ' · ' + period.label : ''}</div>${askGroupTable(live.filter(l => askInPeriod(l, period)), l => l.customer || 'Unknown', 'Customer')}`;
+  // 11. money
+  if (askHas(q, 'revenue', 'margin', 'profit', 'how much', 'money', 'booked', 'gross', 'sales total', '$')) {
+    const p = period || { a: '0000', b: '9999', label: 'all dates' }, mine = live.filter(l => askInPeriod(l, p)), t = askTotals(mine);
+    const hv = mine.filter(l => rateTotal(l) >= 5000).length;
+    return `<div class="ask-h">Money · ${esc(p.label)}</div>${askKpis([['Loads', fmt(t.n)], ['Revenue', askMoney(t.rev)], ['Truck pay', askMoney(t.truck)], ['Margin', askMoney(t.margin)], ['Margin %', t.pct + '%'], ['Avg rate', t.n ? askMoney(t.rev / t.n) : '$0'], ['$5k+ files', fmt(hv)]])}<div class="ask-sub">By office</div>${askGroupTable(mine, l => l.office || 'Unassigned', 'Office')}<div class="ask-sub">By rep</div>${askGroupTable(mine, l => l.salesRep || 'Unassigned', 'Rep')}<div class="ask-acts">${askBtn('Monthly report', 'askReport', { key: 'monthly_this' })}${askBtn('High value loads', 'askReport', { key: 'high_value' })}</div>`;
+  }
+  // 12. lane rates
+  const laneQ = q.replace(/^(?:what is the |what's the |whats the |show me |give me )?(?:the )?(?:rate|rates|lane|price|cost|pay|history)s?\s*(?:for|from|on|between)?\s*/, '').replace(/\s+(?:rate|rates|lane|history|cost|price|pay)s?$/, '').replace(/^from\s+/, '');
+  const lane = laneQ.match(/^([a-z .']+?),?\s*(?:[a-z]{2}\s+)?(?:to|->|-)\s+([a-z .']+?)(?:,\s*[a-z]{2})?$/);
+  const cityOf = s => String(s || '').toLowerCase();
+  const cityKnown = c => live.some(l => cityOf((l.pickups[0] || {}).city).startsWith(c) || cityOf(finalDrop(l).city).startsWith(c));
+  if (lane && cityKnown(lane[1].trim()) && cityKnown(lane[2].trim())) {
+    const o = lane[1].trim(), d = lane[2].trim();
+    const hits = live.filter(l => { const p = l.pickups[0] || {}, f = finalDrop(l); return cityOf(p.city).startsWith(o) && cityOf(f.city).startsWith(d); });
+    if (hits.length) { const rates = hits.map(rateTotal), pays = hits.map(l => num(l.truckPay)).filter(Boolean), p0 = hits[0].pickups[0], d0 = finalDrop(hits[0]), mi = milesBetween(geo(p0.city, p0.st, p0.zip), geo(d0.city, d0.st, d0.zip)); const avg = rates.reduce((s, r) => s + r, 0) / rates.length; return `<div class="ask-h">${esc(route(hits[0]))}${mi ? ' · about ' + fmt(mi) + ' mi' : ''}</div>${askKpis([['Loads', fmt(hits.length)], ['Avg rate', askMoney(avg)], ['Low', askMoney(Math.min(...rates))], ['High', askMoney(Math.max(...rates))], ['$/mile', mi ? '$' + (avg / mi).toFixed(2) : 'n/a'], ['Avg truck pay', pays.length ? askMoney(pays.reduce((s, r) => s + r, 0) / pays.length) : 'n/a']])}${askRows([{ h: 'File #', a: 'c' }, { h: 'Ship' }, { h: 'Customer' }, { h: 'Carrier' }, { h: 'Rate', a: 'r' }, { h: 'Truck pay', a: 'r' }], hits.slice(0, 12).map(l => [fileLink(l), askDate(askShipDate(l)), esc(l.customer || ''), esc(l.carrierName || 'UNCOVERED'), askMoney(rateTotal(l)), askMoney(num(l.truckPay))]))}<div class="ask-acts">${askBtn('Lane rate history', 'askReport', { key: 'lane_rate_history' })}</div>`; }
+    return `<div>No files from ${esc(o)} to ${esc(d)} on this board yet.</div><div class="ask-acts">${askBtn('Open Rate trends', 'goRates')}${askBtn('Lane rate history', 'askReport', { key: 'lane_rate_history' })}</div>`;
+  }
+  // 13. board slices: status words, uncovered, pickups / deliveries in a window
+  const unc = askHas(q, 'uncovered', 'need cover', 'needs cover', 'no carrier', 'not covered', 'need a truck', 'needs a truck', 'open loads', 'open files');
+  const invoice = askHas(q, 'ready to invoice', 'to invoice', 'invoice');
+  if (unc || statusWord || invoice || askHas(q, 'pickup', 'pick up', 'picking up', 'deliver', 'moving', 'on the road', 'what is on', "what's on", 'loads', 'files')) {
+    let mine = live, label = 'Files';
+    if (unc) { mine = mine.filter(l => HOT.includes(l.status)); label = 'Uncovered'; }
+    else if (invoice && !statusWord) { mine = mine.filter(l => l.status === 'Delivered'); label = 'Ready to invoice (delivered, not invoiced)'; }
+    else if (statusWord) { mine = mine.filter(l => l.status === statusWord); label = statusWord; }
+    else if (askHas(q, 'moving', 'on the road')) { mine = mine.filter(l => ACTIVE.includes(l.status)); label = 'Moving'; }
+    if (askHas(q, 'deliver')) { const p = period || { a: todayISO(), b: todayISO(), label: 'today' }; mine = mine.filter(l => { const d = finalDrop(l).date; return d >= p.a && d <= p.b; }); label = `Deliveries ${p.label}` + (unc ? ', uncovered' : ''); }
+    else if (period) { mine = mine.filter(l => askInPeriod(l, period)); label += ' shipping ' + period.label; }
+    else if (askHas(q, 'pickup', 'pick up', 'picking up')) { mine = mine.filter(l => askShipDate(l) === todayISO()); label = 'Pickups today' + (unc ? ', uncovered' : ''); }
+    const who = askFindName(q, REPS); if (who) { mine = mine.filter(l => l.salesRep === who); label += ' for ' + who; }
+    mine = mine.slice().sort((a, b) => askShipDate(a).localeCompare(askShipDate(b)));
+    const t = askTotals(mine);
+    return `<div class="ask-h">${esc(label)}: ${mine.length}</div>${mine.length ? askKpis([['Revenue', askMoney(t.rev)], ['Margin', askMoney(t.margin)], ['Uncovered', fmt(mine.filter(l => HOT.includes(l.status)).length)]]) : ''}${askLoadTable(mine, 'No files match.')}<div class="ask-acts">${askBtn('Show on the board', 'askBoard', unc ? { unc: '1', ...(period ? { from: period.a, to: period.b } : {}) } : statusWord ? { status: statusWord, ...(period ? { from: period.a, to: period.b } : {}) } : period ? { from: period.a, to: period.b } : { search: '' })}</div>`;
+  }
+  // 14. free text: search the board the same way the search box does
+  const hits = live.filter(l => [l.fileNo, l.customer, l.carrierName, l.salesRep, l.office, (l.pickups[0] || {}).city, finalDrop(l).city, (l.pickups[0] || {}).name, finalDrop(l).name, ...l.pickups.map(p => p.ref || ''), ...l.drops.map(d => d.ref || '')].join(' ').toLowerCase().includes(q));
+  if (hits.length) return `<div class="ask-h">${hits.length} file${hits.length === 1 ? '' : 's'} mention "${esc(raw)}"</div>${askLoadTable(hits)}<div class="ask-acts">${askBtn('Show on the board', 'askBoard', { search: raw })}</div>`;
+  const key = askMatchReport(q); if (key) return askReportInline(key);
+  return `<div>I do not have an answer for that one yet. Try a file number, a carrier, a rep, a customer, "running late", "check calls", "revenue this month" or "help".</div>`;
+}
+function askMatchReport(q) {
+  const stop = new Set(['report', 'run', 'open', 'show', 'me', 'the', 'a', 'please', 'browser', 'summary', 'and', 'of', 'for']);
+  const words = q.split(' ').filter(w => w.length > 2 && !stop.has(w)); if (!words.length) return null;
+  let best = null, bestScore = 0;
+  Object.entries(REPORTS).forEach(([k, r]) => { const hay = (r.title + ' ' + k.replace(/_/g, ' ') + ' ' + (r.sub || '')).toLowerCase(); let s = 0; words.forEach(w => { if (hay.includes(w)) s += (r.title.toLowerCase().includes(w) ? 2 : 1); }); if (s > bestScore) { bestScore = s; best = k; } });
+  return bestScore >= Math.min(2, words.length) ? best : null;
+}
+function askReportInline(key) { const r = REPORTS[key]; if (!r) return '<div>No such report.</div>'; let body = ''; try { body = r.body(); } catch (e) { body = '<div class="text-muted">This report could not run inline.</div>'; } return `<div class="ask-h">${esc(r.title)}</div><div class="text-muted" style="font-size:12px">${esc(r.sub || '')}</div><div class="ask-tbl ask-report">${body}</div><div class="ask-acts">${askBtn('Open full report', 'askReport', { key })}</div>`; }
+function askRun(raw) {
+  const text = String(raw || '').trim(); if (!text) return;
+  let html; try { html = askAnswer(text); } catch (e) { html = `<div class="down">That one tripped over something: ${esc(e.message)}</div>`; }
+  S.ai = S.ai || { msgs: [], open: true }; S.ai.msgs.push({ q: text, a: html, at: Date.now() }); if (S.ai.msgs.length > 12) S.ai.msgs.shift(); S.ai.open = true; S.aiFocus = true;
+  render(); const box = document.getElementById('ask-log'); if (box) box.scrollTop = box.scrollHeight; const inp = document.getElementById('ask-q'); if (inp && !isMobile()) inp.focus();
+}
+function renderAsk() {
+  S.ai = S.ai || { msgs: [], open: true }; const msgs = S.ai.msgs;
+  return `<section id="ask" class="ask no-print${S.ai.open ? '' : ' closed'}">
+    <div class="ask-bar">
+      <span class="ask-dot"></span><strong>Ask the board</strong><span class="ask-hint">Late files, check calls, carrier history, rep and customer numbers, lane rates, any report.</span>
+      <span class="spacer"></span>${msgs.length ? `<button class="lg-link ask-clear" data-act="askClear">Clear</button>` : ''}<button class="lg-link ask-toggle" data-act="askToggle">${S.ai.open ? 'Hide' : 'Show'}</button>
+    </div>
+    ${S.ai.open ? `<div class="ask-row"><input class="input ask-in" id="ask-q" placeholder="Ask anything about the board, e.g. what is running late for Alicia" autocomplete="off" data-enter="ask-go"><button class="btn btn-primary ask-go" id="ask-go" data-act="askGo">Ask</button></div>
+    <div class="ask-chips">${ASK_CHIPS.map(c => `<button class="chip" data-act="askText" data-q="${esc(c)}">${esc(c)}</button>`).join('')}</div>
+    ${msgs.length ? `<div class="ask-log" id="ask-log">${msgs.map(m => `<div class="ask-q">${esc(m.q)}<span class="ask-when">${fmtWhen(m.at)}</span></div><div class="ask-a">${m.a}</div>`).join('')}</div>` : ''}` : ''}
+  </section>`;
+}
+const ASK_ACT = {
+  askGo: () => { const i = document.getElementById('ask-q'); askRun(i ? i.value : ''); },
+  askText: el => askRun(el.dataset.q),
+  askClear: () => { S.ai.msgs = []; render(); },
+  askToggle: () => { S.ai.open = !S.ai.open; render(); },
+  askReport: el => { R(el.dataset.key)(); },
+  askBoard: el => { // apply a slice to the board under the chat
+    const d = el.dataset; S.statusFilter = []; S.onlyDelayed = false; S.onlyOverdueCC = false; S.search = d.search || '';
+    if (d.unc) S.statusFilter = [...HOT]; if (d.status) S.statusFilter = [d.status]; if (d.delayed) S.onlyDelayed = true; if (d.cc) S.onlyOverdueCC = true;
+    S.dateScope = 'all'; if (d.from && d.from === d.to) { S.dateScope = 'day'; S.boardDate = d.from; }
+    if (d.rep !== undefined || d.office) bvSet({ rep: d.rep || '', offices: d.office ? [d.office] : 'all' });
+    set({ view: 'board' }); const g = document.getElementById('board-body'); if (g) g.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+};
+Object.assign(ACT, ASK_ACT);
 Object.assign(ACT, ORDER_ACT); Object.assign(ACT, LG_ACT); LG_CHANGE.forEach(a => CHANGE_ACTS.add(a));
 document.addEventListener('dblclick', e => { if (S.view !== 'builder') return; const st = e.target.closest && e.target.closest('.lg-stop'); if (!st) return; if (!(e.target.closest('.lg-facsel, .lg-name, .lg-stop-h, .lg-compact'))) return; e.preventDefault(); const k = st.dataset.kind + '-' + st.dataset.i; S.lgAddrOpen = S.lgAddrOpen || {}; S.lgAddrOpen[k] = !S.lgAddrOpen[k]; render(); });
 document.addEventListener('keydown', e => { if (!S.user || S.view !== 'builder' || e.key !== 'Escape' || isMobile() || document.querySelector('.dialog-backdrop')) return; if (e.target && e.target.matches && e.target.matches('input, select, textarea')) { e.target.blur(); return; } confirmUI('Leave the load editor?', 'Unsaved changes on this file are lost.', 'Leave').then(ok => { if (ok) ACT.lgLeave(); }); });
