@@ -34309,7 +34309,7 @@ function renderAsk() {
       <span class="ask-dot"></span><strong>Ask the board</strong><span class="ask-hint">Late files, check calls, carrier history, rep and customer numbers, lane rates, any report.</span>
       <span class="spacer"></span>${msgs.length ? `<button class="lg-link ask-clear" data-act="askClear">Clear</button>` : ''}<button class="lg-link ask-toggle" data-act="askToggle">${S.ai.open ? 'Hide' : 'Show'}</button>
     </div>
-    ${S.ai.open ? `<div class="ask-row"><input class="input ask-in" id="ask-q" placeholder="Ask anything about the board, e.g. what is running late for Alicia" autocomplete="off" data-enter="ask-go"><button class="btn btn-primary ask-go" id="ask-go" data-act="askGo">Ask</button></div>
+    ${S.ai.open ? `<div class="ask-row"><input class="input ask-in" id="ask-q" placeholder="Ask me anything" autocomplete="off" data-enter="ask-go"><button class="btn btn-primary ask-go" id="ask-go" data-act="askGo">Ask</button></div>
     <div class="ask-chips">${ASK_CHIPS.map(c => `<button class="chip" data-act="askText" data-q="${esc(c)}">${esc(c)}</button>`).join('')}</div>
     ${msgs.length ? `<div class="ask-log" id="ask-log">${msgs.map(m => `<div class="ask-q">${esc(m.q)}<span class="ask-when">${fmtWhen(m.at)}</span></div><div class="ask-a">${m.a}</div>`).join('')}</div>` : ''}` : ''}
   </section>`;
