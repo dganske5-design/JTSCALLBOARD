@@ -738,6 +738,15 @@ body.m #view-line { font-size: 12px; }
 .ask-dots i:nth-child(2) { animation-delay: .2s; } .ask-dots i:nth-child(3) { animation-delay: .4s; }
 @keyframes askdot { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
 
+.ask-card { background: #fff; border: 1px solid #d9c98f; border-left: 4px solid var(--jts-gold, #D4AF37); border-radius: 4px; padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; margin-top: 4px; }
+.ask-card.done { border-color: #dde4ee; border-left-color: #b9c4d3; background: #fafbfd; }
+.ask-card-h { font-weight: 700; font-size: 13px; color: var(--jts-navy, #0B1F3A); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ask-f { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 6px; font-size: 12px; }
+.ask-f > span { color: #5b6878; text-transform: uppercase; letter-spacing: .05em; font-size: 10.5px; }
+.ask-f .input { min-height: 30px; padding: 3px 8px; font-size: 12.5px; }
+.ask-body { font-family: inherit; font-size: 12.5px; line-height: 1.4; padding: 6px 8px; resize: vertical; }
+body.m .ask-f { grid-template-columns: 1fr; gap: 2px; }
+
 /* Ask the board */
 .ask { background: #fff; border: 1px solid #c9d3e0; border-top: 3px solid var(--jts-navy, #0B1F3A); border-radius: 6px; padding: 8px 10px 10px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(11,31,58,.08); }
 .ask-bar { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--jts-navy, #0B1F3A); flex-wrap: wrap; }
@@ -34094,7 +34103,7 @@ I.inbox18 = svg('<path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.45 5.11 2
 // ── Ask the board: a question box on the Load board that answers from the data already in the system ──────
 // No backend, no key. Questions are matched to intents and answered with the same helpers the reports use.
 S.ai = S.ai || { msgs: [], open: true };
-const ASK_CHIPS = ['What is running late?', 'Who needs a check call?', 'Uncovered today', 'Best carriers', 'Revenue this month', 'Morning brief'];
+const ASK_CHIPS = ['What is running late?', 'Who needs a check call?', 'Trace emails for overdue check calls', 'Uncovered today', 'Best carriers', 'Revenue this month', 'Morning brief'];
 const askNorm = q => String(q || '').toLowerCase().replace(/[^\w\s#$./,'-]/g, ' ').replace(/\s+/g, ' ').trim();
 const askHas = (q, ...words) => words.some(w => (w instanceof RegExp ? w.test(q) : q.includes(w)));
 const askMoney = v => money(v).replace(/\.00$/, '');
@@ -34187,8 +34196,18 @@ function askBrief() {
     ${unc.length ? `<div class="ask-sub">Uncovered, today and tomorrow</div>${askLoadTable(unc)}` : ''}
     <div class="ask-acts">${askBtn('Trace console', 'askReport', { key: 'trace_console' })}${askBtn('Pickup console', 'askReport', { key: 'pickup_console' })}${askBtn('Load summary', 'askReport', { key: 'load_summary' })}</div>`;
 }
-function askAnswer(raw) {
+function askAnswer(raw, ctx) {
   const q = askNorm(raw), live = S.loads.filter(askLive), period = askPeriod(q);
+  // emails and exports work offline too: the same approval cards the AI mode uses
+  if (ctx && askHas(q, 'email', 'send ', 'draft', 'mail ', 'export', 'csv', 'spreadsheet', 'excel')) {
+    if (askHas(q, 'export', 'csv', 'spreadsheet', 'excel')) { const who = askFindName(q, REPS); const a = { title: raw }; if (who) a.rep = who; if (askHas(q, 'uncovered')) a.group = 'uncovered'; if (askHas(q, 'moving', 'in transit')) a.group = 'moving'; if (askHas(q, 'late')) a.only_late = true; const p = askPeriod(q); if (p) { a.ship_from = p.a; a.ship_to = p.b; } const r = aiActionTool('export_csv', a, ctx); return `<div class="ask-h">Export ready: ${fmt(r.rows)} files</div><div style="font-size:12.5px">Download below.</div>`; }
+    const kind = askHas(q, 'tender', 'dispatch') ? 'dispatch' : askHas(q, 'customer', 'update', 'client') ? 'customer_update' : askHas(q, 'rate con', 'ratecon', 'rate confirmation') ? 'rate_con' : 'trace_request';
+    const fm0 = q.match(/\b(\d{5,8})\b/), one = fm0 && aiLoadByFile(fm0[1]);
+    if (one) { const r = aiActionTool('draft_email', { kind, file: one.fileNo }, ctx); return `<div class="ask-h">${esc(AI_EMAIL_KINDS[kind])} drafted for file ${fileLink(one)}</div><div style="font-size:12.5px">${r.to && !/no address/.test(r.to) ? 'Review it below and hit Send.' : 'No address on file. Add one in the To field, then Send.'}</div>`; }
+    const many = askHas(q, 'overdue', 'check call') ? S.loads.filter(ccOverdue) : askHas(q, 'late', 'risk') ? askLateLoads().map(x => x.l).filter(l => l.carrierName) : askHas(q, 'uncovered') && kind === 'customer_update' ? live.filter(l => HOT.includes(l.status) && askShipDate(l) >= todayISO()) : [];
+    if (many.length) { many.slice(0, 10).forEach(l => aiActionTool('draft_email', { kind: kind === 'dispatch' ? 'trace_request' : kind, file: l.fileNo }, ctx)); const n = Math.min(10, many.length); return `<div class="ask-h">${n} email${n === 1 ? '' : 's'} drafted: ${esc(AI_EMAIL_KINDS[kind === 'dispatch' ? 'trace_request' : kind].toLowerCase())}</div><div style="font-size:12.5px">One per file below. Send each from your mail app, or skip the ones you do not want.${many.length > 10 ? ' Showing the first 10.' : ''}</div>`; }
+    return `<div>Tell me which file, for example "send a trace email on 2440855", or "trace emails for every overdue check call".</div>`;
+  }
   const statusWord = STATUSES.find(s => askHas(q, new RegExp(`\\b${s.toLowerCase()}\\b`)));
   // 1. help
   if (!q || askHas(q, 'help', 'what can you', 'how do i use', 'commands')) return `<div class="ask-h">What you can ask</div><ul class="ask-list">
@@ -34313,7 +34332,7 @@ function askRun(raw) {
   S.ai = S.ai || { msgs: [], open: true }; if (S.ai.msgs.some(m => m.pending)) { toast('Still working on the last question.'); return; }
   const entry = { q: text, a: '', at: Date.now(), pending: false };
   if (aiOn()) { entry.pending = true; entry.status = 'Thinking'; }
-  else { try { entry.a = askAnswer(text); } catch (e) { entry.a = `<div class="down">That one tripped over something: ${esc(e.message)}</div>`; } }
+  else { try { const ctx = { ui: [], cards: [] }; entry.a = askAnswer(text, ctx); entry.cards = ctx.cards; } catch (e) { entry.a = `<div class="down">That one tripped over something: ${esc(e.message)}</div>`; } }
   S.ai.msgs.push(entry); if (S.ai.msgs.length > 12) S.ai.msgs.shift(); S.ai.open = true; S.aiFocus = true;
   render(); const box = document.getElementById('ask-log'); if (box) box.scrollTop = box.scrollHeight; const inp = document.getElementById('ask-q'); if (inp && !isMobile()) inp.focus();
   if (entry.pending) aiAsk(text, entry);
@@ -34327,7 +34346,7 @@ function renderAsk() {
     </div>
     ${S.ai.open ? `<div class="ask-row"><input class="input ask-in" id="ask-q" placeholder="Ask me anything" autocomplete="off" data-enter="ask-go"><button class="btn btn-primary ask-go" id="ask-go" data-act="askGo">Ask</button></div>
     <div class="ask-chips">${ASK_CHIPS.map(c => `<button class="chip" data-act="askText" data-q="${esc(c)}">${esc(c)}</button>`).join('')}</div>
-    ${msgs.length ? `<div class="ask-log" id="ask-log">${msgs.map(m => `<div class="ask-q">${esc(m.q)}<span class="ask-when">${fmtWhen(m.at)}</span></div><div class="ask-a${m.pending ? ' pending' : ''}">${m.pending ? `<div class="ask-think"><span class="ask-dots"><i></i><i></i><i></i></span><span class="ask-status">${esc(m.status || 'Thinking')}</span></div>` : m.a}</div>`).join('')}</div>` : ''}` : ''}
+    ${msgs.length ? `<div class="ask-log" id="ask-log">${msgs.map(m => `<div class="ask-q">${esc(m.q)}<span class="ask-when">${fmtWhen(m.at)}</span></div><div class="ask-a${m.pending ? ' pending' : ''}">${m.pending ? `<div class="ask-think"><span class="ask-dots"><i></i><i></i><i></i></span><span class="ask-status">${esc(m.status || 'Thinking')}</span></div>` : m.a + (m.cards || []).map(renderAiCard).join('')}</div>`).join('')}</div>` : ''}` : ''}
   </section>`;
 }
 const ASK_ACT = {
@@ -34448,8 +34467,9 @@ const AI_TOOLS = [
   { name: 'open_report', description: 'Open a built-in report on screen after your answer. Prefer this over pasting a huge table.', input_schema: { type: 'object', properties: { key: { type: 'string' } }, required: ['key'], additionalProperties: false } },
   { name: 'open_file', description: 'Open a file in the Load Editor after your answer.', input_schema: { type: 'object', properties: { file: { type: 'string' }, tab: { type: 'string', enum: ['loading', 'tracking', 'ratecon', 'carrier', 'tender'] } }, required: ['file'], additionalProperties: false } },
 ];
-function aiTool(name, a, ui) {
-  a = a || {};
+function aiTool(name, a, ctx) {
+  a = a || {}; ctx = ctx || { ui: [], cards: [] }; const ui = ctx.ui || (ctx.ui = []); if (!ctx.cards) ctx.cards = [];
+  const act = aiActionTool(name, a, ctx); if (act) return act;
   if (name === 'board_overview') {
     const live = S.loads.filter(askLive), t = todayISO(), [wa, wb] = askWeek();
     const by = {}; STATUSES.forEach(s => { by[s] = live.filter(l => l.status === s).length; });
@@ -34534,7 +34554,9 @@ function aiSystem() {
 
 Data model. A "file" is a load, identified by its file number. Statuses in order: Open, Quoted, Tendered (these three are "uncovered", no carrier yet), Booked, Dispatched, In Transit (these three are "moving"), Delivered, Invoiced, Cancelled. Rate is what the customer pays (linehaul + fuel + accessorial); truck pay is what the carrier gets; margin is the difference. Ship date is the first pickup appointment. On-time is judged at the final delivery against its appointment; detention is three hours or more at a stop; check calls are due every four hours by default while a load is moving. "Late or at risk" flags mean: running late, breakdown, detention, overdue check call, or an appointment that has passed without the stop being completed. Dates are YYYY-MM-DD; times in tool output marked Z are UTC, every other time is local.
 
-How to answer. Lead with the answer, then the detail. Be concise and concrete: file numbers, names, dollars, minutes. Use a markdown table whenever you list more than three items; keep tables to the columns that matter. Use **bold** for the key number or verdict. When asked for a review, performance or recommendation, give a clear verdict and the reasoning behind it, then the next action a dispatcher should take. When the user wants to see files or a report, call show_on_board or open_report as well as answering. If the data cannot answer something, say exactly what is missing. Write file numbers as plain digits so they turn into links. Do not use em dashes or en dashes anywhere; use commas, periods or hyphens. No preamble, no sign-off.`;
+How to answer. Lead with the answer, then the detail. Be concise and concrete: file numbers, names, dollars, minutes. Use a markdown table whenever you list more than three items; keep tables to the columns that matter. Use **bold** for the key number or verdict. When asked for a review, performance or recommendation, give a clear verdict and the reasoning behind it, then the next action a dispatcher should take. When the user wants to see files or a report, call show_on_board or open_report as well as answering. If the data cannot answer something, say exactly what is missing. Write file numbers as plain digits so they turn into links. Do not use em dashes or en dashes anywhere; use commas, periods or hyphens. No preamble, no sign-off.
+
+Actions. You can draft emails (draft_email), propose check-call entries (log_check_call), propose internal notes (add_note) and build CSV exports (export_csv). Every email and every write shows up as a card under your answer that the user approves; you never send or save anything yourself, so never say an email was sent or a call was logged. Say "draft below, hit Send when you are happy" or similar. When the user asks to send tracing or dispatch emails for several files (everyone late, every overdue check call, every uncovered load), look the files up first, then draft one email per file with that file's specifics, and summarize what you drafted in a short table. Before drafting, check the file has the address you need and say so if it does not. For dispatch emails confirm the file has a carrier; for customer updates include status, last location and ETA from the file; for trace requests name the driver and the next appointment.`;
 }
 async function aiCall(cfg, messages, opts = {}) {
   const body = { model: cfg.model, max_tokens: opts.maxTokens || 8000, system: [{ type: 'text', text: aiSystem(), cache_control: { type: 'ephemeral' } }], messages };
@@ -34569,7 +34591,7 @@ function mdToHtml(md) {
 }
 async function aiAsk(text, entry) {
   const cfg = aiCfg(); S.ai.thread = S.ai.thread || []; if (S.ai.thread.length > 24) S.ai.thread = [];
-  const thread = S.ai.thread, ui = [];
+  const thread = S.ai.thread, ctx = { ui: [], cards: [] }, ui = ctx.ui;
   thread.push({ role: 'user', content: [{ type: 'text', text: `[Now ${new Date().toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}, today is ${todayISO()}. Signed in: ${S.user.name}, ${S.user.role}, ${S.user.office || ''}]\n${text}` }] });
   let final = null, calls = 0, tokens = { i: 0, o: 0 };
   try {
@@ -34580,7 +34602,7 @@ async function aiAsk(text, entry) {
       if (res.stop_reason === 'tool_use') {
         const uses = res.content.filter(b => b.type === 'tool_use'); calls += uses.length;
         entry.status = `Checking ${uses.map(u => u.name.replace(/_/g, ' ')).join(', ')}`; renderAskLive();
-        const results = uses.map(u => { try { const out = aiTool(u.name, u.input || {}, ui); return { type: 'tool_result', tool_use_id: u.id, content: typeof out === 'string' ? out : aiJson(out) }; } catch (e) { return { type: 'tool_result', tool_use_id: u.id, content: 'Tool error: ' + e.message, is_error: true }; } });
+        const results = uses.map(u => { try { const out = aiTool(u.name, u.input || {}, ctx); return { type: 'tool_result', tool_use_id: u.id, content: typeof out === 'string' ? out : aiJson(out) }; } catch (e) { return { type: 'tool_result', tool_use_id: u.id, content: 'Tool error: ' + e.message, is_error: true }; } });
         thread.push({ role: 'user', content: results }); continue;
       }
       final = res; break;
@@ -34590,7 +34612,7 @@ async function aiAsk(text, entry) {
     let html = mdToHtml(txt || 'No answer came back.');
     if (final.stop_reason === 'refusal') html = `<div class="down">The model declined to answer that one.</div>` + html;
     if (final.stop_reason === 'max_tokens') html += `<div class="text-muted" style="font-size:12px">The answer was cut off. Ask for the next part.</div>`;
-    entry.a = html + `<div class="ask-meta">${aiModelLabel()} · ${calls} lookup${calls === 1 ? '' : 's'} · ${fmt(tokens.i + tokens.o)} tokens</div>`;
+    entry.cards = ctx.cards; entry.a = html + `<div class="ask-meta">${aiModelLabel()} · ${calls} lookup${calls === 1 ? '' : 's'} · ${fmt(tokens.i + tokens.o)} tokens</div>`;
   } catch (e) {
     S.ai.thread = []; // a failed turn leaves the thread out of step; start clean next time
     let offline = ''; try { offline = askAnswer(text); } catch (x) {}
@@ -34621,6 +34643,76 @@ const AI_ACT = {
     try { const r = await aiCall(cfg, [{ role: 'user', content: 'Reply with the single word OK.' }], { noTools: true, maxTokens: 50 }); const t = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim(); if (o) o.textContent = `Connected. ${aiModelLabel()} answered: ${t.slice(0, 40)}`; toast('AI mode is live on the Load board.'); } catch (e) { if (o) o.textContent = 'Failed: ' + e.message; } },
 };
 Object.assign(ACT, AI_ACT); CHANGE_ACTS.add('aiCfg');
+// ── Ask the board: drafts and actions the user approves before anything happens ─────────────────────────────
+const AI_EMAIL_KINDS = { dispatch: 'Load tender to carrier', customer_update: 'Tracing update to customer', trace_request: 'Status request to carrier dispatch', rate_con: 'Rate confirmation to carrier', custom: 'Email' };
+function aiParseMailto(m) { const u = String(m || ''); const to = decodeURIComponent((u.match(/^mailto:([^?]*)/) || [, ''])[1]); const q = u.split('?')[1] || ''; const g = k => { const x = q.split('&').find(p => p.startsWith(k + '=')); return x ? decodeURIComponent(x.slice(k.length + 1).replace(/\+/g, ' ')) : ''; }; return { to, subject: g('subject'), body: g('body') }; }
+function aiEmailDefaults(kind, l) { // the same wording the buttons on the file already use
+  if (!l) return { to: '', subject: '', body: '' };
+  const cr = carrierOf(l), rec = findCarrier(cr.name) || {}, t = trackOf(l), nxt = finalDrop(l), me = S.user ? S.user.name : '';
+  if (kind === 'dispatch') { const p = aiParseMailto(tenderEmail(l)); return { to: p.to || rec.email || '', subject: p.subject, body: p.body }; }
+  if (kind === 'customer_update') { const lbl = t.condition === 'Breakdown' ? 'Breakdown' : t.condition === 'Running late' ? 'Running late' : l.status === 'Delivered' ? 'Delivered' : 'In transit'; const p = aiParseMailto(customerUpdateMail(l, ['update', lbl], null, '')); return { to: p.to || l.customerEmail || '', subject: p.subject, body: p.body }; }
+  if (kind === 'trace_request') return { to: rec.email || cr.email || '', subject: `Status request - JTS file ${l.fileNo} - ${route(l)}`, body: [`Hi ${rec.dispatchName || 'dispatch'},`, '', `Please send a status on JTS file ${l.fileNo} (${route(l)}).`, `Driver: ${cr.driver || 'please confirm'}${cr.driverPhone ? ' ' + cr.driverPhone : ''}`, `Next stop: ${nxt.name || nxt.city || ''}${nxt.date ? ', appt ' + fmtDate(nxt.date) + (nxt.time ? ' ' + nxt.time : '') : ''}`, t.location ? `Last location we have: ${t.location}${t.updatedAt ? ' at ' + fmtWhen(t.updatedAt) : ''}` : 'We have no location on this load yet.', '', 'We need: current location, ETA to the next stop, and anything that could affect delivery.', '', 'Thank you,', me, COMPANY.name, `${COMPANY.phone} · ${COMPANY.email}`].join('\n') };
+  if (kind === 'rate_con') { const rc = l.rateCon; return { to: rec.email || cr.email || '', subject: `Rate confirmation ${rc ? rc.no : ''} - JTS file ${l.fileNo} - ${route(l)}`, body: [`Hi ${rec.dispatchName || 'dispatch'},`, '', `Rate confirmation${rc ? ' ' + rc.no : ''} for JTS file ${l.fileNo}, ${route(l)}.`, `All-in carrier pay: ${money(num(l.truckPay))}`, `Pickup: ${(l.pickups[0] || {}).name || ''} ${fmtDate((l.pickups[0] || {}).date)} ${(l.pickups[0] || {}).time || ''}`.trim(), `Delivery: ${nxt.name || ''} ${fmtDate(nxt.date)} ${nxt.time || ''}`.trim(), l.temp ? `Temperature: ${l.temp}` : '', '', rc ? 'The signed PDF is attached. Reply to confirm.' : 'Issue the rate con on the file and attach the PDF before sending.', '', 'Thank you,', me, COMPANY.name, `${COMPANY.phone} · ${COMPANY.email}`].filter(x => x !== null).join('\n') }; }
+  return { to: '', subject: `JTS file ${l.fileNo} - ${route(l)}`, body: '' };
+}
+function aiCardFind(id) { for (const m of (S.ai.msgs || [])) { const c = (m.cards || []).find(x => x.id === id); if (c) return c; } return null; }
+function aiCardLog(c, text) { if (!c.loadId) return; updateLoad(c.loadId, l => opsLog(l, 'email', text)); }
+function renderAiCard(c) {
+  const done = c.status !== 'draft', badge = c.status === 'sent' ? '<span class="tag tag-accent">Sent</span>' : c.status === 'applied' ? '<span class="tag tag-accent">Applied</span>' : c.status === 'cancelled' ? '<span class="tag tag-neutral">Cancelled</span>' : '<span class="tag tag-outline">Needs your OK</span>';
+  const ro = done ? ' readonly disabled' : '';
+  const f = (k, label, val, extra = '') => `<label class="ask-f"><span>${label}</span><input class="input" value="${esc(val || '')}" data-act="aiCard" data-id="${c.id}" data-k="${k}"${ro} ${extra}></label>`;
+  if (c.kind === 'email') return `<div class="ask-card${done ? ' done' : ''}">
+    <div class="ask-card-h">&#9993; ${esc(AI_EMAIL_KINDS[c.emailKind] || 'Email')}${c.fileNo ? ` · File ${esc(c.fileNo)}` : ''} ${badge}${c.status === 'sent' ? `<span class="text-muted" style="font-size:11px">· opened in your mail app ${fmtWhen(c.doneAt)}</span>` : ''}</div>
+    ${f('to', 'To', c.to, 'type="email" placeholder="carrier@example.com"')}${f('cc', 'Cc', c.cc, 'placeholder="optional"')}${f('subject', 'Subject', c.subject)}
+    <textarea class="input ask-body" data-act="aiCard" data-id="${c.id}" data-k="body" rows="${Math.min(14, Math.max(4, String(c.body || '').split('\n').length + 1))}"${ro}>${esc(c.body || '')}</textarea>
+    ${done ? '' : `<div class="ask-acts"><button class="btn btn-primary btn-sm" data-act="aiCardSend" data-id="${c.id}">Send in my mail app</button><button class="btn btn-secondary btn-sm" data-act="aiCardCopy" data-id="${c.id}">Copy text</button><button class="btn btn-ghost btn-sm" data-act="aiCardCancel" data-id="${c.id}">Don't send</button><span class="text-muted" style="font-size:11.5px">Nothing goes out until you hit send in your mail app.</span></div>`}
+  </div>`;
+  if (c.kind === 'check_call') return `<div class="ask-card${done ? ' done' : ''}"><div class="ask-card-h">&#128222; Log a check call · File ${esc(c.fileNo)} ${badge}</div>
+    <label class="ask-f"><span>Type</span><select class="input" data-act="aiCard" data-id="${c.id}" data-k="type"${ro}>${CC_TYPES.map(t => `<option${c.type === t ? ' selected' : ''}>${t}</option>`).join('')}</select></label>${f('location', 'Location', c.location)}${f('note', 'Note', c.note)}
+    ${done ? '' : `<div class="ask-acts"><button class="btn btn-primary btn-sm" data-act="aiCardApply" data-id="${c.id}">Log it</button><button class="btn btn-ghost btn-sm" data-act="aiCardCancel" data-id="${c.id}">Skip</button></div>`}</div>`;
+  if (c.kind === 'note') return `<div class="ask-card${done ? ' done' : ''}"><div class="ask-card-h">&#128221; Internal note · File ${esc(c.fileNo)}${c.stopLabel ? ' · ' + esc(c.stopLabel) : ''} ${badge}</div>
+    <textarea class="input ask-body" data-act="aiCard" data-id="${c.id}" data-k="text" rows="3"${ro}>${esc(c.text || '')}</textarea>
+    ${done ? '' : `<div class="ask-acts"><button class="btn btn-primary btn-sm" data-act="aiCardApply" data-id="${c.id}">Add note</button><button class="btn btn-ghost btn-sm" data-act="aiCardCancel" data-id="${c.id}">Skip</button></div>`}</div>`;
+  if (c.kind === 'csv') return `<div class="ask-card done"><div class="ask-card-h">&#128202; ${esc(c.title)} <span class="tag tag-accent">${fmt(c.rows)} rows</span></div><div class="ask-acts"><a class="btn btn-primary btn-sm" download="${esc(c.fileName)}" href="data:text/csv;charset=utf-8,${encodeURIComponent(c.csv)}">Download CSV</a><button class="btn btn-secondary btn-sm" data-act="aiCardCopy" data-id="${c.id}">Copy for Excel</button></div></div>`;
+  return '';
+}
+const AI_ACTION_TOOLS = [
+  { name: 'draft_email', description: 'Draft an email for the user to approve and send from their mail app. Kinds: dispatch (load tender to the carrier, prefilled with the full tender), customer_update (tracing update to the customer with current status, location and ETA), trace_request (status request to carrier dispatch), rate_con (rate confirmation cover note to the carrier), custom (anything else: give to, subject and body). Give a file number to prefill recipient and content; pass body or subject only to replace the default. The draft appears as a card under your answer; the user reviews it and sends. You never send mail yourself. Draft one email per file when several are needed.', input_schema: { type: 'object', properties: { kind: { type: 'string', enum: ['dispatch', 'customer_update', 'trace_request', 'rate_con', 'custom'] }, file: { type: 'string' }, to: { type: 'string' }, cc: { type: 'string' }, subject: { type: 'string' }, body: { type: 'string', description: 'Plain text. Leave out to use the standard wording for the kind.' } }, required: ['kind'], additionalProperties: false } },
+  { name: 'log_check_call', description: 'Propose a check call entry on a file (type, location, note). The user approves it on a card before it is logged. Logging Loaded or In Transit moves a Booked or Dispatched file to In Transit; Delivered marks the file delivered.', input_schema: { type: 'object', properties: { file: { type: 'string' }, type: { type: 'string', enum: CC_TYPES }, location: { type: 'string' }, note: { type: 'string' } }, required: ['file', 'type'], additionalProperties: false } },
+  { name: 'add_note', description: 'Propose an internal note on a file, optionally on one stop (pickup 1, delivery 2, ...). Stamped with the user name and time once the user approves. Never prints or emails.', input_schema: { type: 'object', properties: { file: { type: 'string' }, text: { type: 'string' }, stop: { type: 'string', description: 'pickup 1, delivery 1, etc. Omit for a file-level note.' } }, required: ['file', 'text'], additionalProperties: false } },
+  { name: 'export_csv', description: 'Build a CSV download of files matching filters (same filters as search_loads) with the standard columns. Use when the user asks for a spreadsheet, export, CSV or Excel.', input_schema: { type: 'object', properties: { title: { type: 'string' }, ...AI_FILTER_PROPS, sort: { type: 'string', enum: ['ship_date', 'rate', 'margin', 'last_check_call'] } }, required: ['title'], additionalProperties: false } },
+];
+function aiActionTool(name, a, ctx) {
+  const card = c => { c.id = 'card-' + uid(); c.status = 'draft'; ctx.cards.push(c); return c; };
+  if (name === 'draft_email') {
+    const l = a.file ? aiLoadByFile(a.file) : null; if (a.file && !l) return { error: `No file ${a.file}` };
+    const d = aiEmailDefaults(a.kind, l), c = card({ kind: 'email', emailKind: a.kind, loadId: l ? l.id : null, fileNo: l ? String(l.fileNo) : '', to: a.to || d.to, cc: a.cc || '', subject: noDash(a.subject || d.subject), body: noDash(a.body || d.body) });
+    return { card_id: c.id, status: 'draft shown to the user, awaiting their approval', to: c.to || '(no address on file, user must fill it in)', subject: c.subject, body_preview: c.body.slice(0, 300) };
+  }
+  if (name === 'log_check_call') { const l = aiLoadByFile(a.file); if (!l) return { error: `No file ${a.file}` }; const c = card({ kind: 'check_call', loadId: l.id, fileNo: String(l.fileNo), type: CC_TYPES.includes(a.type) ? a.type : 'In Transit', location: a.location || '', note: a.note || '' }); return { card_id: c.id, status: 'awaiting user approval' }; }
+  if (name === 'add_note') { const l = aiLoadByFile(a.file); if (!l) return { error: `No file ${a.file}` }; let kind = null, idx = -1, label = ''; const m = String(a.stop || '').toLowerCase().match(/(pickup|pu|shipper|delivery|drop|del|receiver)\s*(\d+)?/); if (m) { kind = /pick|pu|ship/.test(m[1]) ? 'pickups' : 'drops'; idx = (+m[2] || 1) - 1; if (!l[kind][idx]) return { error: `File ${l.fileNo} has no ${a.stop}` }; label = `${kind === 'pickups' ? 'Pickup' : 'Delivery'} ${idx + 1} · ${l[kind][idx].name || l[kind][idx].city || ''}`; } const c = card({ kind: 'note', loadId: l.id, fileNo: String(l.fileNo), stopKind: kind, stopIdx: idx, stopLabel: label, text: noDash(a.text || '') }); return { card_id: c.id, status: 'awaiting user approval' }; }
+  if (name === 'export_csv') {
+    const rows = aiSort(aiFilter(a), a.sort).slice(0, 2000), cols = ['file', 'status', 'customer', 'rep', 'office', 'equipment', 'carrier', 'driver', 'driver_phone', 'origin', 'ship_date', 'ship_time', 'destination', 'deliver_date', 'deliver_time', 'pu_numbers', 'del_numbers', 'rate', 'truck_pay', 'margin', 'rate_con', 'last_location', 'eta', 'condition', 'last_check_call', 'detention', 'flags'];
+    const q = v => { const s = Array.isArray(v) ? v.join('; ') : (v == null ? '' : String(v)); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const csv = [cols.join(','), ...rows.map(l => { const r = aiRow(l); return cols.map(k => q(r[k])).join(','); })].join('\n');
+    const c = card({ kind: 'csv', title: a.title, rows: rows.length, csv, fileName: a.title.replace(/[^a-z0-9]+/gi, '-').toLowerCase().replace(/^-|-$/g, '') + '.csv' }); c.status = 'ready';
+    return { card_id: c.id, rows: rows.length, columns: cols, status: 'download card shown to the user' };
+  }
+  return null;
+}
+const AI_CARD_ACT = {
+  aiCard: el => { const c = aiCardFind(el.dataset.id); if (c) c[el.dataset.k] = el.value; },
+  aiCardSend: el => { const c = aiCardFind(el.dataset.id); if (!c) return; if (!c.to) { notify('Who gets it?', 'Add an address in the To field first.'); return; }
+    const url = `mailto:${encodeURIComponent(c.to)}?${c.cc ? 'cc=' + encodeURIComponent(c.cc) + '&' : ''}subject=${encodeURIComponent(noDash(c.subject))}&body=${encodeURIComponent(noDash(c.body))}`;
+    c.status = 'sent'; c.doneAt = Date.now(); aiCardLog(c, `${AI_EMAIL_KINDS[c.emailKind] || 'Email'} to ${c.to}: ${c.subject} (via Ask the board)`);
+    try { window.location.href = url; } catch (e) {} render(); toast('Opened in your mail app. Hit send there to deliver it.'); },
+  aiCardCopy: el => { const c = aiCardFind(el.dataset.id); if (!c) return; const text = c.kind === 'csv' ? c.csv.replace(/,/g, '\t') : `To: ${c.to}\n${c.cc ? 'Cc: ' + c.cc + '\n' : ''}Subject: ${c.subject}\n\n${c.body}`; copyText(text).then(() => toast('Copied.')); },
+  aiCardCancel: el => { const c = aiCardFind(el.dataset.id); if (!c) return; c.status = 'cancelled'; render(); },
+  aiCardApply: el => { const c = aiCardFind(el.dataset.id); if (!c) return;
+    if (c.kind === 'check_call') { updateLoad(c.loadId, l => ccPush(l, { type: c.type, location: c.location, note: c.note })); c.status = 'applied'; c.doneAt = Date.now(); render(); toast(`Check call logged on file ${c.fileNo}.`); return; }
+    if (c.kind === 'note') { updateLoad(c.loadId, l => { if (c.stopKind && l[c.stopKind][c.stopIdx]) { const st = l[c.stopKind][c.stopIdx]; st.calls = st.calls || []; st.calls.push({ at: Date.now(), by: S.user.name, who: '', text: c.text }); } else { l.internalComments = [l.internalComments, `${fmtWhen(Date.now())} ${S.user.name}: ${c.text}`].filter(Boolean).join('\n'); opsLog(l, 'note', c.text); } }); c.status = 'applied'; c.doneAt = Date.now(); render(); toast(`Note added to file ${c.fileNo}.`); } },
+};
+Object.assign(ACT, AI_CARD_ACT); CHANGE_ACTS.add('aiCard'); AI_TOOLS.push(...AI_ACTION_TOOLS);
 Object.assign(ACT, ORDER_ACT); Object.assign(ACT, LG_ACT); LG_CHANGE.forEach(a => CHANGE_ACTS.add(a));
 document.addEventListener('dblclick', e => { if (S.view !== 'builder') return; const st = e.target.closest && e.target.closest('.lg-stop'); if (!st) return; if (!(e.target.closest('.lg-facsel, .lg-name, .lg-stop-h, .lg-compact'))) return; e.preventDefault(); const k = st.dataset.kind + '-' + st.dataset.i; S.lgAddrOpen = S.lgAddrOpen || {}; S.lgAddrOpen[k] = !S.lgAddrOpen[k]; render(); });
 document.addEventListener('keydown', e => { if (!S.user || S.view !== 'builder' || e.key !== 'Escape' || isMobile() || document.querySelector('.dialog-backdrop')) return; if (e.target && e.target.matches && e.target.matches('input, select, textarea')) { e.target.blur(); return; } confirmUI('Leave the load editor?', 'Unsaved changes on this file are lost.', 'Leave').then(ok => { if (ok) ACT.lgLeave(); }); });
